@@ -156,6 +156,8 @@ def process(
     # Reliability parameters
     max_retries: int = 0,
     timeout_seconds: Optional[float] = None,
+    # Semantic preservation
+    preserve_intent: bool = False,
 ) -> Union[str, Dict[str, Any]]:
     """
     Process a prompt through PrivySHA optimization pipeline.
@@ -182,6 +184,12 @@ def process(
         log_level: Logging level - "ERROR", "WARN", "INFO", "DEBUG" (default: "INFO")
         log_output: Output destination - "console", "file", "json" (default: "console")
         log_file: Log file path (if log_output="file") (default: None)
+        max_retries: Retry pipeline on transient failure (default: 0 — no retries)
+        timeout_seconds: Abort processing after this many seconds (default: None)
+        preserve_intent: When True, if no PII and no threats are detected the original
+            prompt is returned unchanged — preventing the optimizer from rewriting clean
+            prompts.  Set to True when semantic fidelity matters more than token savings.
+            (default: False)
 
     Returns:
         Optimized prompt string or dict with metrics
@@ -471,10 +479,18 @@ def process(
         if reversible and masking_map:
             enhanced_metrics["masking_map"] = masking_map
 
+        # preserve_intent: when no PII was found and no threats detected, the
+        # optimizer has no security work to do — return the original prompt to
+        # prevent semantic drift (e.g. "customer support" → "Analyze user information").
+        _preserve_intent_triggered = (
+            preserve_intent and not pii_types and threats_count == 0
+        )
+
         # Warn when the optimizer rewrites a prompt that had no PII and no threats.
         # This surprises users who expect clean prompts to pass through unchanged.
         if (
             verbose
+            and not _preserve_intent_triggered
             and optimized != prompt
             and not pii_types
             and threats_count == 0
@@ -483,15 +499,15 @@ def process(
             import warnings as _warnings
             _warnings.warn(
                 "process() rewrote a prompt that contained no PII and no threats. "
-                "To opt out of optimization for safe prompts use mode='off' or "
-                "pass trust_input=True to optimize().",
+                "To preserve semantic meaning pass preserve_intent=True, "
+                "or use mode='off' to skip optimization entirely.",
                 UserWarning,
                 stacklevel=2,
             )
 
         if return_metrics or debug:
             response = {
-                "optimized": _finalize_privacy_output(result, privacy),
+                "optimized": prompt if _preserve_intent_triggered else _finalize_privacy_output(result, privacy),
                 "original": result["prompts"]["original"],
                 "token_reduction": result["optimization_metrics"].get(
                     "token_reduction_percentage", 0
@@ -564,6 +580,9 @@ def process(
                     response["diff"] = result["diff"]
 
             return response
+
+        if _preserve_intent_triggered:
+            return prompt
 
         return _finalize_privacy_output(result, privacy)
 

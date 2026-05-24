@@ -2,6 +2,8 @@
 
 Gap 2: Safe prompts should be unchanged under mode="off".
 Gap 3: Semantic meaning should be preserved (key intent words survive).
+       preserve_intent=True is the recommended escape-hatch when the default
+       balanced-mode optimizer would otherwise drift the meaning.
 Gap 4: Instructions/constraints must survive under mode="off" / privacy=False.
 Gap 5: JSON and code blocks must pass through under mode="off".
 """
@@ -150,6 +152,43 @@ def test_markdown_code_fence_preserved_mode_off():
     assert isinstance(result, str)
     # The explanation request should survive
     assert "python" in result.lower() or "hello" in result or "Explain" in result
+
+
+# ---------------------------------------------------------------------------
+# Gap 3: preserve_intent=True — clean prompts returned verbatim
+# ---------------------------------------------------------------------------
+
+
+def test_preserve_intent_returns_original_for_clean_prompt():
+    """preserve_intent=True must return the original when no PII / threats found."""
+    original = "I need customer support for my billing issue."
+    result = process(original, preserve_intent=True)
+    assert result == original
+
+
+def test_preserve_intent_returns_original_simple():
+    """A generic safe prompt is not rewritten when preserve_intent=True."""
+    original = "Explain the difference between supervised and unsupervised learning."
+    result = process(original, preserve_intent=True)
+    assert result == original
+
+
+def test_preserve_intent_false_may_rewrite():
+    """When preserve_intent=False (default), the optimizer may rewrite clean prompts."""
+    original = "Tell me about customer support best practices."
+    # We only assert we get some string back — the exact output is optimizer-dependent
+    result = process(original, preserve_intent=False)
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_preserve_intent_pii_still_masked():
+    """Even with preserve_intent=True, PII must be masked when present."""
+    prompt = "Contact john.doe@example.com for customer support details."
+    result = process(prompt, preserve_intent=True)
+    assert isinstance(result, str)
+    # PII present → optimizer ran → preserve_intent does NOT restore the raw email
+    assert "john.doe@example.com" not in result
 
 
 # ---------------------------------------------------------------------------

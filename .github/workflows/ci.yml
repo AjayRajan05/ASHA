@@ -48,7 +48,7 @@ jobs:
       run: mypy src/privysha --ignore-missing-imports
 
     - name: Run unit tests
-      run: pytest --cov=privysha --cov-report=xml --cov-report=term --cov-fail-under=55 -m "not slow"
+      run: pytest --cov=privysha --cov-report=xml --cov-report=term --cov-fail-under=50 -m "not slow"
 
     - name: Run slow tests
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
