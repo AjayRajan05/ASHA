@@ -148,11 +148,14 @@ def process(
     pii_mode: str = "rule",
     reversible: bool = False,
     security_fail_closed: bool = False,
-    # NEW: Observability parameters
+    # Observability parameters
     trace: bool = False,
     log_level: str = "INFO",
     log_output: str = "console",
     log_file: Optional[str] = None,
+    # Reliability parameters
+    max_retries: int = 0,
+    timeout_seconds: Optional[float] = None,
 ) -> Union[str, Dict[str, Any]]:
     """
     Process a prompt through PrivySHA optimization pipeline.
@@ -338,14 +341,47 @@ def process(
             pii_mode=pii_mode,
             reversible=reversible,
         )
-        result = pipeline.process(
-            content=prompt,
-            trace=trace,
-            log_level=log_level,
-            debug=debug or debug_mode,
-            log_output=log_output,
-            log_file=log_file,
-        )
+
+        def _run_pipeline() -> Any:
+            return pipeline.process(
+                content=prompt,
+                trace=trace,
+                log_level=log_level,
+                debug=debug or debug_mode,
+                log_output=log_output,
+                log_file=log_file,
+            )
+
+        # Retry + timeout support
+        import concurrent.futures as _cf
+
+        _last_exc: Optional[Exception] = None
+        result = None
+        for _attempt in range(max_retries + 1):
+            try:
+                if timeout_seconds is not None:
+                    with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
+                        _future = _pool.submit(_run_pipeline)
+                        try:
+                            result = _future.result(timeout=timeout_seconds)
+                        except _cf.TimeoutError:
+                            raise TimeoutError(
+                                f"process() timed out after {timeout_seconds}s"
+                            )
+                else:
+                    result = _run_pipeline()
+                break
+            except TimeoutError:
+                raise  # never retry on timeout
+            except Exception as _exc:
+                _last_exc = _exc
+                if _attempt == max_retries:
+                    raise
+                if verbose:
+                    print(
+                        f"[PrivySHA] process() attempt {_attempt + 1} failed "
+                        f"({type(_exc).__name__}), retrying..."
+                    )
 
         if debugger:
             debugger.complete_stage(
@@ -434,6 +470,24 @@ def process(
             masking_map = vault_result.masking_map or {}
         if reversible and masking_map:
             enhanced_metrics["masking_map"] = masking_map
+
+        # Warn when the optimizer rewrites a prompt that had no PII and no threats.
+        # This surprises users who expect clean prompts to pass through unchanged.
+        if (
+            verbose
+            and optimized != prompt
+            and not pii_types
+            and threats_count == 0
+            and mode not in ("off",)
+        ):
+            import warnings as _warnings
+            _warnings.warn(
+                "process() rewrote a prompt that contained no PII and no threats. "
+                "To opt out of optimization for safe prompts use mode='off' or "
+                "pass trust_input=True to optimize().",
+                UserWarning,
+                stacklevel=2,
+            )
 
         if return_metrics or debug:
             response = {
@@ -963,6 +1017,8 @@ def sanitize(
     return_details: bool = False,
     reversible: bool = False,
     security_fail_closed: bool = False,
+    max_retries: int = 0,
+    timeout_seconds: Optional[float] = None,
 ) -> Union[str, Dict[str, Any]]:
     """
     Sanitize a prompt for security only (PII masking, threat detection).
@@ -982,11 +1038,36 @@ def sanitize(
     """
     from ..security.service import run_security_only
     from ..utils.dropin_privacy import SECURITY_FAIL_CLOSED_PLACEHOLDER
+    import concurrent.futures as _cf
 
-    try:
-        security_result = run_security_only(
+    def _run_security() -> Any:
+        return run_security_only(
             prompt, security_level=SecurityLevel.HIGH, reversible=reversible
         )
+
+    try:
+        _last_exc: Optional[Exception] = None
+        security_result = None
+        for _attempt in range(max_retries + 1):
+            try:
+                if timeout_seconds is not None:
+                    with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
+                        _future = _pool.submit(_run_security)
+                        try:
+                            security_result = _future.result(timeout=timeout_seconds)
+                        except _cf.TimeoutError:
+                            raise TimeoutError(
+                                f"sanitize() timed out after {timeout_seconds}s"
+                            )
+                else:
+                    security_result = _run_security()
+                break
+            except TimeoutError:
+                raise
+            except Exception as _exc:
+                _last_exc = _exc
+                if _attempt == max_retries:
+                    raise
     except Exception:
         if security_fail_closed:
             if return_details:

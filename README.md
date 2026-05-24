@@ -10,7 +10,7 @@ Transform raw prompts into optimized, structured, privacy-safe prompts before th
 
 <p align="center">
 
-![PyPI](https://img.shields.io/badge/pypi-v1.0.0-blue)
+![PyPI](https://img.shields.io/badge/pypi-v1.0.1-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Status](https://img.shields.io/badge/status-stable-green)

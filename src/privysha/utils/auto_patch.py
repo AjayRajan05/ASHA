@@ -125,9 +125,15 @@ def auto_patch(
     if enable and not _patch_warning_shown:
         import warnings
 
+        _patching_providers = providers or ["openai", "anthropic",
+                                             "google.generativeai", "huggingface"]
         warnings.warn(
-            "PrivySHA auto_patch() monkey-patches installed LLM SDKs. "
-            "Use wrap_llm() for explicit per-client control.",
+            f"auto_patch() globally monkey-patches installed LLM SDKs "
+            f"({', '.join(_patching_providers)}). This may cause unexpected behaviour "
+            f"in third-party libraries that use those SDKs. "
+            f"Prefer wrap_llm(client) for explicit, per-client control — it is safer "
+            f"and scoped only to your own client objects. "
+            f"Call disable_auto_patch() to undo all patches.",
             UserWarning,
             stacklevel=2,
         )

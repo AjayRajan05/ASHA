@@ -55,21 +55,21 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "pydantic>=2.0.0",
-    "tiktoken>=0.5.0",
-    "requests>=2.28.0",
-    "python-dotenv>=1.0.0",
-    "click>=8.0.0"
+    "pydantic>=2.0.0,<3.0.0",
+    "tiktoken>=0.5.0,<2.0.0",
+    "requests>=2.28.0,<3.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "click>=8.0.0,<9.0.0"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-asyncio>=0.21.0",
-    "black>=22.0.0",
-    "flake8>=5.0.0",
-    "mypy>=1.0.0"
+    "pytest>=7.0.0,<9.0.0",
+    "pytest-cov>=4.0.0,<7.0.0",
+    "pytest-asyncio>=0.21.0,<1.0.0",
+    "black>=22.0.0,<26.0.0",
+    "flake8>=5.0.0,<8.0.0",
+    "mypy>=1.0.0,<2.0.0"
 ]
 docs = [
     "mkdocs>=1.4.0",
@@ -77,83 +77,83 @@ docs = [
     "mkdocstrings[python]>=0.19.0"
 ]
 openai = [
-    "openai>=1.0.0"
+    "openai>=1.0.0,<2.0.0"
 ]
 anthropic = [
-    "anthropic>=0.5.0"
+    "anthropic>=0.5.0,<1.0.0"
 ]
 gemini = [
-    "google-generativeai>=0.3.0"
+    "google-generativeai>=0.3.0,<1.0.0"
 ]
 transformers = [
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-    "accelerate>=0.20.0"
+    "transformers>=4.20.0,<5.0.0",
+    "torch>=1.12.0,<3.0.0",
+    "accelerate>=0.20.0,<2.0.0"
 ]
 ml = [
-    "spacy>=3.4.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-    "accelerate>=0.20.0"
+    "spacy>=3.4.0,<4.0.0",
+    "transformers>=4.20.0,<5.0.0",
+    "torch>=1.12.0,<3.0.0",
+    "accelerate>=0.20.0,<2.0.0"
 ]
 fastapi = [
-    "fastapi>=0.100.0",
-    "starlette>=0.27.0",
-    "uvicorn>=0.23.0",
+    "fastapi>=0.100.0,<1.0.0",
+    "starlette>=0.27.0,<1.0.0",
+    "uvicorn>=0.23.0,<1.0.0",
 ]
 flask = [
-    "flask>=2.0.0",
+    "flask>=2.0.0,<4.0.0",
 ]
 django = [
-    "django>=4.0.0",
+    "django>=4.0.0,<6.0.0",
 ]
 langchain = [
-    "langchain-core>=0.1.0",
-    "langchain-openai>=0.1.0",
+    "langchain-core>=0.1.0,<1.0.0",
+    "langchain-openai>=0.1.0,<1.0.0",
 ]
 instructor = [
-    "instructor>=0.4.0",
-    "openai>=1.0.0",
+    "instructor>=0.4.0,<2.0.0",
+    "openai>=1.0.0,<2.0.0",
 ]
 guardrails = [
-    "guardrails-ai>=0.4.0",
+    "guardrails-ai>=0.4.0,<1.0.0",
 ]
 integrations = [
-    "fastapi>=0.100.0",
-    "starlette>=0.27.0",
-    "uvicorn>=0.23.0",
-    "langchain-core>=0.1.0",
-    "langchain-openai>=0.1.0",
-    "instructor>=0.4.0",
-    "openai>=1.0.0",
+    "fastapi>=0.100.0,<1.0.0",
+    "starlette>=0.27.0,<1.0.0",
+    "uvicorn>=0.23.0,<1.0.0",
+    "langchain-core>=0.1.0,<1.0.0",
+    "langchain-openai>=0.1.0,<1.0.0",
+    "instructor>=0.4.0,<2.0.0",
+    "openai>=1.0.0,<2.0.0",
 ]
 llamaindex = [
-    "llama-index-core>=0.10.0",
+    "llama-index-core>=0.10.0,<1.0.0",
 ]
 otel = [
-    "opentelemetry-api>=1.20.0",
-    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-api>=1.20.0,<3.0.0",
+    "opentelemetry-sdk>=1.20.0,<3.0.0",
 ]
 all = [
-    "openai>=1.0.0",
-    "anthropic>=0.5.0",
-    "google-generativeai>=0.3.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-    "accelerate>=0.20.0",
-    "spacy>=3.4.0",
-    "fastapi>=0.100.0",
-    "starlette>=0.27.0",
-    "uvicorn>=0.23.0",
-    "langchain-core>=0.1.0",
-    "langchain-openai>=0.1.0",
-    "instructor>=0.4.0",
-    "flask>=2.0.0",
-    "django>=4.0.0",
-    "guardrails-ai>=0.4.0",
-    "opentelemetry-api>=1.20.0",
-    "opentelemetry-sdk>=1.20.0",
-    "llama-index-core>=0.10.0",
+    "openai>=1.0.0,<2.0.0",
+    "anthropic>=0.5.0,<1.0.0",
+    "google-generativeai>=0.3.0,<1.0.0",
+    "transformers>=4.20.0,<5.0.0",
+    "torch>=1.12.0,<3.0.0",
+    "accelerate>=0.20.0,<2.0.0",
+    "spacy>=3.4.0,<4.0.0",
+    "fastapi>=0.100.0,<1.0.0",
+    "starlette>=0.27.0,<1.0.0",
+    "uvicorn>=0.23.0,<1.0.0",
+    "langchain-core>=0.1.0,<1.0.0",
+    "langchain-openai>=0.1.0,<1.0.0",
+    "instructor>=0.4.0,<2.0.0",
+    "flask>=2.0.0,<4.0.0",
+    "django>=4.0.0,<6.0.0",
+    "guardrails-ai>=0.4.0,<1.0.0",
+    "opentelemetry-api>=1.20.0,<3.0.0",
+    "opentelemetry-sdk>=1.20.0,<3.0.0",
+    "llama-index-core>=0.10.0,<1.0.0",
 ]
 
 [project.urls]
