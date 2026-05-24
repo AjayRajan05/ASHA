@@ -2,6 +2,56 @@
 
 PrivySHA uses [trusted publishing](https://docs.pypi.org/trusted-publishers/) via GitHub Actions.
 
+## TestPyPI (recommended first)
+
+Use [TestPyPI](https://test.pypi.org/) to validate packaging before production PyPI.
+
+### One-time TestPyPI configuration
+
+1. **Create account** — Register at [test.pypi.org](https://test.pypi.org/) (separate from production PyPI).
+
+2. **Trusted publisher** — TestPyPI → Account settings → Publishing → Add a new pending publisher:
+   - PyPI project name: `privysha`
+   - Owner: `AjayRajan05` (or your GitHub org)
+   - Repository: `privySHA`
+   - Workflow: `publish-testpypi.yml`
+   - Environment: `testpypi`
+
+3. **GitHub environment** — Repo → Settings → Environments → New environment:
+   - Name: `testpypi`
+
+4. **Publish** — Actions → **Publish to TestPyPI** → Run workflow (optionally skip tests for a dry packaging run).
+
+5. **Install from TestPyPI**:
+
+   ```bash
+   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ privysha
+   ```
+
+   The extra production index is required because TestPyPI does not mirror all dependencies.
+
+### Local TestPyPI upload (alternative)
+
+```bash
+python -m build
+twine check dist/*
+twine upload --repository testpypi dist/*
+```
+
+Create `~/.pypirc` or set:
+
+```bash
+# PowerShell
+$env:TWINE_USERNAME = "__token__"
+$env:TWINE_PASSWORD = "pypi-<your-testpypi-api-token>"
+```
+
+Generate a token at TestPyPI → Account settings → API tokens (scope: entire account or project `privysha`).
+
+---
+
+## Production PyPI
+
 ## One-time configuration
 
 1. **PyPI project** — Create or open the [privysha](https://pypi.org/project/privysha/) project on PyPI.
