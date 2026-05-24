@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-from openai import OpenAI
 from .base import BaseAdapter
 from .universal_adapter import UniversalModelAdapter
 
@@ -24,23 +23,58 @@ class OpenAIAdapter(BaseAdapter):
     """
 
     def __init__(self, model="gpt-4o-mini"):
-        """Initialize using universal adapter for better functionality."""
+        """Initialize OpenAI adapter with specified model.
+
+        Args:
+            model: OpenAI model name (default: 'gpt-4o-mini')
+
+        Note:
+            Uses UniversalModelAdapter for enhanced functionality
+        """
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "OPENAI_API_KEY environment variable is not set. "
+                "Set it with: export OPENAI_API_KEY='your-key'"
+            )
+
         self._adapter = UniversalModelAdapter(
-            provider="openai",
-            model=model,
-            api_key=os.getenv("OPENAI_API_KEY")
+            provider="openai", model=model, api_key=api_key
         )
         self.model = model
 
     def generate(self, prompt: str) -> str:
-        """Generate response using universal adapter."""
+        """Generate response using OpenAI model.
+
+        Args:
+            prompt: Input prompt for OpenAI model
+
+        Returns:
+            Generated response text
+
+        Raises:
+            Exception: If API call fails
+            ValueError: If API key not set
+        """
         return self._adapter.generate(prompt)
 
     # Additional v2 methods exposed for compatibility
     def generate_with_fallback(self, prompt: str, fallback_models=None) -> str:
-        """Generate with fallback support."""
+        """Generate with fallback support.
+
+        Args:
+            prompt: Input prompt
+            fallback_models: List of fallback model configurations
+
+        Returns:
+            Generated response with fallback if primary fails
+        """
         return self._adapter.generate_with_fallback(prompt, fallback_models)
 
     def get_provider_info(self) -> dict:
-        """Get provider information."""
+        """Get provider information.
+
+        Returns:
+            Dictionary with provider details including model, capabilities, etc.
+        """
         return self._adapter.get_provider_info()

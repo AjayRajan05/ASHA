@@ -1,6 +1,8 @@
-# Model Gateway
+# LLM Provider Support
 
-The Model Gateway provides a unified interface for multiple LLM providers, enabling seamless switching, fallbacks, and intelligent routing.
+**Universal compatibility with all major LLM providers**
+
+PrivySHA works with any LLM provider through a simple, unified interface.
 
 ---
 
@@ -8,10 +10,15 @@ The Model Gateway provides a unified interface for multiple LLM providers, enabl
 
 ### OpenAI
 ```python
-from privysha import Agent
+from privysha import wrap_llm
+import openai
 
-agent = Agent(model="gpt-4o-mini")
-# Uses OpenAI API
+client = openai.OpenAI()
+secure_client = wrap_llm(client)
+
+response = secure_client.chat.completions.create(
+    messages=[{"role": "user", "content": "Your prompt"}]
+)
 ```
 
 **Available Models:**
@@ -22,10 +29,16 @@ agent = Agent(model="gpt-4o-mini")
 
 ### Anthropic Claude
 ```python
-from privysha import Agent
+from privysha import wrap_llm
+import anthropic
 
-agent = Agent(model="claude-3-haiku")
-# Uses Anthropic API
+client = anthropic.Anthropic()
+secure_client = wrap_llm(client)
+
+response = secure_client.messages.create(
+    model="claude-3-haiku",
+    messages=[{"role": "user", "content": "Your prompt"}]
+)
 ```
 
 **Available Models:**
@@ -33,20 +46,294 @@ agent = Agent(model="claude-3-haiku")
 - `claude-3-sonnet` - Balanced
 - `claude-3-haiku` - Fast, cost-effective
 
-### xAI Grok
+### Google Gemini
 ```python
-from privysha import Agent
+from privysha import wrap_llm
+import google.generativeai as genai
 
-agent = Agent(model="grok-beta")
-# Uses xAI API
+genai.configure(api_key="your-api-key")
+client = genai.GenerativeModel('gemini-1.5-flash')
+secure_client = wrap_llm(client)
+
+response = secure_client.generate_content("Your prompt")
 ```
 
 **Available Models:**
-- `grok-beta` - Latest Grok model
+- `gemini-1.5-pro` - Most capable
+- `gemini-1.5-flash` - Fast, cost-effective
+- `gemini-1.0-pro` - Legacy support
 
 ### HuggingFace (Local)
 ```python
-from privysha import Agent
+from privysha import wrap_llm
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained("model-name")
+tokenizer = AutoTokenizer.from_pretrained("model-name")
+secure_client = wrap_llm((model, tokenizer))
+
+response = secure_client.generate("Your prompt")
+```
+
+**Available Models:**
+- Any HuggingFace model
+- Local model files
+- Custom trained models
+
+### Ollama (Local)
+```python
+from privysha import wrap_llm
+import ollama
+
+client = ollama.Client()
+secure_client = wrap_llm(client)
+
+response = secure_client.generate(
+    model="llama3",
+    prompt="Your prompt"
+)
+```
+
+**Available Models:**
+- `llama3` - Meta's latest
+- `codellama` - Code specialized
+- `mistral` - High performance
+- Any custom Ollama model
+
+---
+
+## 🔧 Universal Adapter
+
+### Base Adapter Interface
+
+```python
+from privysha.adapters import BaseAdapter
+
+class CustomAdapter(BaseAdapter):
+    def generate(self, prompt, **kwargs):
+        # Custom implementation
+        pass
+    
+    def validate_config(self, config):
+        # Validate configuration
+        pass
+```
+
+### Adding New Providers
+
+```python
+from privysha import register_adapter
+
+# Register custom adapter
+register_adapter("custom_provider", CustomAdapter)
+
+# Use it
+from privysha import process
+
+result = process("prompt", provider="custom_provider")
+```
+
+---
+
+## 🎯 Provider Selection
+
+### Automatic Detection
+
+```python
+from privysha import process
+
+# Automatically detects provider from model name
+result = process("prompt", model="gpt-4o-mini")  # OpenAI
+result = process("prompt", model="claude-3-haiku")  # Anthropic
+result = process("prompt", model="gemini-1.5-flash")  # Gemini
+```
+
+### Manual Specification
+
+```python
+from privysha import process
+
+result = process(
+    "prompt",
+    provider="openai",
+    model="gpt-4o-mini"
+)
+```
+
+---
+
+## 🔄 Fallback Support
+
+### Multiple Providers
+
+```python
+from privysha import process
+
+result = process(
+    "prompt",
+    providers=[
+        {"provider": "openai", "model": "gpt-4o-mini"},
+        {"provider": "anthropic", "model": "claude-3-haiku"},
+        {"provider": "google", "model": "gemini-1.5-flash"}
+    ]
+)
+```
+
+### Automatic Failover
+
+If primary provider fails, PrivySHA automatically tries the next available provider.
+
+---
+
+## 📊 Provider Comparison
+
+| Provider | Speed | Cost | Quality | Privacy |
+|----------|-------|------|---------|---------|
+| OpenAI | Fast | Medium | Excellent | Cloud |
+| Anthropic | Fast | High | Excellent | Cloud |
+| Google | Fast | Medium | Very Good | Cloud |
+| HuggingFace | Variable | Free | Variable | Local |
+| Ollama | Medium | Free | Good | Local |
+
+---
+
+## 🔑 API Keys Setup
+
+### Environment Variables
+
+```bash
+# OpenAI
+export OPENAI_API_KEY=your_openai_key
+
+# Anthropic
+export ANTHROPIC_API_KEY=your_anthropic_key
+
+# Google
+export GOOGLE_API_KEY=your_google_key
+```
+
+### Configuration File
+
+```python
+from privysha import configure
+
+configure(
+    providers={
+        "openai": {"api_key": "your_key"},
+        "anthropic": {"api_key": "your_key"},
+        "google": {"api_key": "your_key"}
+    }
+)
+```
+
+---
+
+## 🚀 Performance Optimization
+
+### Provider Selection
+
+```python
+from privysha import process
+
+# Cost-optimized
+result = process("prompt", optimize_for="cost")
+
+# Speed-optimized
+result = process("prompt", optimize_for="speed")
+
+# Quality-optimized
+result = process("prompt", optimize_for="quality")
+```
+
+### Load Balancing
+
+```python
+from privysha import process
+
+# Distribute load across providers
+result = process(
+    "prompt",
+    load_balance=True,
+    providers=["openai", "anthropic", "google"]
+)
+```
+
+---
+
+## 🔍 Provider Debugging
+
+### Provider Information
+
+```python
+from privysha import get_provider_info
+
+info = get_provider_info("openai")
+print(info)
+# Output: {"models": [...], "features": [...], "pricing": {...}}
+```
+
+### Connection Testing
+
+```python
+from privysha import test_provider
+
+result = test_provider("openai")
+print(result)
+# Output: {"status": "healthy", "latency": 45, "models": [...]}
+```
+
+---
+
+## 🎯 Best Practices
+
+### 1. Use Environment Variables
+
+```bash
+export OPENAI_API_KEY=your_key
+# Instead of hardcoding in code
+```
+
+### 2. Set Up Fallbacks
+
+```python
+result = process(
+    "prompt",
+    providers=["openai", "anthropic", "google"]
+)
+```
+
+### 3. Monitor Provider Health
+
+```python
+from privysha import monitor_providers
+
+monitor_providers()  # Alerts on issues
+```
+
+### 4. Optimize for Your Use Case
+
+```python
+# For cost-sensitive applications
+result = process("prompt", optimize_for="cost")
+
+# For speed-critical applications
+result = process("prompt", optimize_for="speed")
+```
+
+---
+
+## 📋 Provider Summary
+
+PrivySHA provides:
+
+- ✅ **Universal Support**: All major LLM providers
+- ✅ **Automatic Detection**: Smart provider selection
+- ✅ **Fallback Support**: Reliable operation
+- ✅ **Performance Optimization**: Cost/speed/quality tradeoffs
+- ✅ **Easy Integration**: Drop-in wrapper functionality
+- ✅ **Local Options**: Privacy-preserving local models
+
+Use any LLM provider with the same simple API and get automatic security and optimization.
 
 agent = Agent(model="mistralai/Mistral-7B-Instruct-v0.2")
 # Uses local HuggingFace model

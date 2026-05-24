@@ -1,53 +1,352 @@
 # API Reference
 
-Complete API documentation for PrivySHA, including all classes, methods, and configuration options.
+**Core Functions for PrivySHA**
+
+PrivySHA provides 4 main functions that cover all use cases.
 
 ---
 
-## 🔧 Core Classes
+## 🚀 Core Functions
 
-### Agent
+### 1. process()
 
-The main interface for interacting with PrivySHA.
-
-#### Constructor
+Full pipeline processing with security and optimization.
 
 ```python
-from privysha import Agent
+from privysha import process
 
-agent = Agent(
-    model="gpt-4o-mini",
-    privacy=False,
-    optimization_level="balanced",
-    fallback_providers=None,
-    routing_strategy="balanced",
-    debug_level="basic"
-)
+result = process(
+    prompt: str,
+    mode: str = "balanced",
+    return_metrics: bool = False,
+    debug: bool = False,
+    verbose: bool = False
+) -> Union[str, Dict[str, Any]]
 ```
 
 **Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `model` | str | `"gpt-4o-mini"` | Model to use or `"auto"` for automatic selection |
-| `privacy` | bool | `False` | Enable PII masking and injection protection |
-| `optimization_level` | str | `"balanced"` | `"conservative"`, `"balanced"`, or `"aggressive"` |
-| `fallback_providers` | list | `None` | List of fallback provider configurations |
-| `routing_strategy` | str or callable | `"balanced"` | `"cost_optimized"`, `"performance_optimized"`, `"balanced"`, or custom function |
-| `debug_level` | str | `"basic"` | `"basic"`, `"verbose"`, or `"none"` |
-| `provider_config` | dict | `{}` | Provider-specific configuration |
+| `prompt` | str | Required | Input prompt to process |
+| `mode` | str | `"balanced"` | `"balanced"`, `"strict"`, `"lite"`, `"off"` |
+| `return_metrics` | bool | `False` | Return detailed metrics |
+| `debug` | bool | `False` | Enable debug information |
+| `verbose` | bool | `False` | Enable logging output |
+| `security_fail_closed` | bool | `False` | Return blocked placeholder instead of raw PII on total failure |
 
-#### Fallback Provider Configuration
+**Returns:**
+- `str` if `return_metrics=False`
+- `dict` if `return_metrics=True`
+
+**Fail-safe:** `process()` never raises on pipeline errors — it returns a security-scrubbed fallback (or the original prompt in fail-open mode). Use `debug=True` for `fallback_reason` and `original_error` fields.
+
+**Examples:**
 
 ```python
-fallback_providers=[
-    {
-        "provider": "anthropic",
-        "model": "claude-3-haiku",
-        "config": {"temperature": 0.7}
+# Basic usage
+result = process("My email is john@gmail.com. Analyze this.")
+
+# With metrics
+result = process("prompt", return_metrics=True)
+print(f"Saved: {result['token_reduction']}%")
+
+# Debug mode
+result = process("prompt", debug=True)
+print(result["changes"])
+```
+
+---
+
+### 2. wrap_llm()
+
+Wrap existing LLM client with PrivySHA protection.
+
+```python
+from privysha import wrap_llm
+
+secure_client = wrap_llm(
+    client: Any,
+    mode: str = "balanced",
+    privacy: bool = True
+) -> Any
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | Any | Required | LLM client to wrap |
+| `mode` | str | `"balanced"` | Processing mode |
+| `privacy` | bool | `True` | Enable privacy features |
+
+**Returns:**
+- Wrapped client with same interface
+
+**Examples:**
+
+```python
+import openai
+from privysha import wrap_llm
+
+client = openai.OpenAI()
+secure_client = wrap_llm(client)
+
+# Same interface, automatically secured
+response = secure_client.chat.completions.create(
+    messages=[{"role": "user", "content": "My email is john@gmail.com"}]
+)
+```
+
+---
+
+### 3. optimize()
+
+Token optimization only (no security processing).
+
+```python
+from privysha import optimize
+
+result = optimize(
+    prompt: str,
+    mode: str = "balanced",
+    return_metrics: bool = False
+) -> Union[str, Dict[str, Any]]
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `prompt` | str | Required | Input prompt to optimize |
+| `mode` | str | `"balanced"` | Optimization level |
+| `return_metrics` | bool | `False` | Return optimization metrics |
+
+**Examples:**
+
+```python
+# Basic optimization
+optimized = optimize("Very long verbose prompt that needs compression")
+
+# With metrics
+result = optimize("prompt", return_metrics=True)
+print(f"Tokens saved: {result['token_reduction']}")
+```
+
+---
+
+### 4. sanitize()
+
+Security processing only (no optimization).
+
+```python
+from privysha import sanitize
+
+result = sanitize(
+    prompt: str,
+    return_details: bool = False,
+    reversible: bool = False,
+) -> Union[str, Dict[str, Any]]
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `prompt` | str | Required | Input prompt to sanitize |
+| `mode` | str | `"balanced"` | Security level |
+| `return_details` | bool | `False` | Return security details |
+| `reversible` | bool | `False` | Return `masking_map` for post-LLM unmask (opt-in) |
+
+**Examples:**
+
+```python
+# Basic sanitization
+safe = sanitize("My email is john@gmail.com and phone is 555-1234")
+
+# With details
+result = sanitize("prompt", return_details=True)
+print(f"PII detected: {len(result['pii_detected'])}")
+
+# Reversible masking (opt-in — use only when you need to restore LLM output)
+result = sanitize("Email alice@corp.com", return_details=True, reversible=True)
+from privysha import unmask
+restored = unmask(llm_output, result["masking_map"])
+```
+
+---
+
+## 🛠️ CLI Tool
+
+### privysha command
+
+```bash
+privysha "prompt" [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--debug` | Enable debug mode |
+| `--mode` | Processing mode |
+| `--quick-test` | Run quick test suite |
+| `--examples` | Show usage examples |
+
+**Examples:**
+
+```bash
+# Quick demo
+privysha "My email is john@gmail.com. Analyze this dataset."
+
+# Debug mode
+privysha "prompt" --debug
+
+# Quick test
+privysha --quick-test
+```
+
+---
+
+## 📊 Response Formats
+
+### process() with return_metrics=True
+
+```python
+{
+    "optimized": "processed_prompt",
+    "original": "original_prompt",
+    "token_reduction": 45,
+    "security_result": {
+        "is_safe": True,
+        "masked_entities": ["email"],
+        "threats_blocked": 0
     },
-    {
-        "provider": "openai", 
+    "metrics": {
+        "tokens_saved": 64,
+        "cost_reduction": "47%",
+        "processing_time_ms": 54
+    }
+}
+```
+
+### optimize() with return_metrics=True
+
+```python
+{
+    "optimized": "optimized_prompt",
+    "original": "original_prompt",
+    "token_reduction": 35,
+    "metrics": {
+        "tokens_saved": 50,
+        "compression_ratio": 0.65
+    }
+}
+```
+
+### sanitize() with return_details=True
+
+```python
+{
+    "sanitized": "sanitized_prompt",
+    "original": "original_prompt",
+    "is_safe": True,
+    "pii_detected": [
+        {"type": "email", "value": "john@gmail.com", "masked": "[EMAIL]_abc123"}
+    ],
+    "threats_blocked": 0
+}
+```
+
+---
+
+## ⚙️ Configuration
+
+### Global Configuration
+
+```python
+from privysha import configure
+
+configure(
+    default_mode="balanced",
+    token_budget=1200,
+    privacy=True,
+    debug=False
+)
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `PRIVYSHA_MODE` | Default processing mode |
+| `PRIVYSHA_DEBUG` | Enable debug mode |
+| `PRIVYSHA_TOKEN_BUDGET` | Default token budget |
+
+---
+
+## 🔧 Advanced Usage
+
+### Async Support
+
+```python
+from privysha import process_async, optimize_async, sanitize_async
+
+result = await process_async("prompt")
+result = await optimize_async("prompt")
+result = await sanitize_async("prompt")
+```
+
+### Custom Processing
+
+```python
+from privysha import Pipeline
+
+pipeline = Pipeline(
+    privacy=True,
+    token_budget=1200,
+    debug_enabled=False
+)
+
+result = pipeline.process("prompt")
+```
+
+---
+
+## 🚨 Error Handling
+
+PrivySHA uses fail-safe design - always returns usable results.
+
+```python
+try:
+    result = process("prompt")
+except Exception as e:
+    # Falls back to original prompt
+    print(f"Processing failed: {e}")
+    # result is still usable
+```
+
+### Common Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `ImportError` | Missing dependencies | Install required packages |
+| `ConnectionError` | LLM API unavailable | Use fallback or offline mode |
+| `ValidationError` | Invalid parameters | Check function signatures |
+
+---
+
+## 📈 Performance Metrics
+
+When `return_metrics=True`, PrivySHA provides detailed performance data:
+
+- **Token Reduction**: Percentage of tokens saved
+- **Cost Savings**: Estimated cost reduction
+- **Processing Time**: Time taken for processing
+- **PII Detected**: Number of PII items found
+- **Threats Blocked**: Security threats neutralized
+
+These metrics help you optimize your LLM usage and ensure security compliance. 
         "model": "gpt-3.5-turbo",
         "config": {"timeout": 30}
     }
@@ -461,14 +760,71 @@ Anthropic Claude adapter.
 #### Constructor
 
 ```python
-from privysha.adapters.claude_adapter import AnthropicAdapter
+from privysha.adapters.claude_adapter import ClaudeAdapter
 
-adapter = AnthropicAdapter(
+adapter = ClaudeAdapter(
     model="claude-3-haiku",
     api_key="your_key",
     timeout=30
 )
 ```
+
+### GeminiAdapter
+
+Google Gemini adapter.
+
+#### Constructor
+
+```python
+from privysha.adapters.gemini_adapter import GeminiAdapter
+
+adapter = GeminiAdapter(
+    model="gemini-1.5-flash",
+    api_key="your_key",
+)
+```
+
+### OllamaAdapter
+
+Local Ollama adapter (no API key required).
+
+#### Constructor
+
+```python
+from privysha.adapters.ollama_adapter import OllamaAdapter
+
+adapter = OllamaAdapter(
+    model="llama3",
+    base_url="http://localhost:11434",
+)
+```
+
+### GrokAdapter
+
+xAI Grok adapter.
+
+#### Constructor
+
+```python
+from privysha.adapters.grok_adapter import GrokAdapter
+
+adapter = GrokAdapter(
+    model="grok-beta",
+    api_key="your_key",
+)
+```
+
+### AdapterFactory
+
+Create adapters by provider name:
+
+```python
+from privysha import AdapterFactory
+
+adapter = AdapterFactory.create(provider="openai", model="gpt-4o-mini")
+```
+
+Supported providers: `openai`, `anthropic`, `gemini`, `ollama`, `huggingface`, `grok`, `mock`.
 
 ### HuggingFaceAdapter
 
@@ -488,6 +844,69 @@ adapter = HuggingFaceAdapter(
 
 ---
 
+## 🔌 Framework Integrations
+
+PrivySHA composes with existing frameworks — it preprocesses prompts **before** they reach guardrails or structured-output libraries.
+
+### FastAPI
+
+```python
+from fastapi import FastAPI
+from privysha.integrations.fastapi.middleware import PrivySHAMiddleware
+
+app = FastAPI()
+app.add_middleware(PrivySHAMiddleware, mode="balanced")
+```
+
+Or use the helper:
+
+```python
+from privysha import add_privysha_to_fastapi
+
+app = add_privysha_to_fastapi(app, mode="strict")
+```
+
+### LangChain
+
+```python
+from privysha import wrap_langchain_llm, LangChainPromptTemplate
+
+secure_llm = wrap_langchain_llm(your_llm)
+template = LangChainPromptTemplate.from_template("Analyze {input}")
+```
+
+### Instructor
+
+```python
+from privysha import compose_with_instructor, PrivySHAInstructorClient
+
+composer = compose_with_instructor()
+# Preprocesses prompt before Instructor structured output call
+result = composer.create_with_privysha(
+    prompt="Extract user from john@example.com",
+    response_model=UserInfo,
+    client=instructor_client,
+)
+```
+
+Optional: `pip install instructor`
+
+### Guardrails AI
+
+```python
+from privysha import compose_with_guardrails
+
+composer = compose_with_guardrails()
+result = composer.validate_with_privysha(
+    prompt="User message with PII",
+    guard=your_guardrails_guard,
+)
+```
+
+See **[Integrations Guide](integrations.md)** for full examples.
+
+---
+
 ## 🏗️ Pipeline Classes
 
 ### Pipeline
@@ -500,11 +919,13 @@ Main processing pipeline.
 from privysha.pipeline import Pipeline
 
 pipeline = Pipeline(
-    enable_sanitization=True,
-    enable_pii_detection=True,
-    enable_ir_generation=True,
-    enable_optimization=True,
-    enable_compilation=True
+    privacy=True,
+    token_budget=1200,
+    security_level="MEDIUM",
+    debug_enabled=False,
+    fallback_mode=True,
+    timeout_ms=0,
+    pii_mode="rule",
 )
 ```
 

@@ -19,6 +19,7 @@ from enum import Enum
 
 class IntentType(Enum):
     """Intent types for prompt classification."""
+
     ANALYZE = "analyze"
     GENERATE = "generate"
     SUMMARIZE = "summarize"
@@ -32,11 +33,13 @@ class IntentType(Enum):
     VALIDATE = "validate"
     SEARCH = "search"
     DEBUG = "debug"
+    CODE = "code"
     OPTIMIZE = "optimize"
 
 
 class EntityType(Enum):
     """Entity types for object classification."""
+
     DATASET = "dataset"
     TEXT = "text"
     CODE = "code"
@@ -57,6 +60,7 @@ class EntityType(Enum):
 
 class ConstraintType(Enum):
     """Constraint types for prompt requirements."""
+
     PRIVACY = "privacy"
     ACCURACY = "accuracy"
     SPEED = "speed"
@@ -73,6 +77,7 @@ class ConstraintType(Enum):
 
 class PrivacyLevel(Enum):
     """Privacy levels for data handling."""
+
     PUBLIC = "public"
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
@@ -84,17 +89,17 @@ class PrivacyLevel(Enum):
 class PromptIR:
     """
     Prompt Intermediate Representation (IR) - structured representation of a prompt.
-    
+
     This is the core data structure that enables compiler-style optimizations
     and transformations in PrivySHA.
     """
-    
+
     # Core components
     intent: IntentType
     entity: EntityType
     constraints: List[ConstraintType]
     privacy: PrivacyLevel
-    
+
     # Additional metadata
     original_prompt: str
     extracted_entities: List[str]
@@ -103,11 +108,11 @@ class PromptIR:
     urgency: Optional[str] = None
     complexity_score: Optional[float] = None
     token_estimate: Optional[int] = None
-    
+
     # Optimization hints
     optimization_targets: List[str] = None
     fallback_intents: List[IntentType] = None
-    
+
     def __post_init__(self):
         """Post-initialization processing."""
         if self.optimization_targets is None:
@@ -118,7 +123,7 @@ class PromptIR:
             self.parameters = {}
         if self.extracted_entities is None:
             self.extracted_entities = []
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert IR to dictionary representation."""
         return {
@@ -134,11 +139,11 @@ class PromptIR:
             "complexity_score": self.complexity_score,
             "token_estimate": self.token_estimate,
             "optimization_targets": self.optimization_targets,
-            "fallback_intents": [i.value for i in self.fallback_intents]
+            "fallback_intents": [i.value for i in self.fallback_intents],
         }
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'PromptIR':
+    def from_dict(cls, data: Dict[str, Any]) -> "PromptIR":
         """Create IR from dictionary representation."""
         return cls(
             intent=IntentType(data["intent"]),
@@ -152,24 +157,27 @@ class PromptIR:
             urgency=data.get("urgency"),
             complexity_score=data.get("complexity_score"),
             token_estimate=data.get("token_estimate"),
-            optimization_targets=data.get("optimization_targets", ["tokens", "accuracy"]),
-            fallback_intents=[IntentType(i) for i in data.get("fallback_intents", [])]
+            optimization_targets=data.get(
+                "optimization_targets", ["tokens", "accuracy"]
+            ),
+            fallback_intents=[IntentType(i)
+                              for i in data.get("fallback_intents", [])],
         )
-    
+
     def add_constraint(self, constraint: ConstraintType):
         """Add a constraint to the IR."""
         if constraint not in self.constraints:
             self.constraints.append(constraint)
-    
+
     def remove_constraint(self, constraint: ConstraintType):
         """Remove a constraint from the IR."""
         if constraint in self.constraints:
             self.constraints.remove(constraint)
-    
+
     def add_parameter(self, key: str, value: Any):
         """Add a parameter to the IR."""
         self.parameters[key] = value
-    
+
     def get_complexity_level(self) -> str:
         """Get complexity level based on score."""
         if self.complexity_score is None:
@@ -180,23 +188,27 @@ class PromptIR:
             return "medium"
         else:
             return "high"
-    
+
     def requires_privacy_masking(self) -> bool:
         """Check if privacy masking is required."""
-        return self.privacy in [PrivacyLevel.CONFIDENTIAL, PrivacyLevel.RESTRICTED, PrivacyLevel.MASKED]
-    
+        return self.privacy in [
+            PrivacyLevel.CONFIDENTIAL,
+            PrivacyLevel.RESTRICTED,
+            PrivacyLevel.MASKED,
+        ]
+
     def is_cost_sensitive(self) -> bool:
         """Check if cost optimization is important."""
         return ConstraintType.COST in self.constraints
-    
+
     def is_time_sensitive(self) -> bool:
         """Check if time optimization is important."""
         return ConstraintType.SPEED in self.constraints or self.urgency == "high"
-    
+
     def get_optimization_priority(self) -> List[str]:
         """Get optimization priorities based on constraints."""
         priorities = []
-        
+
         if ConstraintType.COST in self.constraints:
             priorities.append("cost")
         if ConstraintType.SPEED in self.constraints:
@@ -205,13 +217,13 @@ class PromptIR:
             priorities.append("tokens")
         if ConstraintType.ACCURACY in self.constraints:
             priorities.append("accuracy")
-        
+
         return priorities or ["tokens", "accuracy"]  # Default priorities
-    
+
     def __str__(self) -> str:
         """String representation of IR."""
         return f"PromptIR(intent={self.intent.value}, entity={self.entity.value}, privacy={self.privacy.value})"
-    
+
     def __repr__(self) -> str:
         """Detailed string representation."""
         return self.to_dict().__repr__()
@@ -220,10 +232,10 @@ class PromptIR:
 class IRTransform:
     """
     Transformation operations for Prompt IR.
-    
+
     Enables compiler-style optimizations and transformations.
     """
-    
+
     @staticmethod
     def optimize_for_tokens(ir: PromptIR) -> PromptIR:
         """Optimize IR for token efficiency."""
@@ -240,15 +252,16 @@ class IRTransform:
             urgency=ir.urgency,
             complexity_score=ir.complexity_score,
             token_estimate=ir.token_estimate,
-            optimization_targets=["tokens"] + [t for t in ir.optimization_targets if t != "tokens"],
-            fallback_intents=ir.fallback_intents.copy()
+            optimization_targets=["tokens"]
+            + [t for t in ir.optimization_targets if t != "tokens"],
+            fallback_intents=ir.fallback_intents.copy(),
         )
-        
+
         # Add token optimization constraint
         optimized.add_constraint(ConstraintType.TOKEN_LIMIT)
-        
+
         return optimized
-    
+
     @staticmethod
     def enhance_privacy(ir: PromptIR) -> PromptIR:
         """Enhance privacy level of IR."""
@@ -265,14 +278,14 @@ class IRTransform:
             complexity_score=ir.complexity_score,
             token_estimate=ir.token_estimate,
             optimization_targets=ir.optimization_targets.copy(),
-            fallback_intents=ir.fallback_intents.copy()
+            fallback_intents=ir.fallback_intents.copy(),
         )
-        
+
         # Add privacy constraint
         enhanced.add_constraint(ConstraintType.PRIVACY)
-        
+
         return enhanced
-    
+
     @staticmethod
     def simplify_intent(ir: PromptIR) -> PromptIR:
         """Simplify intent for faster processing."""
@@ -283,9 +296,9 @@ class IRTransform:
             IntentType.VALIDATE: IntentType.ANALYZE,
             IntentType.MODIFY: IntentType.CREATE,
         }
-        
+
         simplified_intent = intent_mapping.get(ir.intent, ir.intent)
-        
+
         return PromptIR(
             intent=simplified_intent,
             entity=ir.entity,
@@ -298,6 +311,7 @@ class IRTransform:
             urgency=ir.urgency,
             complexity_score=ir.complexity_score,
             token_estimate=ir.token_estimate,
-            optimization_targets=["speed"] + [t for t in ir.optimization_targets if t != "speed"],
-            fallback_intents=ir.fallback_intents.copy()
+            optimization_targets=["speed"]
+            + [t for t in ir.optimization_targets if t != "speed"],
+            fallback_intents=ir.fallback_intents.copy(),
         )

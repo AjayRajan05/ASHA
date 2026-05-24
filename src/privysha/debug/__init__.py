@@ -14,9 +14,5 @@
 
 from .debugger import PrivySHADebugger, DebugTrace, PipelineStage, MetricsCollector
 
-__all__ = [
-    "PrivySHADebugger",
-    "DebugTrace",
-    "PipelineStage", 
-    "MetricsCollector"
-]
+__all__ = ["PrivySHADebugger", "DebugTrace",
+           "PipelineStage", "MetricsCollector"]

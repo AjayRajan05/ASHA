@@ -1,6 +1,6 @@
 # Contributing to PrivySHA
 
-Thank you for your interest in contributing to PrivySHA! This guide will help you get started.
+**Thank you for helping make LLM security and optimization accessible to everyone!**
 
 ---
 
@@ -37,7 +37,7 @@ pip install -e ".[dev]"
 4. **Verify Setup**
 ```bash
 pytest tests/
-python -c "from privysha import Agent; print('Setup successful!')"
+python -c "from privysha import process; print('Setup successful!')"
 ```
 
 ---
@@ -47,7 +47,35 @@ python -c "from privysha import Agent; print('Setup successful!')"
 ```
 privySHA/
 ├── src/privysha/
-│   ├── adapters/          # Model adapters
+│   ├── utils/             # Core functions (process, wrap_llm, optimize, sanitize)
+│   ├── pipeline/          # Processing pipeline
+│   ├── security/          # PII detection and threat prevention
+│   ├── adapters/          # LLM provider adapters
+│   ├── compiler/          # Optimization engine
+│   └── cli.py             # Command-line interface
+├── tests/                 # Test suite
+├── docs/                  # Documentation
+├── examples/              # Usage examples
+└── benchmarks/            # Performance data
+```
+
+---
+
+## 🎯 Core Architecture
+
+PrivySHA is built around 4 core functions:
+
+1. **`process()`** - Full pipeline (security + optimization)
+2. **`wrap_llm()`** - Wrap existing LLM client
+3. **`optimize()`** - Token optimization only
+4. **`sanitize()`** - Security processing only
+
+### Key Components
+
+- **Pipeline**: Orchestrates processing stages
+- **Security Layer**: PII detection and threat prevention
+- **Optimizer**: Token reduction and cost optimization
+- **Adapters**: Universal LLM provider support
 │   ├── compiler/          # Prompt compiler
 │   ├── debug/             # Debugging tools
 │   ├── ir/                # Prompt IR

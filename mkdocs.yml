@@ -1,0 +1,63 @@
+site_name: PrivySHA
+site_description: Drop-in security and optimization layer for LLM applications
+site_url: https://ajayrajan05.github.io/privySHA/
+repo_url: https://github.com/AjayRajan05/privySHA
+repo_name: AjayRajan05/privySHA
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Quickstart: quickstart.md
+  - Core Concepts: core-concepts.md
+  - Architecture: architecture.md
+  - API Reference: api-reference.md
+  - Security: security.md
+  - Compliance: compliance.md
+  - Integrations: integrations.md
+  - Pipeline: pipeline.md
+  - Prompt IR: prompt-ir.md
+  - Optimization: optimization.md
+  - Debugging: debugging.md
+  - Performance Tuning: performance-tuning.md
+  - Troubleshooting: troubleshooting.md
+  - FAQ: faq.md
+  - Examples: examples.md
+  - Migration: migration.md
+  - Versioning: versioning.md
+  - Benchmarks: benchmarks.md
+  - Publishing: publishing.md
+  - Roadmap: roadmap.md
+  - Contributing: contributing.md

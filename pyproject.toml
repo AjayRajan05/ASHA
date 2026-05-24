@@ -18,8 +18,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "privysha"
-version = "0.1.4"
-description = "Privacy-first prompt optimization and compilation framework for AI systems"
+version = "1.0.1"
+description = "Drop-in security + optimization layer for LLM apps"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -29,47 +29,44 @@ maintainers = [
     {name = "Ajay Rajan A", email = "ajayrajan727@gmail.com"}
 ]
 keywords = [
-    "privacy",
-    "prompt-engineering",
-    "ai",
     "llm",
-    "prompt-optimization",
-    "pii-protection",
-    "token-optimization",
-    "prompt-compilation"
+    "security",
+    "optimization",
+    "privacy",
+    "pii-detection",
+    "openai",
+    "anthropic",
+    "gemini",
+    "prompt-engineering"
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "Operating System :: OS Independent",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security",
-    "Topic :: Text Processing :: Linguistic"
+    "Topic :: Text Processing",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content"
 ]
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0.0",
     "tiktoken>=0.5.0",
-    "numpy>=1.21.0",
-    "transformers>=4.20.0",
-    "torch>=1.12.0",
-    "accelerate>=0.20.0",
-    "anthropic>=0.5.0",
-    "openai>=1.0.0",
     "requests>=2.28.0",
-    "aiohttp>=3.8.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "click>=8.0.0"
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
     "black>=22.0.0",
     "flake8>=5.0.0",
     "mypy>=1.0.0"
@@ -79,13 +76,93 @@ docs = [
     "mkdocs-material>=8.5.0",
     "mkdocstrings[python]>=0.19.0"
 ]
+openai = [
+    "openai>=1.0.0"
+]
+anthropic = [
+    "anthropic>=0.5.0"
+]
+gemini = [
+    "google-generativeai>=0.3.0"
+]
+transformers = [
+    "transformers>=4.20.0",
+    "torch>=1.12.0",
+    "accelerate>=0.20.0"
+]
+ml = [
+    "spacy>=3.4.0",
+    "transformers>=4.20.0",
+    "torch>=1.12.0",
+    "accelerate>=0.20.0"
+]
+fastapi = [
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0",
+    "uvicorn>=0.23.0",
+]
+flask = [
+    "flask>=2.0.0",
+]
+django = [
+    "django>=4.0.0",
+]
+langchain = [
+    "langchain-core>=0.1.0",
+    "langchain-openai>=0.1.0",
+]
+instructor = [
+    "instructor>=0.4.0",
+    "openai>=1.0.0",
+]
+guardrails = [
+    "guardrails-ai>=0.4.0",
+]
+integrations = [
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0",
+    "uvicorn>=0.23.0",
+    "langchain-core>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "instructor>=0.4.0",
+    "openai>=1.0.0",
+]
+llamaindex = [
+    "llama-index-core>=0.10.0",
+]
+otel = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+]
+all = [
+    "openai>=1.0.0",
+    "anthropic>=0.5.0",
+    "google-generativeai>=0.3.0",
+    "transformers>=4.20.0",
+    "torch>=1.12.0",
+    "accelerate>=0.20.0",
+    "spacy>=3.4.0",
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0",
+    "uvicorn>=0.23.0",
+    "langchain-core>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "instructor>=0.4.0",
+    "flask>=2.0.0",
+    "django>=4.0.0",
+    "guardrails-ai>=0.4.0",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "llama-index-core>=0.10.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/AjayRajan05/privySHA"
-Documentation = "https://privysha.readthedocs.io/"
-Repository = "https://github.com/AjayRajan05/privySHA.git"
-"Bug Tracker" = "https://github.com/AjayRajan05/privySHA/issues"
+Issues = "https://github.com/AjayRajan05/privySHA/issues"
 Changelog = "https://github.com/AjayRajan05/privySHA/blob/main/CHANGELOG.md"
+
+[project.scripts]
+privysha = "privysha.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -129,14 +206,15 @@ strict_equality = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config"
-testpaths = ["tests"]
+addopts = "-ra -q --strict-markers --strict-config -m \"not integration\""
+testpaths = ["tests", "tests_v2"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+asyncio_mode = "auto"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests"
+    "integration: marks tests as integration tests (require API keys)"
 ]
 
 [tool.coverage.run]

@@ -1,53 +1,219 @@
 # Core Concepts
 
-Understanding PrivySHA's mental model is key to using it effectively. This guide explains the fundamental concepts that make PrivySHA different from traditional LLM usage.
+**Understanding PrivySHA's Processing Modes and Features**
+
+PrivySHA provides a simple, drop-in way to add security and optimization to any LLM application.
 
 ---
 
-## 🧠 The Big Idea: Prompts as Programs
+## 🎯 Processing Modes
 
-### Traditional Approach
-```
-User → Prompt String → LLM → Response
-```
+PrivySHA offers different processing modes for different use cases:
 
-**Problems:**
-- Prompts are unstructured strings
-- No optimization possible
-- No debugging visibility
-- Hard to reproduce results
+### Balanced Mode (Default)
+- **Goal**: Optimal balance of security and performance
+- **Features**: PII masking + token optimization
+- **Use Case**: General applications
 
-### PrivySHA Approach
-```
-User → Prompt IR → Optimized Program → LLM → Response
+```python
+result = process(prompt, mode="balanced")
 ```
 
-**Benefits:**
-- Prompts become structured programs
-- Systematic optimization
-- Full debugging traces
-- Reproducible results
+### Strict Mode
+- **Goal**: Maximum security
+- **Features**: Aggressive PII masking + content filtering
+- **Use Case**: Healthcare, finance, legal
+
+```python
+result = process(prompt, mode="strict")
+```
+
+### Lite Mode
+- **Goal**: Minimal processing overhead
+- **Features**: Basic sanitization only
+- **Use Case**: High-throughput applications
+
+```python
+result = process(prompt, mode="lite")
+```
+
+### Off Mode
+- **Goal**: No processing
+- **Features**: Pass-through only
+- **Use Case**: Testing, debugging
+
+```python
+result = process(prompt, mode="off")
+```
 
 ---
 
-## 🏗️ Core Components
+## 🔐 Privacy & Security
 
-### 1. Prompt IR (Intermediate Representation)
+### PII Detection
 
-The heart of PrivySHA - a structured representation of prompts:
+PrivySHA automatically detects and masks:
 
-```json
-{
-  "intent": "analyze",
-  "object": "dataset",
-  "constraints": ["anomaly_detection"],
-  "style": "concise",
-  "privacy": {
-    "masked": true,
-    "level": "high"
-  },
-  "optimization": {
-    "target_tokens": 50,
+| PII Type | Example | Masked As |
+| -------- | ------- | --------- |
+| Email | john@gmail.com | [EMAIL]_abc123 |
+| Phone | 555-1234 | [PHONE]_def456 |
+| Credit Card | 4111-1111-1111-1111 | [CARD]_ghi789 |
+| SSN | 123-45-6789 | [SSN]_jkl012 |
+| Address | 123 Main St | [ADDRESS]_mno345 |
+
+### Security Features
+
+- **Injection Detection**: SQL, prompt injection attacks
+- **Content Filtering**: Malicious content detection
+- **Data Leakage Prevention**: Sensitive information protection
+
+---
+
+## ⚡ Token Optimization
+
+### Optimization Strategies
+
+1. **Compression**: Remove redundant words
+2. **Restructuring**: Reorganize for efficiency
+3. **Abbreviation**: Use compact notation
+
+### Example
+
+**Before:**
+```
+Please analyze this dataset for anomalies and unusual patterns. 
+I need you to look for any outliers or strange behavior in the data.
+```
+
+**After:**
+```
+@analyze(dataset, tasks=[anomaly_detection, pattern_analysis])
+```
+
+**Savings:**
+- Tokens: 28 → 8 (71% reduction)
+- Cost: 71% savings
+
+---
+
+## 🌐 Universal Compatibility
+
+PrivySHA works with any LLM provider:
+
+### Supported Providers
+- OpenAI (GPT models)
+- Anthropic (Claude models)
+- Google (Gemini models)
+- HuggingFace (Transformers)
+- Ollama (Local models)
+
+### Provider Abstraction
+
+```python
+# Same API, different providers
+agent = Agent(model="gpt-4o-mini")        # OpenAI
+agent = Agent(model="claude-3-haiku")      # Anthropic
+agent = Agent(model="gemini-1.5-flash")   # Google
+agent = Agent(model="llama3")             # Ollama
+```
+
+---
+
+## 🔍 Debugging & Transparency
+
+### Debug Mode
+
+```python
+result = process(prompt, debug=True)
+
+print(result["changes"])
+print(result["metrics"])
+```
+
+### Example Output
+
+```diff
+- john@gmail.com
++ [EMAIL_HASH]_abc123
+```
+
+### Metrics Available
+
+- Token reduction percentage
+- PII items detected
+- Processing time
+- Security threats blocked
+
+---
+
+## 🎛️ Configuration
+
+### Global Settings
+
+```python
+from privysha import configure
+
+configure(
+    default_mode="balanced",
+    token_budget=1200,
+    privacy=True,
+    debug=False
+)
+```
+
+### Per-Request Settings
+
+```python
+result = process(
+    prompt,
+    mode="strict",
+    token_budget=800,
+    debug=True
+)
+```
+
+---
+
+## 🚀 Integration Patterns
+
+### Drop-in Processing
+
+```python
+from privysha import process
+
+# One-line processing
+result = process("User prompt with PII")
+```
+
+### Client Wrapping
+
+```python
+from privysha import wrap_llm
+
+# Wrap existing client
+secure_client = wrap_llm(existing_client)
+```
+
+### Async Support
+
+```python
+from privysha import process_async
+
+result = await process_async("prompt")
+```
+
+---
+
+## 🎯 Key Takeaways
+
+1. **Simple API**: 4 core functions cover all use cases
+2. **Processing Modes**: Choose security vs performance tradeoff
+3. **Privacy First**: Built-in PII masking and security
+4. **Universal**: Works with any LLM provider
+5. **Fail-Safe**: Always returns usable results
+
+These concepts make PrivySHA easy to adopt while providing powerful security and optimization features.
     "preserve_meaning": true
   }
 }
@@ -363,7 +529,7 @@ This mental model helps you:
 
 ### For Businesses
 
-- **Cost Effective** - 68% average token reduction
+- **Cost Effective** - 5–15% typical token reduction on verbose prompts
 - **Secure** - Built-in privacy protection
 - **Reliable** - Automatic fallbacks and retries
 - **Observable** - Full usage analytics

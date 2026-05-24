@@ -15,7 +15,4 @@
 from .prompt_compiler import PromptCompiler
 from .optimizer_engine import PromptOptimizer
 
-__all__ = [
-    "PromptCompiler",
-    "PromptOptimizer"
-]
+__all__ = ["PromptCompiler", "PromptOptimizer"]

@@ -7,3 +7,12 @@ venv/
 dist/
 build/
 *.egg-info
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+logs/
+flake8_report*.txt
+test_output.txt
+benchmarks/output/
+site/

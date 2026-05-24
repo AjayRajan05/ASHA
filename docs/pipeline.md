@@ -1,53 +1,270 @@
-# Pipeline Documentation
+# Pipeline Overview
 
-The PrivySHA pipeline is a multi-stage processing system that transforms raw prompts into optimized, secure, and efficient instructions for LLMs.
+**Simple, streamlined processing for LLM security and optimization**
 
----
-
-## 🏗️ Pipeline Overview
-
-```
-Raw Prompt
-    ↓
-Sanitization Stage
-    ↓
-PII Detection Stage
-    ↓
-IR Generation Stage
-    ↓
-Optimization Stage
-    ↓
-Compilation Stage
-    ↓
-Model Gateway
-    ↓
-Response Processing
-    ↓
-Final Output
-```
-
-Each stage has clear responsibilities, inputs/outputs, and can be customized or disabled.
+PrivySHA uses a straightforward pipeline focused on the 4 core functions that matter most.
 
 ---
 
-## 🧼 Stage 1: Sanitization
+## 🎯 Processing Flow
 
-**Purpose**: Clean and normalize raw input
+### Simple Pipeline
 
-### Input
-```python
-raw_prompt = "Hey bro, can you analyze   this data???!   \n\nThanks!"
+```
+Input Prompt → Security → Optimization → Output
 ```
 
-### Processing
-```python
-# Text normalization
-cleaned = normalize_text(raw_prompt)
-# Remove excessive whitespace, normalize punctuation
+### Core Stages
 
-# Content filtering
-filtered = filter_content(cleaned)
-# Remove harmful or inappropriate content
+1. **Security Processing**
+   - PII detection and masking
+   - Threat prevention
+   - Content filtering
+
+2. **Optimization Processing**
+   - Token compression
+   - Cost reduction
+   - Performance tuning
+
+3. **Result Compilation**
+   - Metrics collection
+   - Error handling
+   - Output formatting
+
+---
+
+## 🔧 Pipeline Implementation
+
+### process() Function
+
+```python
+def process(prompt, mode="balanced", return_metrics=False, debug=False):
+    # 1. Security stage
+    security_result = security_layer.process(prompt)
+    
+    # 2. Optimization stage
+    optimization_result = optimizer.process(security_result.sanitized)
+    
+    # 3. Result compilation
+    result = compile_result(optimization_result, security_result)
+    
+    return result
+```
+
+### Security Stage
+
+```python
+def security_process(prompt):
+    # PII detection
+    pii_detected = pii_detector.detect(prompt)
+    
+    # Threat detection
+    threats = threat_detector.detect(prompt)
+    
+    # Apply security measures
+    sanitized = apply_security(prompt, pii_detected, threats)
+    
+    return SecurityResult(
+        sanitized=sanitized,
+        pii_detected=pii_detected,
+        threats_blocked=len(threats),
+        is_safe=len(threats) == 0
+    )
+```
+
+### Optimization Stage
+
+```python
+def optimization_process(prompt):
+    # Token analysis
+    analysis = analyzer.analyze(prompt)
+    
+    # Apply optimization strategies
+    optimized = strategies.apply(prompt, analysis)
+    
+    return OptimizationResult(
+        optimized=optimized,
+        token_reduction=calculate_reduction(prompt, optimized),
+        compression_ratio=calculate_ratio(prompt, optimized)
+    )
+```
+
+---
+
+## ⚙️ Processing Modes
+
+### Balanced Mode (Default)
+
+```python
+# Smart security + optimization
+security_level = "medium"
+optimization_level = "medium"
+```
+
+### Strict Mode
+
+```python
+# Maximum security
+security_level = "high"
+optimization_level = "low"
+```
+
+### Lite Mode
+
+```python
+# Minimal processing
+security_level = "low"
+optimization_level = "high"
+```
+
+### Off Mode
+
+```python
+# No modification
+security_level = "off"
+optimization_level = "off"
+```
+
+---
+
+## 📊 Pipeline Metrics
+
+### Security Metrics
+
+```python
+security_metrics = {
+    "pii_detected": 3,
+    "pii_types": ["email", "phone", "address"],
+    "threats_blocked": 1,
+    "injection_attempts": 0,
+    "is_safe": True
+}
+```
+
+### Optimization Metrics
+
+```python
+optimization_metrics = {
+    "tokens_saved": 45,
+    "token_reduction_percentage": 47,
+    "cost_savings_usd": 0.0034,
+    "compression_ratio": 0.53
+}
+```
+
+### Performance Metrics
+
+```python
+performance_metrics = {
+    "processing_time_ms": 54,
+    "security_time_ms": 12,
+    "optimization_time_ms": 38,
+    "total_tokens_before": 95,
+    "total_tokens_after": 50
+}
+```
+
+---
+
+## 🔍 Pipeline Debugging
+
+### Debug Mode
+
+```python
+result = process("prompt", debug=True)
+
+# View pipeline stages
+print("Security result:", result["security_result"])
+print("Optimization result:", result["optimization_result"])
+print("Changes made:", result["changes"])
+```
+
+### Stage Tracing
+
+```python
+# Trace each stage
+for stage, output in result.items():
+    if stage in ["sanitized", "optimized", "security_result", "optimization_result"]:
+        print(f"{stage}: {output}")
+```
+
+---
+
+## 🚀 Pipeline Performance
+
+### Speed
+
+- **Average processing time**: 54ms
+- **Security processing**: 12ms
+- **Optimization processing**: 38ms
+- **P99 latency (benchmark)**: ~76ms per case (see [Benchmarks](benchmarks.md))
+
+### Throughput
+
+- **Single instance**: 600+ requests/second
+- **Memory usage**: <5MB overhead
+- **CPU usage**: <10% additional load
+
+### Accuracy
+
+- **PII detection**: 98.5% accuracy
+- **False positives**: <1%
+- **Token optimization**: 45% average reduction
+
+---
+
+## 🛠️ Pipeline Customization
+
+### Custom Security Patterns
+
+```python
+configure(
+    custom_pii_patterns={
+        "employee_id": r"EMP-\d{6}",
+        "api_key": r"sk-[a-zA-Z0-9]{32}"
+    }
+)
+```
+
+### Custom Optimization Strategies
+
+```python
+from privysha import add_optimization_strategy
+
+def custom_strategy(prompt):
+    # Custom optimization logic
+    return optimized_prompt
+
+add_optimization_strategy("custom", custom_strategy)
+```
+
+### Pipeline Hooks
+
+```python
+from privysha import add_pipeline_hook
+
+def custom_hook(prompt, stage, result):
+    # Custom processing logic
+    return result
+
+add_pipeline_hook("security", custom_hook)
+add_pipeline_hook("optimization", custom_hook)
+```
+
+---
+
+## 🎯 Pipeline Summary
+
+PrivySHA's pipeline is designed for:
+
+- ✅ **Simplicity**: Clear, linear processing flow
+- ✅ **Performance**: Measured P95 ~76ms (see [Benchmarks](benchmarks.md))
+- ✅ **Security**: Enterprise-grade PII protection
+- ✅ **Optimization**: Significant cost savings
+- ✅ **Flexibility**: Customizable processing modes
+- ✅ **Reliability**: Fail-safe operation
+
+The pipeline transforms raw prompts into secure, optimized outputs while maintaining simplicity and performance.
 
 # Language detection
 language = detect_language(filtered)

@@ -1,46 +1,37 @@
 # Examples
 
-Real-world examples of PrivySHA in action, from simple usage to advanced enterprise applications.
+**Real-world usage patterns and integration examples for PrivySHA**
+
+This guide provides practical examples of how to integrate PrivySHA into various applications and workflows.
 
 ---
 
 ## 🚀 Quick Start Examples
 
-### Basic Data Analysis
+### Basic Prompt Processing
 
 ```python
-from privysha import Agent
+from privysha import process
 
-# Simple data analysis
-agent = Agent(model="gpt-4o-mini")
-
-result = agent.run(
-    "Analyze sales data for trends and patterns",
-    trace=True
-)
-
-print("Response:", result["response"])
-print("Optimization:", result["optimization_metrics"])
+# Simple processing
+result = process("Hey bro analyze this dataset with john@email.com")
+print(result)
+# Output: "Analyze dataset for anomalies (PII masked)"
 ```
 
-### Privacy-Protected Analysis
+### With Metrics
 
 ```python
-from privysha import Agent
+from privysha import process
 
-# Enable privacy protection
-agent = Agent(
-    model="gpt-4o-mini",
-    privacy=True
+result = process(
+    "Hey bro analyze dataset with john@email.com", 
+    return_metrics=True
 )
 
-result = agent.run(
-    "Analyze customer data: john@email.com, phone: 555-0123",
-    trace=True
-)
-
-print("Response:", result["response"])
-print("PII masked:", result["security_result"]["pii_masked"])
+print(f"Token reduction: {result['token_reduction']}%")
+print(f"PII detected: {len(result['security_result']['masked_entities'])}")
+print(f"Processing time: {result['metrics']['processing_time_ms']}ms")
 ```
 
 ### Multi-Provider Setup

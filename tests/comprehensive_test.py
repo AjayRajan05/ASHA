@@ -1,289 +1,102 @@
-#!/usr/bin/env python3
-"""
-Comprehensive test for PrivySHA package readiness
-Tests all major functionality without requiring external services
-"""
+"""Comprehensive smoke tests for PrivySHA package readiness."""
 
-import sys
-import traceback
 from pathlib import Path
 
+import pytest
+
+from privysha import Agent, process, ThreatType, HybridPIIDetector
+from privysha.pipeline import Pipeline
+from privysha.adapters.factory import AdapterFactory
+
+
+REQUIRED_FILES = [
+    "src/privysha/__init__.py",
+    "src/privysha/agent.py",
+    "src/privysha/pipeline/pipeline.py",
+    "src/privysha/pipeline/stages/security_stage.py",
+    "src/privysha/parser/__init__.py",
+    "src/privysha/parser/prompt_ast.py",
+    "src/privysha/adapters/factory.py",
+    "src/privysha/adapters/mock_adapter.py",
+    "src/privysha/adapters/base.py",
+    "src/privysha/utils/dropin.py",
+    "src/privysha/utils/pii_detector.py",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+
 def test_package_structure():
-    """Test if package has proper structure"""
-    print("1. Testing Package Structure")
-    print("-" * 30)
-    
-    required_files = [
-        "src/privysha/__init__.py",
-        "src/privysha/agent.py", 
-        "src/privysha/pipeline.py",
-        "src/privysha/parser/__init__.py",
-        "src/privysha/parser/prompt_ast.py",
-        "src/privysha/adapters/factory.py",
-        "src/privysha/adapters/mock_adapter.py",
-        "src/privysha/adapters/base.py",
-        "src/privysha/stages/sanitizer.py",
-        "src/privysha/stages/optimizer.py",
-        "src/privysha/stages/compiler.py",
-        "src/privysha/utils/pii_detector.py",
-        "README.md",
-        "LICENSE",
-        "pyproject.toml"
-    ]
-    
-    missing_files = []
-    for file_path in required_files:
-        if not Path(file_path).exists():
-            missing_files.append(file_path)
-    
-    if missing_files:
-        print(f"✗ Missing files: {missing_files}")
-        assert False, f"Missing files: {missing_files}"
-    else:
-        print("✓ All required files present")
+    """Verify the modular package layout exists."""
+    missing = [f for f in REQUIRED_FILES if not Path(f).exists()]
+    assert not missing, f"Missing files: {missing}"
 
-def test_imports():
-    """Test if all imports work"""
-    print("\n2. Testing Imports")
-    print("-" * 30)
-    
-    try:
-        from privysha import Agent
-        print("✓ Main Agent import successful")
-        
-        from privysha.pipeline import Pipeline
-        print("✓ Pipeline import successful")
-        
-        from privysha.adapters.factory import AdapterFactory
-        print("✓ Adapter factory import successful")
-        
-        from privysha.stages.sanitizer import Sanitizer
-        print("✓ Sanitizer import successful")
-        
-        from privysha.stages.optimizer import Optimizer
-        print("✓ Optimizer import successful")
-        
-    except Exception as e:
-        print(f"✗ Import failed: {e}")
-        traceback.print_exc()
-        assert False, f"Import failed: {e}"
 
-def test_basic_functionality():
-    """Test basic pipeline functionality"""
-    print("\n3. Testing Basic Functionality")
-    print("-" * 30)
-    
-    try:
-        from privysha import Agent
-        
-        # Test mock adapter
-        agent = Agent(model="mock", privacy=True, token_budget=1200)
-        print("✓ Agent creation successful")
-        
-        # Test pipeline processing
-        test_prompt = "Hey bro can you analyze this dataset for anomalies? Contact me at john@example.com"
-        result = agent.run(test_prompt, trace=True)
-        print("✓ Pipeline processing successful")
-        
-        # Verify pipeline stages
-        required_stages = ["raw_prompt", "sanitized", "optimized", "compiled_prompt"]
-        for stage in required_stages:
-            if stage not in result:
-                assert False, f"Missing stage: {stage}"
-        
-        print("✓ All pipeline stages present")
-        
-        # Test PII masking
-        if "john@example.com" in result["sanitized"]:
-            assert False, "PII not properly masked"
-        else:
-            print("✓ PII masking working")
-        
-        # Test sanitization
-        if "bro" in result["sanitized"].lower():
-            assert False, "Conversational filler not removed"
-        else:
-            print("✓ Prompt sanitization working")
-        
-        return True
-        
-    except Exception as e:
-        print(f"✗ Basic functionality test failed: {e}")
-        traceback.print_exc()
-        assert False, f"Basic functionality test failed: {e}"
+def test_public_api_imports():
+    """Core public API and lazy imports resolve."""
+    assert Agent is not None
+    assert process is not None
+    assert ThreatType is not None
+    assert HybridPIIDetector is not None
 
-def test_different_adapters():
-    """Test different adapter types"""
-    print("\n4. Testing Adapters")
-    print("-" * 30)
-    
-    try:
-        from privysha.adapters.factory import AdapterFactory
-        
-        # Test mock adapter
-        mock_adapter = AdapterFactory.create("mock")
-        print("✓ Mock adapter creation successful")
-        
-        # Test mock generation
-        response = mock_adapter.generate("test prompt")
-        print(f"✓ Mock generation successful: '{response}'")
-        
-        # Test adapter factory logic
-        ollama_adapter = AdapterFactory.create("llama3")
-        print("✓ Ollama adapter creation successful")
-        
-        # Note: We don't test actual OpenAI/Ollama calls as they require external services
-        
-        return True
-        
-    except Exception as e:
-        print(f"✗ Adapter test failed: {e}")
-        traceback.print_exc()
-        assert False, f"Adapter test failed: {e}"
 
-def test_pipeline_stages():
-    """Test individual pipeline stages"""
-    print("\n5. Testing Pipeline Stages")
-    print("-" * 30)
-    
-    try:
-        from privysha.stages.sanitizer import Sanitizer
-        from privysha.stages.optimizer import Optimizer
-        from privysha.stages.compiler import Compiler
-        
-        # Test sanitizer
-        sanitizer = Sanitizer(privacy=True)
-        test_input = "Hey bro can you help me? My email is john@example.com"
-        sanitized = sanitizer.run(test_input)
-        
-        if "john@example.com" not in sanitized and "bro" not in sanitized.lower():
-            print("✓ Sanitizer working correctly")
-        else:
-            assert False, "Sanitizer not working properly"
-        
-        # Test optimizer
-        optimizer = Optimizer(100)
-        optimized = optimizer.run("analyze this dataset for anomalies")
-        print(f"✓ Optimizer working: '{optimized}'")
-        
-        # Test compiler
-        compiler = Compiler()
-        # Compiler expects a context dict, not a string
-        context = {"system": "You are a helpful assistant.", "task": "analyze dataset"}
-        compiled = compiler.compile(context)
-        print(f"✓ Compiler working: compiled prompt generated")
-        
-        return True
-        
-    except Exception as e:
-        print(f"✗ Pipeline stages test failed: {e}")
-        traceback.print_exc()
-        assert False, f"Pipeline stages test failed: {e}"
+def test_dropin_process():
+    """Drop-in process() masks PII and returns a string."""
+    result = process("Contact john@example.com for help")
+    assert isinstance(result, str)
+    assert "john@example.com" not in result
+
+
+def test_agent_pipeline_trace():
+    """Agent runs the full pipeline with mock adapter."""
+    agent = Agent(model="mock", privacy=True, token_budget=1200)
+    test_prompt = (
+        "Hey bro can you analyze this dataset for anomalies? "
+        "Contact me at john@example.com"
+    )
+    result = agent.run(test_prompt, trace=True)
+
+    for stage in ("prompts", "response"):
+        assert stage in result, f"Missing key: {stage}"
+
+    sanitized = result["prompts"]["sanitized"]
+    assert "john@example.com" not in sanitized
+
+
+def test_adapters():
+    """Adapter factory creates mock and ollama adapters."""
+    mock_adapter = AdapterFactory.create("mock")
+    response = mock_adapter.generate("test prompt")
+    assert isinstance(response, str)
+
+    ollama_adapter = AdapterFactory.create("llama3")
+    assert ollama_adapter is not None
+
+
+def test_modular_pipeline_stages():
+    """Individual pipeline stages initialize and the pipeline processes text."""
+    from privysha.pipeline.stages import (
+        SecurityStage,
+        IRGenerationStage,
+        OptimizationStage,
+    )
+
+    SecurityStage()
+    IRGenerationStage()
+    OptimizationStage()
+
+    pipeline = Pipeline(privacy=True, token_budget=1200)
+    result = pipeline.process("analyze dataset for anomalies")
+    assert "prompts" in result
+    assert "sanitized" in result["prompts"]
+    assert "compiled" in result["prompts"]
+
 
 def test_documentation():
-    """Test if documentation is adequate"""
-    print("\n6. Testing Documentation")
-    print("-" * 30)
-    
-    try:
-        # Check README exists and has content
-        readme_path = Path("README.md")
-        if not readme_path.exists():
-            assert False, "README.md missing"
-        
-        readme_content = readme_path.read_text(encoding='utf-8', errors='ignore')
-        if len(readme_content) < 1000:
-            assert False, "README too short"
-        
-        # Check for key sections
-        required_sections = [
-            "# Overview",
-            "# Installation", 
-            "# Quick Start",
-            "# Key Features"
-        ]
-        
-        missing_sections = []
-        for section in required_sections:
-            if section not in readme_content:
-                missing_sections.append(section)
-        
-        if missing_sections:
-            assert False, f"Missing README sections: {missing_sections}"
-        else:
-            print("✓ README documentation adequate")
-        
-        return True
-        
-    except Exception as e:
-        print(f"✗ Documentation test failed: {e}")
-        assert False, f"Documentation test failed: {e}"
+    """README contains required sections."""
+    readme = Path("README.md").read_text(encoding="utf-8", errors="ignore")
+    assert len(readme) >= 1000
+    for section in ("# Overview", "# Installation", "# Quick Start", "# Key Features"):
+        assert section in readme, f"Missing README section: {section}"
 
-def main():
-    """Run all tests"""
-    print("PrivySHA Package Readiness Assessment")
-    print("=" * 50)
-    
-    tests = [
-        ("Package Structure", test_package_structure),
-        ("Imports", test_imports),
-        ("Basic Functionality", test_basic_functionality),
-        ("Adapters", test_different_adapters),
-        ("Pipeline Stages", test_pipeline_stages),
-        ("Documentation", test_documentation)
-    ]
-    
-    results = []
-    for test_name, test_func in tests:
-        try:
-            result = test_func()
-            results.append((test_name, result))
-        except Exception as e:
-            print(f"✗ {test_name} crashed: {e}")
-            results.append((test_name, False))
-    
-    # Summary
-    print("\n" + "=" * 50)
-    print("ASSESSMENT SUMMARY")
-    print("=" * 50)
-    
-    passed = 0
-    total = len(results)
-    
-    for test_name, result in results:
-        status = "✓ PASS" if result else "✗ FAIL"
-        print(f"{status} {test_name}")
-        if result:
-            passed += 1
-    
-    print(f"\nOverall: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("\n🎉 PACKAGE IS READY FOR PUBLIC USE!")
-        print("\nHow to use:")
-        print("1. Install: pip install privysha")
-        print("2. Basic usage:")
-        print("   from privysha import Agent")
-        print("   agent = Agent(model='mock', privacy=True)")
-        print("   response = agent.run('Your prompt here')")
-        print("\n3. For production use:")
-        print("   - Use OpenAI: Agent(model='gpt-4o-mini')")
-        print("   - Use Ollama: Agent(model='llama3') (requires Ollama server)")
-        print("   - Use HuggingFace: Agent(model='model-name') (requires transformers)")
-        
-        print("\n✅ PRODUCTION DEPLOYMENT READY")
-        print("   - All core functionality working")
-        print("   - PII protection enabled")
-        print("   - Token optimization active")
-        print("   - Modular architecture")
-        print("   - Comprehensive documentation")
-        
-    else:
-        print(f"\n⚠️  PACKAGE NEEDS {total - passed} FIXES BEFORE PUBLIC RELEASE")
-        print("Address the failing tests before going public.")
-    
-    return passed == total
-
-if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)

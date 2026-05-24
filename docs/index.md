@@ -1,8 +1,8 @@
-# Welcome to PrivySHA Documentation
+# PrivySHA Documentation
 
-**The First Prompt Compiler Infrastructure for LLM Systems**
+**Drop-in security + optimization layer for LLM apps**
 
-PrivySHA transforms raw prompts into optimized, structured, secure, and cost-efficient instructions before they ever reach an LLM.
+PrivySHA automatically masks PII, reduces tokens, and blocks prompt injection attacks - all with zero code changes.
 
 ---
 
@@ -11,35 +11,37 @@ PrivySHA transforms raw prompts into optimized, structured, secure, and cost-eff
 **New to PrivySHA?** Start here:
 
 - **[Getting Started](getting-started.md)** - Installation and first example
-- **[Core Concepts](core-concepts.md)** - Understanding the mental model
-- **[Architecture](architecture.md)** - System overview
+- **[API Reference](api-reference.md)** - Core functions: process, wrap_llm, optimize, sanitize
+- **[Examples](examples.md)** - Real-world use cases
+- **[Integrations](integrations.md)** - FastAPI, LangChain, Instructor, Guardrails
 
 ---
 
 ## 🧱 Core Documentation
 
-### Fundamentals
+### Essential Guides
 - **[Getting Started](getting-started.md)** - Installation, setup, first prompt
-- **[Core Concepts](core-concepts.md)** - Prompt IR, Pipeline, Compiler concepts
-- **[Architecture](architecture.md)** - System design and components
+- **[API Reference](api-reference.md)** - Complete API documentation
+- **[Examples](examples.md)** - Real-world use cases and patterns
+- **[Integrations](integrations.md)** - Framework composition guides
 
 ### Key Features
-- **[Prompt IR](prompt-ir.md)** - 🔥 Structured prompt representation
-- **[Pipeline](pipeline.md)** - Raw → Sanitized → IR → Optimized flow
-- **[Model Gateway](model-gateway.md)** - Multi-provider abstraction
 - **[Security](security.md)** - PII masking and injection protection
+- **[Compliance](compliance.md)** - GDPR, CCPA, HIPAA considerations
 - **[Optimization](optimization.md)** - Token reduction and cost savings
-- **[Routing](routing.md)** - Intelligent model selection
-- **[Debugging](debugging.md)** - Full pipeline tracing
+- **[Processing Modes](core-concepts.md)** - balanced, strict, lite, off modes
+- **[CLI Tool](getting-started.md#cli-tool)** - Quick testing and debugging
 
-### Reference
-- **[API Reference](api-reference.md)** - Complete API documentation
-- **[Examples](examples.md)** - Real-world use cases
+### Advanced
+- **[Architecture](architecture.md)** - System design and components
+- **[Debugging](debugging.md)** - Full pipeline tracing
 - **[FAQ](faq.md)** - Common questions
 
 ### Project
 - **[Contributing](contributing.md)** - How to contribute
-- **[Roadmap](roadmap.md)** - Future vision and plans
+- **[Migration](migration.md)** - Upgrade from Presidio, regex, spaCy, etc.
+- **[Troubleshooting](troubleshooting.md)** - Common issues and fixes
+- **[Benchmarks](benchmarks.md)** - Reproducible performance numbers
 
 ---
 
@@ -64,7 +66,7 @@ User → Sanitization → Prompt IR → Optimization → Best Model → Response
 
 **Benefits:**
 - ✅ Structured, reproducible prompts
-- ✅ 68% average token reduction
+- ✅ 5–15% typical token reduction (see [benchmarks.md](benchmarks.md))
 - ✅ Built-in privacy protection
 - ✅ Intelligent model routing
 - ✅ Full debugging traces
@@ -75,7 +77,7 @@ User → Sanitization → Prompt IR → Optimization → Best Model → Response
 
 | Feature | Traditional | PrivySHA | Improvement |
 |---------|------------|-----------|------------|
-| **Token Usage** | 120 tokens | 38 tokens | **68% reduction** |
+| **Token Usage** | 120 tokens | 102–114 tokens | **5–15% reduction** |
 | **Privacy** | None | Built-in PII masking | **Full protection** |
 | **Debugging** | Limited | Full pipeline traces | **Complete visibility** |
 | **Model Selection** | Manual | Intelligent routing | **Automatic optimization** |
@@ -134,7 +136,7 @@ This enables:
 ## 🚀 Next Steps
 
 1. **[Install PrivySHA](getting-started.md#installation)**
-2. **[Set up API keys](getting-started.md#setup-api-keys)**
+2. **[Set up API keys](getting-started.md#api-keys-optional)**
 3. **[Run your first prompt](getting-started.md#your-first-prompt)**
 4. **[Explore advanced features](core-concepts.md)**
 

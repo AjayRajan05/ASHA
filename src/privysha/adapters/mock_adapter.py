@@ -23,7 +23,7 @@ class MockAdapter(BaseAdapter):
 
     def generate(self, prompt):
         """Generate a mock response based on the prompt content"""
-        
+
         # Simple mock responses based on prompt content
         if "analyze" in prompt.lower():
             return "Mock analysis completed. Found patterns in the data."
@@ -33,6 +33,6 @@ class MockAdapter(BaseAdapter):
             return "Mock anomaly detection finished. No anomalies detected."
         else:
             return "Mock response: Processing completed successfully."
-        
+
         # In a real implementation, this would call an LLM API
         # return f"Mock response for: {prompt[:50]}..."

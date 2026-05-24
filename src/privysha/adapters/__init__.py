@@ -15,28 +15,45 @@
 """
 Adapters module for PrivySHA.
 
-This module provides adapters for different LLM providers including:
-- OpenAI (GPT models)
-- Anthropic (Claude models)
-- HuggingFace (open source models)
-- Ollama (local models)
-- Mock (for testing)
+Heavy provider adapters load lazily on first access to keep import time low.
 """
+
+from importlib import import_module
+from typing import Any, Tuple
 
 from .base import BaseAdapter
 from .factory import AdapterFactory
-from .openai_adapter import OpenAIAdapter
-from .claude_adapter import ClaudeAdapter
-from .hf_adapter import HuggingFaceAdapter
-from .ollama_adapter import OllamaAdapter
-from .mock_adapter import MockAdapter
+
+_LAZY_IMPORTS: dict[str, Tuple[str, str]] = {
+    "OpenAIAdapter": (".openai_adapter", "OpenAIAdapter"),
+    "ClaudeAdapter": (".claude_adapter", "ClaudeAdapter"),
+    "HuggingFaceAdapter": (".hf_adapter", "HuggingFaceAdapter"),
+    "OllamaAdapter": (".ollama_adapter", "OllamaAdapter"),
+    "MockAdapter": (".mock_adapter", "MockAdapter"),
+    "GeminiAdapter": (".gemini_adapter", "GeminiAdapter"),
+    "GrokAdapter": (".grok_adapter", "GrokAdapter"),
+    "UniversalModelAdapter": (".universal_adapter", "UniversalModelAdapter"),
+}
 
 __all__ = [
     "BaseAdapter",
-    "AdapterFactory", 
+    "AdapterFactory",
     "OpenAIAdapter",
     "ClaudeAdapter",
     "HuggingFaceAdapter",
     "OllamaAdapter",
-    "MockAdapter"
+    "MockAdapter",
+    "GeminiAdapter",
+    "GrokAdapter",
+    "UniversalModelAdapter",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    if name in _LAZY_IMPORTS:
+        module_path, attr = _LAZY_IMPORTS[name]
+        module = import_module(module_path, __name__)
+        value = getattr(module, attr)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

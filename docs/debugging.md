@@ -1,53 +1,441 @@
 # Debugging
 
-PrivySHA provides comprehensive debugging capabilities that give you full visibility into every stage of prompt processing, from raw input to final response.
+**Debug and monitor PrivySHA's 4 core functions**
+
+PrivySHA provides comprehensive debugging capabilities to help you understand how prompts are processed and optimized.
+
+---
+
+## Tracing: `TraceContext` vs `DebugTracer`
+
+| API | Status | Use when |
+|-----|--------|----------|
+| **`TraceContext`** (`trace=True` on `process()`) | **Recommended** | Production tracing, JSON logs, stage latency, diffs |
+| **`DebugTracer`** (`from privysha import DebugTracer`) | Legacy / advanced | Standalone debug sessions, flow visualization exports |
+
+**Default path:** pass `trace=True` and optionally `debug=True` to `process()`:
+
+```python
+from privysha import process
+
+result = process("Contact john@example.com", trace=True, debug=True, return_metrics=True)
+print(result["trace"])
+print(result.get("diff"))
+```
+
+`DebugTracer` remains exported for backward compatibility but is **not** wired into the main pipeline. New integrations should use `TraceContext` via `process(..., trace=True)`.
 
 ---
 
 ## 🔍 Debugging Overview
 
-### Why Debugging Matters
+### Why Debug PrivySHA?
 
 **Traditional LLM Usage:**
 ```
 User Prompt → Black Box → Response
 ```
-**Problems:**
-- No visibility into processing
-- Hard to debug issues
-- Impossible to optimize
-- No performance insights
 
 **PrivySHA Debugging:**
 ```
 User Prompt → Visible Pipeline → Response
 ```
+
 **Benefits:**
-- Full pipeline visibility
-- Step-by-step tracing
-- Performance metrics
-- Easy optimization
+- See exactly what changes are made
+- Understand cost savings
+- Verify PII masking
+- Optimize performance
 
 ---
 
-## 🎯 Debugging Modes
+## 🎯 Debug Modes
 
-### Basic Tracing
+### Basic Debug Mode
 
 ```python
-from privysha import Agent
+from privysha import process
 
-agent = Agent(model="gpt-4o-mini")
+result = process("My email is john@gmail.com. Analyze this.", debug=True)
 
-result = agent.run("Analyze data", trace=True)
-agent.print_debug_trace()
+print(result["changes"])
+print(result["metrics"])
 ```
 
-### Verbose Debugging
+### CLI Debug Mode
+
+```bash
+privysha "My email is john@gmail.com. Analyze this." --debug
+```
+
+---
+
+## 📊 What Debug Shows
+
+### Changes Made
 
 ```python
-agent = Agent(
-    model="gpt-4o-mini",
+result = process("Hey bro analyze dataset with john@email.com", debug=True)
+
+print(result["changes"])
+```
+
+**Output:**
+```diff
+- Hey bro
+- john@email.com
++ analyze dataset
++ [EMAIL]_abc123
+```
+
+### Performance Metrics
+
+```python
+result = process("prompt", return_metrics=True)
+
+print(f"Token reduction: {result['token_reduction']}%")
+print(f"Processing time: {result['metrics']['processing_time_ms']}ms")
+print(f"PII detected: {len(result['security_result']['masked_entities'])}")
+```
+
+---
+
+## 🔧 Function-Specific Debugging
+
+### Debug process()
+
+```python
+from privysha import process
+
+result = process("prompt", debug=True, return_metrics=True)
+
+# View all debug information
+for key, value in result.items():
+    if key not in ["optimized", "original"]:
+        print(f"{key}: {value}")
+```
+
+When the pipeline falls back (fail-open default), `debug=True` surfaces swallowed errors:
+
+```python
+result = process("prompt", debug=True, return_metrics=True)
+if result.get("fallback_reason"):
+    print(result["fallback_reason"])   # e.g. "pipeline_exception"
+    print(result["original_error"])    # exception type + message (no PII)
+```
+
+### Debug optimize()
+
+```python
+from privysha import optimize
+
+result = optimize("Very long verbose prompt", return_metrics=True)
+
+print(f"Tokens saved: {result['token_reduction']}")
+print(f"Compression ratio: {result['compression_ratio']}")
+```
+
+### Debug sanitize()
+
+```python
+from privysha import sanitize
+
+result = sanitize("My email is john@gmail.com", return_details=True)
+
+print(f"PII detected: {result['pii_detected']}")
+print(f"Is safe: {result['is_safe']}")
+print(f"Threats blocked: {result['threats_blocked']}")
+```
+
+---
+
+## 🛠️ Advanced Debugging
+
+### Pipeline Tracing
+
+```python
+from privysha import process
+
+result = process("prompt", debug=True)
+
+# View each processing stage
+stages = ["raw", "sanitized", "optimized", "compiled"]
+for stage in stages:
+    if stage in result:
+        print(f"{stage.upper()}:")
+        print(f"  {result[stage]}")
+```
+
+### Performance Monitoring
+
+```python
+import time
+from privysha import process
+
+def debug_with_timing(prompt):
+    start_time = time.time()
+    
+    result = process(prompt, debug=True, return_metrics=True)
+    
+    processing_time = time.time() - start_time
+    
+    print(f"Total time: {processing_time:.3f}s")
+    print(f"PrivySHA time: {result['metrics']['processing_time_ms']}ms")
+    print(f"Overhead: {(processing_time - result['metrics']['processing_time_ms']/1000)*1000:.1f}ms")
+    
+    return result
+
+result = debug_with_timing("Your prompt here")
+```
+
+### Custom Debug Hooks
+
+```python
+from privysha import add_debug_hook
+
+def custom_debug_hook(prompt, result):
+    print(f"Custom debug - Input length: {len(prompt)}")
+    print(f"Custom debug - Output length: {len(result)}")
+    return result
+
+add_debug_hook(custom_debug_hook)
+
+result = process("prompt", debug=True)
+```
+
+---
+
+## 🐛 Common Debugging Scenarios
+
+### "Why isn't PII being masked?"
+
+```python
+# Check processing mode
+result = process("john@gmail.com", debug=True, mode="strict")
+
+if not result["security_result"]["masked_entities"]:
+    print("No PII detected - check patterns")
+else:
+    print("PII detected successfully")
+```
+
+### "Why are my prompts changing too much?"
+
+```python
+# Try lite mode for minimal changes
+result = process("Your prompt", debug=True, mode="lite")
+
+print("Changes with lite mode:")
+for change in result["changes"]:
+    print(f"- {change}")
+```
+
+### "How much am I actually saving?"
+
+```python
+# Track savings over time
+def track_savings(prompts):
+    total_saved = 0
+    total_original = 0
+    
+    for prompt in prompts:
+        result = process(prompt, return_metrics=True)
+        total_saved += result["metrics"]["tokens_saved"]
+        total_original += len(prompt.split())
+    
+    savings_percent = (total_saved / total_original) * 100
+    print(f"Total tokens saved: {total_saved}")
+    print(f"Savings percentage: {savings_percent:.1f}%")
+
+# Usage
+prompts = ["prompt1", "prompt2", "prompt3"]
+track_savings(prompts)
+```
+
+---
+
+## 🔍 CLI Debugging Tools
+
+### Quick Test Suite
+
+```bash
+privysha --quick-test
+```
+
+This runs a comprehensive test suite showing:
+- PII detection accuracy
+- Token optimization performance
+- Processing speed
+- Error handling
+
+### Examples with Debug
+
+```bash
+privysha --examples
+```
+
+Shows real-world examples with debug output.
+
+### Verbose Mode
+
+```bash
+privysha "prompt" --debug --verbose
+```
+
+Maximum detail for troubleshooting.
+
+---
+
+## 📈 Performance Debugging
+
+### Benchmark Your Usage
+
+```python
+import time
+from privysha import process
+
+def benchmark_prompts(prompts):
+    results = []
+    
+    for prompt in prompts:
+        start = time.time()
+        result = process(prompt, return_metrics=True)
+        end = time.time()
+        
+        results.append({
+            "prompt_length": len(prompt),
+            "processing_time_ms": result["metrics"]["processing_time_ms"],
+            "total_time_ms": (end - start) * 1000,
+            "token_reduction": result["token_reduction"]
+        })
+    
+    # Calculate averages
+    avg_time = sum(r["processing_time_ms"] for r in results) / len(results)
+    avg_reduction = sum(r["token_reduction"] for r in results) / len(results)
+    
+    print(f"Average processing time: {avg_time:.1f}ms")
+    print(f"Average token reduction: {avg_reduction:.1f}%")
+    
+    return results
+
+# Usage
+test_prompts = ["Short prompt", "Medium length prompt with some details", 
+                "Very long verbose prompt with lots of unnecessary words and filler text"]
+benchmark_prompts(test_prompts)
+```
+
+### Memory Usage Debugging
+
+```python
+import psutil
+import os
+from privysha import process
+
+def debug_memory_usage(prompt):
+    process = psutil.Process(os.getpid())
+    
+    # Memory before
+    mem_before = process.memory_info().rss / 1024 / 1024  # MB
+    
+    result = process(prompt, return_metrics=True)
+    
+    # Memory after
+    mem_after = process.memory_info().rss / 1024 / 1024  # MB
+    
+    print(f"Memory before: {mem_before:.1f}MB")
+    print(f"Memory after: {mem_after:.1f}MB")
+    print(f"Memory increase: {mem_after - mem_before:.1f}MB")
+    
+    return result
+
+result = debug_memory_usage("Your test prompt")
+```
+
+---
+
+## 🎯 Best Practices
+
+### 1. Always Debug in Development
+
+```python
+# Development
+result = process(prompt, debug=True, return_metrics=True)
+
+# Production
+result = process(prompt, return_metrics=False)
+```
+
+### 2. Log Key Metrics
+
+```python
+import logging
+
+def process_with_logging(prompt):
+    result = process(prompt, return_metrics=True)
+    
+    logging.info(f"Tokens saved: {result['token_reduction']}")
+    logging.info(f"PII detected: {len(result['security_result']['masked_entities'])}")
+    logging.info(f"Processing time: {result['metrics']['processing_time_ms']}ms")
+    
+    return result["optimized"]
+```
+
+### 3. Set Up Monitoring
+
+```python
+# In production, monitor these metrics
+MONITORING_METRICS = [
+    "token_reduction",
+    "processing_time_ms", 
+    "pii_detected_count",
+    "threats_blocked"
+]
+```
+
+### 4. Use CLI for Quick Checks
+
+```bash
+# Quick validation
+privysha "test prompt with john@gmail.com" --debug
+
+# Performance check
+privysha --quick-test
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### Common Issues and Solutions
+
+| Issue | Debug Command | Solution |
+|-------|---------------|----------|
+| No PII masking | `privysha "john@gmail.com" --debug` | Check processing mode |
+| High processing time | `privysha --quick-test` | Use lite mode |
+| Unexpected changes | `result["changes"]` | Review optimization level |
+| Integration issues | `result["errors"]` | Check adapter compatibility |
+
+### Getting Help
+
+1. **Enable debug mode**: `debug=True`
+2. **Run quick test**: `privysha --quick-test`
+3. **Check metrics**: `return_metrics=True`
+4. **Review changes**: `result["changes"]`
+5. **Open GitHub issue** with debug output
+
+---
+
+## 📚 Debugging Summary
+
+PrivySHA debugging provides:
+
+- ✅ **Full visibility** into all processing stages
+- ✅ **Performance metrics** for optimization
+- ✅ **Security monitoring** for compliance
+- ✅ **CLI tools** for quick debugging
+- ✅ **Production monitoring** capabilities
+
+Use debugging to understand, optimize, and monitor your LLM applications effectively.
     debug_level="verbose"
 )
 

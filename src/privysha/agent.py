@@ -14,35 +14,57 @@
 
 import os
 from typing import Dict, List, Optional, Union, Any
-from .pipeline import Pipeline
-from .adapters.factory import AdapterFactory, SmartRoutingAdapter
-from .adapters.universal_adapter import UniversalModelAdapter
+from .pipeline.pipeline import Pipeline
+from .adapters.factory import AdapterFactory
 from .adapters.base import BaseAdapter
-from .security.security_layer import SecurityLevel
-from .routing.model_router import RoutingStrategy
+
+
+def _get_compiled_prompt(processed: Dict[str, Any]) -> str:
+    """Extract compiled prompt from pipeline result."""
+    prompts = processed.get("prompts", {})
+    return (
+        prompts.get("compiled")
+        or prompts.get("optimized")
+        or prompts.get("sanitized")
+        or prompts.get("original")
+        or ""
+    )
+
+
+def _count_tokens(text: str) -> int:
+    """Count tokens using tiktoken with word-split fallback."""
+    try:
+        import tiktoken
+
+        enc = tiktoken.get_encoding("cl100k_base")
+        return len(enc.encode(text or ""))
+    except Exception:
+        return int(len((text or "").split()) * 1.3)
 
 
 class Agent:
     """
     PrivySHA Agent - Complete v2 functionality with v1 compatibility.
-    
+
     This class provides the same simple API as v1 but with all v2 capabilities
     built directly in. No separate enhanced files needed.
     """
 
-    def __init__(self, 
-                 model: str = "gpt-4o-mini",
-                 privacy: bool = True,
-                 token_budget: int = 1200,
-                 provider: str = None,
-                 fallback_providers: List[Dict] = None,
-                 routing_config: Dict[str, str] = None,
-                 timeout: int = 10,
-                 retries: int = 3,
-                 api_key: str = None):
+    def __init__(
+        self,
+        model: str = "gpt-4o-mini",
+        privacy: bool = True,
+        token_budget: int = 1200,
+        provider: str = None,
+        fallback_providers: List[Dict] = None,
+        routing_config: Dict[str, str] = None,
+        timeout: int = 10,
+        retries: int = 3,
+        api_key: str = None,
+    ) -> None:
         """
         Initialize Agent with full v2 capabilities.
-        
+
         Args:
             model: Model name (defaults to gpt-4o-mini for better default experience)
             privacy: Enable privacy features
@@ -57,14 +79,14 @@ class Agent:
         self.privacy = privacy
         self.token_budget = token_budget
         self.model = model
-        
+
         # Initialize pipeline
         self.pipeline = Pipeline(privacy=privacy, token_budget=token_budget)
-        
+
         # Determine provider from model if not specified
         if not provider:
             provider = self._infer_provider(model)
-        
+
         # Initialize adapter based on configuration
         if routing_config:
             # Smart routing mode
@@ -75,7 +97,7 @@ class Agent:
             self.adapter = AdapterFactory.create_with_fallbacks(
                 primary_provider=provider,
                 primary_model=model,
-                fallback_providers=fallback_providers
+                fallback_providers=fallback_providers,
             )
             self.mode = "fallback"
         else:
@@ -85,7 +107,7 @@ class Agent:
                 model=model,
                 api_key=api_key,
                 timeout=timeout,
-                retries=retries
+                retries=retries,
             )
             self.mode = "universal"
 
@@ -99,71 +121,95 @@ class Agent:
             return "anthropic"
         elif model.startswith("grok"):
             return "grok"
+        elif model.startswith("gemini"):
+            return "gemini"
         elif "/" in model:
             return "huggingface"
         else:
             return "ollama"
 
-    def run(self, prompt: str, trace: bool = False, task_type: str = "chat") -> Union[str, Dict]:
-        """
-        Run prompt through the enhanced pipeline.
-        
+    def run(
+        self, prompt: str, trace: bool = False, task_type: str = "chat"
+    ) -> Union[str, Dict]:
+        """Run prompt through the enhanced pipeline.
+
         Args:
-            prompt: Input prompt
-            trace: Return full pipeline trace
+            prompt: Input prompt to process
+            trace: Enable full pipeline tracing
             task_type: Task type for smart routing (if enabled)
-            
+
         Returns:
             Response text or full trace dict
+
+        Raises:
+            Exception: If pipeline processing fails
+            ValueError: If invalid prompt provided
         """
         # Process prompt through pipeline
         processed = self.pipeline.process(prompt)
-        
+
         # Generate response using adapter
-        if self.mode == "routing" and hasattr(self.adapter, 'route'):
-            response = self.adapter.route(task_type, processed["compiled_prompt"])
+        if self.mode == "routing" and hasattr(self.adapter, "route"):
+            response = self.adapter.route(
+                task_type,
+                processed.get("prompts", {}).get(
+                    "compiled",
+                    processed.get("prompts", {}).get(
+                        "optimized", str(processed)),
+                ),
+            )
         else:
-            response = self.adapter.generate(processed["compiled_prompt"])
-        
+            response = self.adapter.generate(
+                processed.get("prompts", {}).get(
+                    "compiled",
+                    processed.get("prompts", {}).get(
+                        "optimized", str(processed)),
+                )
+            )
+
         if trace:
             processed["response"] = response
             processed["adapter_info"] = self._get_adapter_info()
             processed["mode"] = self.mode
             return processed
-        
+
         return response
 
-    def run_with_fallback(self, prompt: str, trace: bool = False, 
-                         fallback_adapters: List[BaseAdapter] = None) -> Union[str, Dict]:
+    def run_with_fallback(
+        self,
+        prompt: str,
+        trace: bool = False,
+        fallback_adapters: List[BaseAdapter] = None,
+    ) -> Union[str, Dict]:
         """
         Run prompt with explicit fallback adapters.
-        
+
         Args:
             prompt: Input prompt
             trace: Return full pipeline trace
             fallback_adapters: Additional fallback adapters
-            
+
         Returns:
             Response text or full trace dict
         """
         processed = self.pipeline.process(prompt)
-        
+        compiled = _get_compiled_prompt(processed)
+
         # Try primary adapter first
         try:
-            response = self.adapter.generate(processed["compiled_prompt"])
+            response = self.adapter.generate(compiled)
         except Exception as primary_error:
-            if hasattr(self.adapter, 'generate_with_fallback'):
+            if hasattr(self.adapter, "generate_with_fallback"):
                 # Use built-in fallback
                 response = self.adapter.generate_with_fallback(
-                    processed["compiled_prompt"], 
-                    fallback_adapters
+                    compiled, fallback_adapters
                 )
             else:
                 # Use provided fallbacks
                 if fallback_adapters:
                     for fallback in fallback_adapters:
                         try:
-                            response = fallback.generate(processed["compiled_prompt"])
+                            response = fallback.generate(compiled)
                             break
                         except Exception:
                             continue
@@ -171,19 +217,19 @@ class Agent:
                         raise Exception("All adapters failed")
                 else:
                     raise primary_error
-        
+
         if trace:
             processed["response"] = response
             processed["adapter_info"] = self._get_adapter_info()
             return processed
-        
+
         return response
 
     def _get_adapter_info(self) -> Dict[str, Any]:
         """Get adapter information for tracing."""
-        if hasattr(self.adapter, 'get_provider_info'):
+        if hasattr(self.adapter, "get_provider_info"):
             return self.adapter.get_provider_info()
-        elif hasattr(self.adapter, 'routing_config'):
+        elif hasattr(self.adapter, "routing_config"):
             return {"routing_config": self.adapter.routing_config}
         else:
             return {"type": type(self.adapter).__name__}
@@ -191,25 +237,33 @@ class Agent:
     def get_token_metrics(self, prompt: str) -> Dict[str, int]:
         """
         Get token optimization metrics for a prompt.
-        
+
         Args:
             prompt: Input prompt
-            
+
         Returns:
             Token usage metrics
         """
         processed = self.pipeline.process(prompt)
-        
-        # Calculate approximate tokens (rough estimation)
-        raw_tokens = len(processed["raw_prompt"].split()) * 1.3  # Rough estimate
-        optimized_tokens = len(processed["optimized"].split()) * 1.3
-        compiled_tokens = len(processed["compiled_prompt"].split()) * 1.3
-        
+        prompts = processed.get("prompts", {})
+
+        raw = prompts.get("original", prompt)
+        optimized = prompts.get("optimized", raw)
+        compiled = prompts.get("compiled", optimized)
+
+        raw_tokens = _count_tokens(raw)
+        optimized_tokens = _count_tokens(optimized)
+        compiled_tokens = _count_tokens(compiled)
+
         return {
-            "raw_tokens": int(raw_tokens),
-            "optimized_tokens": int(optimized_tokens),
-            "compiled_tokens": int(compiled_tokens),
-            "token_reduction_percentage": int((1 - optimized_tokens / raw_tokens) * 100) if raw_tokens > 0 else 0
+            "raw_tokens": raw_tokens,
+            "optimized_tokens": optimized_tokens,
+            "compiled_tokens": compiled_tokens,
+            "token_reduction_percentage": (
+                int((1 - optimized_tokens / raw_tokens) * 100)
+                if raw_tokens > 0
+                else 0
+            ),
         }
 
     def get_debug_trace(self, session_id: str = None) -> Optional[Dict[str, Any]]:
@@ -217,25 +271,25 @@ class Agent:
         # For now, return adapter info - could be enhanced with full tracing
         return self._get_adapter_info()
 
-    def print_debug_trace(self, session_id: str = None, format_type: str = "readable") -> str:
+    def print_debug_trace(
+        self, session_id: str = None, format_type: str = "readable"
+    ) -> str:
         """Print debug trace in specified format."""
         info = self._get_adapter_info()
         return f"Debug Trace ({format_type}): {info}"
 
-    def switch_provider(self, provider: str, model: str = None):
+    def switch_provider(self, provider: str, model: str = None) -> None:
         """Switch to a different provider."""
         self.adapter = AdapterFactory.create_universal(
-            provider=provider,
-            model=model
-        )
+            provider=provider, model=model)
         self.mode = "universal"
         self.model = model or self.model
 
-    def add_fallback(self, provider: str, model: str = None):
+    def add_fallback(self, provider: str, model: str = None) -> None:
         """Add a fallback provider."""
-        if not hasattr(self.adapter, '_fallback_adapters'):
+        if not hasattr(self.adapter, "_fallback_adapters"):
             self.adapter._fallback_adapters = []
-        
+
         fallback = AdapterFactory.create_universal(provider, model)
         self.adapter._fallback_adapters.append(fallback)
 
@@ -250,7 +304,7 @@ class Agent:
             "model": self.model,
             "privacy": self.privacy,
             "token_budget": self.token_budget,
-            "adapter_info": self._get_adapter_info()
+            "adapter_info": self._get_adapter_info(),
         }
 
     # Backward compatibility methods
@@ -260,15 +314,16 @@ class Agent:
         return {
             "original_tokens": metrics.get("raw_tokens", 0),
             "optimized_tokens": metrics.get("optimized_tokens", 0),
-            "savings": metrics.get("raw_tokens", 0) - metrics.get("optimized_tokens", 0),
-            "savings_percentage": metrics.get("token_reduction_percentage", 0)
+            "savings": metrics.get("raw_tokens", 0)
+            - metrics.get("optimized_tokens", 0),
+            "savings_percentage": metrics.get("token_reduction_percentage", 0),
         }
 
     @classmethod
-    def from_env(cls) -> 'Agent':
+    def from_env(cls) -> "Agent":
         """
         Create agent from environment configuration.
-        
+
         Environment variables:
         - PRIVYSHA_PROVIDER: Provider name
         - PRIVYSHA_MODEL: Model name
@@ -276,7 +331,7 @@ class Agent:
         - PRIVYSHA_TOKEN_BUDGET: Token budget (default 1200)
         - PRIVYSHA_TIMEOUT: Timeout (default 10)
         - PRIVYSHA_RETRIES: Retries (default 3)
-        
+
         Returns:
             Agent configured from environment
         """
@@ -286,34 +341,40 @@ class Agent:
             privacy=os.getenv("PRIVYSHA_PRIVACY", "true").lower() == "true",
             token_budget=int(os.getenv("PRIVYSHA_TOKEN_BUDGET", "1200")),
             timeout=int(os.getenv("PRIVYSHA_TIMEOUT", "10")),
-            retries=int(os.getenv("PRIVYSHA_RETRIES", "3"))
+            retries=int(os.getenv("PRIVYSHA_RETRIES", "3")),
         )
 
     # Class methods for different creation patterns
     @classmethod
-    def create_simple(cls, provider: str = "openai", model: str = None) -> 'Agent':
+    def create_simple(cls, provider: str = "openai", model: str = None) -> "Agent":
         """Create simple agent with single provider."""
         return cls(provider=provider, model=model)
 
     @classmethod
-    def create_advanced(cls, provider: str = "openai", model: str = None, 
-                      fallback_providers: List[Dict] = None) -> 'Agent':
+    def create_advanced(
+        cls,
+        provider: str = "openai",
+        model: str = None,
+        fallback_providers: List[Dict] = None,
+    ) -> "Agent":
         """Create advanced agent with fallback providers."""
         if fallback_providers is None:
             fallback_providers = [
                 {"provider": "anthropic", "model": "claude-3-haiku"},
-                {"provider": "grok", "model": "grok-beta"}
+                {"provider": "grok", "model": "grok-beta"},
             ]
-        return cls(provider=provider, model=model, fallback_providers=fallback_providers)
+        return cls(
+            provider=provider, model=model, fallback_providers=fallback_providers
+        )
 
     @classmethod
-    def create_smart_routing(cls, routing_config: Dict[str, str] = None) -> 'Agent':
+    def create_smart_routing(cls, routing_config: Dict[str, str] = None) -> "Agent":
         """Create agent with smart routing configuration."""
         if routing_config is None:
             routing_config = {
                 "analysis": "claude-3-sonnet",
-                "chat": "gpt-4o-mini", 
+                "chat": "gpt-4o-mini",
                 "coding": "codellama-7b",
-                "bulk": "llama3-8b"
+                "bulk": "llama3-8b",
             }
         return cls(routing_config=routing_config)

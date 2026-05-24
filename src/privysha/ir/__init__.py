@@ -12,15 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .prompt_ir import PromptIR, IntentType, EntityType, ConstraintType, PrivacyLevel, IRTransform
+from .prompt_ir import (
+    PromptIR,
+    IntentType,
+    EntityType,
+    ConstraintType,
+    PrivacyLevel,
+    IRTransform,
+)
 from .ir_builder import IRBuilder
 
 __all__ = [
     "PromptIR",
-    "IntentType", 
+    "IntentType",
     "EntityType",
     "ConstraintType",
     "PrivacyLevel",
     "IRTransform",
-    "IRBuilder"
+    "IRBuilder",
 ]

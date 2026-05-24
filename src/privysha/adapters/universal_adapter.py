@@ -15,7 +15,7 @@
 import os
 import time
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 from .base import BaseAdapter
 
 
@@ -25,11 +25,17 @@ class UniversalModelAdapter(BaseAdapter):
     with retry logic and fallback capabilities.
     """
 
-    def __init__(self, provider: str, api_key: str = None, model: str = None, 
-                 timeout: int = 10, retries: int = 3):
+    def __init__(
+        self,
+        provider: str,
+        api_key: str = None,
+        model: str = None,
+        timeout: int = 10,
+        retries: int = 3,
+    ):
         """
         Initialize universal adapter with provider-specific configuration.
-        
+
         Args:
             provider: Provider name ("openai", "anthropic", "grok", "huggingface")
             api_key: API key (if None, will try environment variables)
@@ -42,10 +48,10 @@ class UniversalModelAdapter(BaseAdapter):
         self.timeout = timeout
         self.retries = retries
         self.logger = logging.getLogger(__name__)
-        
+
         # Initialize provider-specific client
         self.client = self._initialize_client(api_key)
-        
+
         # Validate configuration
         self._validate_config()
 
@@ -57,6 +63,8 @@ class UniversalModelAdapter(BaseAdapter):
             return self._init_anthropic_client(api_key)
         elif self.provider == "grok":
             return self._init_grok_client(api_key)
+        elif self.provider == "gemini":
+            return self._init_gemini_client(api_key)
         elif self.provider == "huggingface":
             return self._init_hf_client(api_key)
         elif self.provider == "mock":
@@ -68,44 +76,72 @@ class UniversalModelAdapter(BaseAdapter):
         """Initialize OpenAI client."""
         try:
             from openai import OpenAI
+
             key = api_key or os.getenv("OPENAI_API_KEY")
             if not key:
                 raise ValueError("OpenAI API key not found")
             return OpenAI(api_key=key)
         except ImportError:
-            raise ImportError("OpenAI library not installed. Install with: pip install openai")
+            raise ImportError(
+                "OpenAI library not installed. Install with: pip install openai"
+            )
 
     def _init_anthropic_client(self, api_key: str = None):
         """Initialize Anthropic client."""
         try:
             import anthropic
+
             key = api_key or os.getenv("ANTHROPIC_API_KEY")
             if not key:
                 raise ValueError("Anthropic API key not found")
             return anthropic.Anthropic(api_key=key)
         except ImportError:
-            raise ImportError("Anthropic library not installed. Install with: pip install anthropic")
+            raise ImportError(
+                "Anthropic library not installed. Install with: pip install anthropic"
+            )
 
     def _init_grok_client(self, api_key: str = None):
         """Initialize Grok (xAI) client using OpenAI-compatible interface."""
         try:
             from openai import OpenAI
+
             key = api_key or os.getenv("GROK_API_KEY")
             if not key:
                 raise ValueError("Grok API key not found")
             return OpenAI(api_key=key, base_url="https://api.x.ai/v1")
         except ImportError:
-            raise ImportError("OpenAI library not installed. Install with: pip install openai")
+            raise ImportError(
+                "OpenAI library not installed. Install with: pip install openai"
+            )
+
+    def _init_gemini_client(self, api_key: str = None):
+        """Initialize Google Gemini client."""
+        try:
+            import google.generativeai as genai
+
+            key = api_key or os.getenv(
+                "GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+            if not key:
+                raise ValueError("Google API key not found")
+            genai.configure(api_key=key)
+            return genai
+        except ImportError:
+            raise ImportError(
+                "Google Generative AI library not installed. Install with: pip install google-generativeai"
+            )
 
     def _init_hf_client(self, api_key: str = None):
         """Initialize HuggingFace client."""
         try:
             from transformers import pipeline
+
             key = api_key or os.getenv("HUGGINGFACE_API_KEY")
             # For HF, we'll use the pipeline interface
             return {"pipeline": pipeline, "api_key": key}
         except ImportError:
-            raise ImportError("Transformers library not installed. Install with: pip install transformers")
+            raise ImportError(
+                "Transformers library not installed. Install with: pip install transformers"
+            )
 
     def _init_mock_client(self):
         """Initialize mock client for testing."""
@@ -119,6 +155,8 @@ class UniversalModelAdapter(BaseAdapter):
             self.model = "claude-3-sonnet-20240229"
         elif self.provider == "grok" and not self.model:
             self.model = "grok-beta"
+        elif self.provider == "gemini" and not self.model:
+            self.model = "gemini-1.5-flash"
         elif self.provider == "huggingface" and not self.model:
             self.model = "microsoft/DialoGPT-medium"
         elif self.provider == "mock" and not self.model:
@@ -127,10 +165,10 @@ class UniversalModelAdapter(BaseAdapter):
     def generate(self, prompt: str) -> str:
         """
         Generate response with retry logic.
-        
+
         Args:
             prompt: Input prompt
-            
+
         Returns:
             Generated response text
         """
@@ -139,10 +177,14 @@ class UniversalModelAdapter(BaseAdapter):
                 return self._generate_with_provider(prompt)
             except Exception as e:
                 if attempt == self.retries:
-                    self.logger.error(f"All {self.retries + 1} attempts failed for {self.provider}: {e}")
+                    self.logger.error(
+                        f"All {self.retries + 1} attempts failed for {self.provider}: {e}"
+                    )
                     raise
-                wait_time = 2 ** attempt  # Exponential backoff
-                self.logger.warning(f"Attempt {attempt + 1} failed, retrying in {wait_time}s: {e}")
+                wait_time = 2**attempt  # Exponential backoff
+                self.logger.warning(
+                    f"Attempt {attempt + 1} failed, retrying in {wait_time}s: {e}"
+                )
                 time.sleep(wait_time)
 
     def _generate_with_provider(self, prompt: str) -> str:
@@ -153,6 +195,8 @@ class UniversalModelAdapter(BaseAdapter):
             return self._anthropic_generate(prompt)
         elif self.provider == "grok":
             return self._grok_generate(prompt)
+        elif self.provider == "gemini":
+            return self._gemini_generate(prompt)
         elif self.provider == "huggingface":
             return self._hf_generate(prompt)
         elif self.provider == "mock":
@@ -165,7 +209,7 @@ class UniversalModelAdapter(BaseAdapter):
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            timeout=self.timeout
+            timeout=self.timeout,
         )
         return response.choices[0].message.content
 
@@ -175,7 +219,7 @@ class UniversalModelAdapter(BaseAdapter):
             model=self.model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
-            timeout=self.timeout
+            timeout=self.timeout,
         )
         return response.content[0].text
 
@@ -184,16 +228,23 @@ class UniversalModelAdapter(BaseAdapter):
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            timeout=self.timeout
+            timeout=self.timeout,
         )
         return response.choices[0].message.content
+
+    def _gemini_generate(self, prompt: str) -> str:
+        """Generate using Google Gemini."""
+        model = self.client.GenerativeModel(self.model)
+        response = model.generate_content(prompt)
+        return response.text
 
     def _hf_generate(self, prompt: str) -> str:
         """Generate using HuggingFace pipeline."""
         # Note: This is a simplified implementation
         # In production, you'd want to handle different model types appropriately
         try:
-            generator = self.client["pipeline"]("text-generation", model=self.model)
+            generator = self.client["pipeline"](
+                "text-generation", model=self.model)
             result = generator(prompt, max_length=100, num_return_sequences=1)
             return result[0]["generated_text"]
         except Exception as e:
@@ -203,31 +254,36 @@ class UniversalModelAdapter(BaseAdapter):
         """Generate using mock for testing."""
         return f"Mock response to: {prompt[:50]}{'...' if len(prompt) > 50 else ''}"
 
-    def generate_with_fallback(self, prompt: str, fallback_models: List[BaseAdapter] = None) -> str:
+    def generate_with_fallback(
+        self, prompt: str, fallback_models: List[BaseAdapter] = None
+    ) -> str:
         """
         Generate with fallback to alternative models.
-        
+
         Args:
             prompt: Input prompt
             fallback_models: List of fallback adapters
-            
+
         Returns:
             Generated response text
         """
         try:
             return self.generate(prompt)
         except Exception as primary_error:
-            self.logger.warning(f"Primary provider {self.provider} failed: {primary_error}")
-            
+            self.logger.warning(
+                f"Primary provider {self.provider} failed: {primary_error}"
+            )
+
             if fallback_models:
                 for i, fallback in enumerate(fallback_models):
                     try:
                         self.logger.info(f"Trying fallback model {i+1}")
                         return fallback.generate(prompt)
                     except Exception as fallback_error:
-                        self.logger.warning(f"Fallback {i+1} failed: {fallback_error}")
+                        self.logger.warning(
+                            f"Fallback {i+1} failed: {fallback_error}")
                         continue
-            
+
             raise Exception("All providers failed")
 
     def get_provider_info(self) -> Dict[str, Any]:
@@ -236,5 +292,5 @@ class UniversalModelAdapter(BaseAdapter):
             "provider": self.provider,
             "model": self.model,
             "timeout": self.timeout,
-            "retries": self.retries
+            "retries": self.retries,
         }

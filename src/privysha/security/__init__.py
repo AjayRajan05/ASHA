@@ -13,10 +13,22 @@
 # limitations under the License.
 
 from .security_layer import SecurityLayer, SecurityResult, SecurityLevel, ThreatType
+from .service import (
+    run_security,
+    run_security_only,
+    normalize_security_level,
+    read_security_field,
+    get_sanitized_content,
+)
 
 __all__ = [
     "SecurityLayer",
-    "SecurityResult", 
+    "SecurityResult",
     "SecurityLevel",
-    "ThreatType"
+    "ThreatType",
+    "run_security",
+    "run_security_only",
+    "normalize_security_level",
+    "read_security_field",
+    "get_sanitized_content",
 ]

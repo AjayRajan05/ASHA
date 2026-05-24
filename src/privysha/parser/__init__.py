@@ -15,9 +15,10 @@
 """
 Parser module for PrivySHA.
 
-This module provides parsing functionality for prompt analysis and AST manipulation.
+This module provides comprehensive parsing functionality for prompt analysis,
+AST manipulation, and semantic understanding of user inputs.
 """
 
-from .prompt_ast import PromptParser
+from .prompt_ast import PromptParser, PromptAST, IntentType, ObjectType
 
-__all__ = ['PromptParser']
+__all__ = ["PromptParser", "PromptAST", "IntentType", "ObjectType"]

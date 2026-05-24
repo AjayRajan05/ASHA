@@ -1,0 +1,593 @@
+# Copyright 2026 Ajay Rajan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Composition Strategy - Phase 4 Key Differentiator
+
+Makes PrivySHA work WITH other tools instead of competing:
+# With Instructor
+secure_prompt = process(prompt)
+result = instructor_client.create(...)
+
+# With Guardrails
+secure_prompt = process(prompt)
+guard.validate(...)
+
+# With LangChain
+secure_chain = PrivySHATemplate(llm)
+chain.run(prompt)
+
+We are not competing - we are complementing and enhancing.
+"""
+
+import json
+from typing import Dict, List, Any, Optional, Callable, Type
+from dataclasses import dataclass
+from enum import Enum
+import time
+
+# Import PrivySHA components
+from ..utils.dropin import process
+
+
+class CompositionMode(Enum):
+    """Composition strategy modes."""
+
+    PREPROCESS = "preprocess"  # Process before other tools
+    POSTPROCESS = "postprocess"  # Process after other tools
+    ENHANCE = "enhance"  # Enhance existing tool output
+    VALIDATE = "validate"  # Validate tool results
+
+
+@dataclass
+class CompositionConfig:
+    """Configuration for composition strategy."""
+
+    mode: CompositionMode = CompositionMode.PREPROCESS
+    enable_pii_masking: bool = True
+    enable_optimization: bool = True
+    enable_safety_check: bool = True
+    preserve_original: bool = False
+    merge_results: bool = True
+    error_handling: str = "continue"  # "continue", "stop", "fallback"
+    policy_mode: str = "balanced"
+
+
+class ToolChain:
+    """Chain of tools with PrivySHA integration."""
+
+    def __init__(self, config: Optional[CompositionConfig] = None):
+        """Initialize tool chain."""
+        self.config = config or CompositionConfig()
+        self.tools = []
+        self.results = []
+
+    def add_tool(self, tool: Callable, name: str, **kwargs) -> "ToolChain":
+        """Add tool to chain."""
+        self.tools.append({"tool": tool, "name": name, "kwargs": kwargs})
+        return self
+
+    def run(self, input_data: Any) -> Dict[str, Any]:
+        """Run the tool chain."""
+        current_data = input_data
+        chain_results = {}
+
+        for i, tool_info in enumerate(self.tools):
+            tool = tool_info["tool"]
+            name = tool_info["name"]
+            kwargs = tool_info["kwargs"]
+
+            try:
+                # Preprocess with PrivySHA if configured
+                if self.config.mode == CompositionMode.PREPROCESS:
+                    if isinstance(current_data, str):
+                        current_data = self._preprocess(current_data)
+
+                # Run the tool
+                start_time = time.time()
+                if kwargs:
+                    result = tool(current_data, **kwargs)
+                else:
+                    result = tool(current_data)
+                processing_time = (time.time() - start_time) * 1000
+
+                # Postprocess with PrivySHA if configured
+                if self.config.mode == CompositionMode.POSTPROCESS:
+                    if isinstance(result, str):
+                        result = self._postprocess(result)
+
+                # Store result
+                chain_results[name] = {
+                    "result": result,
+                    "processing_time_ms": processing_time,
+                    "success": True,
+                }
+
+                # Update current data for next tool
+                current_data = result
+
+            except Exception as e:
+                chain_results[name] = {"error": str(e), "success": False}
+
+                if self.config.error_handling == "stop":
+                    break
+                elif self.config.error_handling == "fallback":
+                    current_data = self._fallback_processing(current_data)
+
+        return {
+            "final_result": current_data,
+            "chain_results": chain_results,
+            "config": self.config.__dict__,
+        }
+
+    def _preprocess(self, text: str) -> str:
+        """Preprocess text with PrivySHA."""
+        return process(text, mode=self.config.policy_mode, return_metrics=False)
+
+    def _postprocess(self, text: str) -> str:
+        """Postprocess text with PrivySHA."""
+        return process(text, mode=self.config.policy_mode, return_metrics=False)
+
+    def _fallback_processing(self, data: Any) -> Any:
+        """Fallback processing if tool fails."""
+        if isinstance(data, str):
+            return f"[FALLBACK] {data}"
+        return data
+
+
+class PrivySHAInstructorComposer:
+    """
+    Compose PrivySHA with Instructor for structured outputs.
+
+    Example:
+        composer = PrivySHAInstructorComposer()
+        result = composer.create_with_privysha(
+            prompt="Extract info from john@email.com",
+            response_model=UserInfo,
+            client=instructor_client
+        )
+    """
+
+    def __init__(self, config: Optional[CompositionConfig] = None):
+        """Initialize Instructor composer."""
+        self.config = config or CompositionConfig()
+
+    def create_with_privysha(
+        self, prompt: str, response_model: Type, client: Any, **kwargs
+    ) -> Any:
+        """Create structured output with PrivySHA preprocessing."""
+        # Preprocess prompt with PrivySHA
+        secure_prompt = process(
+            prompt, mode=self.config.policy_mode, return_metrics=False
+        )
+
+        # Create with Instructor
+        result = client.chat.completions.create(
+            response_model=response_model,
+            messages=[{"role": "user", "content": secure_prompt}],
+            **kwargs,
+        )
+
+        return result
+
+    def validate_with_privysha(
+        self, result: Any, schema: Type, client: Any
+    ) -> Dict[str, Any]:
+        """Validate Instructor result with PrivySHA."""
+        validation_result = {
+            "original_result": result,
+            "is_valid": True,
+            "privysha_processed": False,
+        }
+
+        try:
+            # Convert result to dict/string for processing
+            if hasattr(result, "dict"):
+                result_text = json.dumps(result.dict())
+            elif hasattr(result, "__dict__"):
+                result_text = json.dumps(result.__dict__)
+            else:
+                result_text = str(result)
+
+            # Process with PrivySHA
+            processed_text = process(
+                result_text, mode=self.config.policy_mode, return_metrics=False
+            )
+
+            validation_result["privysha_processed"] = True
+            validation_result["processed_text"] = processed_text
+
+        except Exception as e:
+            validation_result["error"] = str(e)
+            validation_result["is_valid"] = False
+
+        return validation_result
+
+
+class PrivySHAGuardrailsComposer:
+    """
+    Compose PrivySHA with Guardrails for enhanced validation.
+
+    Example:
+        composer = PrivySHAGuardrailsComposer()
+        result = composer.validate_with_privysha(
+            prompt="User data with john@email.com",
+            guard=guard_obj
+        )
+    """
+
+    def __init__(self, config: Optional[CompositionConfig] = None):
+        """Initialize Guardrails composer."""
+        self.config = config or CompositionConfig()
+
+    def validate_with_privysha(
+        self, prompt: str, guard: Any, **kwargs
+    ) -> Dict[str, Any]:
+        """Validate prompt with Guardrails after PrivySHA processing."""
+        # Preprocess with PrivySHA
+        secure_prompt = process(
+            prompt, mode=self.config.policy_mode, return_metrics=False
+        )
+
+        # Validate with Guardrails
+        try:
+            guard_result = guard.validate(secure_prompt, **kwargs)
+
+            return {
+                "original_prompt": prompt,
+                "secure_prompt": secure_prompt,
+                "guard_result": guard_result,
+                "validation_passed": getattr(guard_result, "validation_passed", True),
+            }
+
+        except Exception as e:
+            return {
+                "original_prompt": prompt,
+                "secure_prompt": secure_prompt,
+                "error": str(e),
+                "validation_passed": False,
+            }
+
+    def enhance_guardrails(
+        self,
+        guard_config: Dict[str, Any],
+        privysha_config: Optional[CompositionConfig] = None,
+    ) -> Dict[str, Any]:
+        """Enhance Guardrails configuration with PrivySHA features."""
+        enhanced_config = guard_config.copy()
+
+        # Add PrivySHA preprocessing step
+        if "rails" not in enhanced_config:
+            enhanced_config["rails"] = []
+
+        # Add PrivySHA rail
+        privysha_rail = {
+            "name": "privysha_preprocessing",
+            "type": "preprocessor",
+            "description": "PrivySHA PII masking and optimization",
+            "config": (privysha_config or self.config).__dict__,
+        }
+
+        enhanced_config["rails"].insert(0, privysha_rail)
+
+        return enhanced_config
+
+
+class PrivySHALangChainComposer:
+    """
+    Compose PrivySHA with LangChain for enhanced chains.
+
+    Example:
+        composer = PrivySHALangChainComposer()
+        chain = composer.create_privysha_chain(llm)
+        result = chain.run("Analyze data with john@email.com")
+    """
+
+    def __init__(self, config: Optional[CompositionConfig] = None):
+        """Initialize LangChain composer."""
+        self.config = config or CompositionConfig()
+
+    def create_privysha_chain(self, llm: Any, template: Optional[str] = None) -> Any:
+        """Create LangChain with PrivySHA integration."""
+        try:
+            from langchain.chains import LLMChain
+            from ..integrations.framework_adapters import (
+                PrivySHAPromptTemplate,
+                PrivySHALLM,
+            )
+        except ImportError:
+            raise ImportError("LangChain not available")
+
+        # Wrap LLM with PrivySHA
+        privysha_llm = PrivySHALLM(
+            llm,
+            (
+                self.config.to_policy_config()
+                if hasattr(self.config, "to_policy_config")
+                else None
+            ),
+        )
+
+        # Create or use template
+        if template:
+            privysha_template = PrivySHAPromptTemplate(
+                input_variables=["input"], template=template, config=self.config
+            )
+        else:
+            privysha_template = PrivySHAPromptTemplate(
+                input_variables=["input"],
+                template="Process: {input}",
+                config=self.config,
+            )
+
+        # Create chain
+        chain = LLMChain(llm=privysha_llm, prompt=privysha_template)
+
+        return chain
+
+    def enhance_existing_chain(self, chain: Any) -> Any:
+        """Enhance existing LangChain with PrivySHA."""
+        try:
+            from ..integrations.framework_adapters import PrivySHALLM
+        except ImportError:
+            raise ImportError("LangChain not available")
+
+        # Wrap the chain's LLM
+        if hasattr(chain, "llm"):
+            original_llm = chain.llm
+            privysha_llm = PrivySHALLM(original_llm)
+            chain.llm = privysha_llm
+
+        return chain
+
+
+class OpenAIComposer:
+    """
+    Compose PrivySHA with OpenAI for enhanced API calls.
+
+    Example:
+        composer = OpenAIComposer()
+        client = composer.create_privysha_client()
+        response = client.chat.completions.create(...)
+    """
+
+    def __init__(self, config: Optional[CompositionConfig] = None):
+        """Initialize OpenAI composer."""
+        self.config = config or CompositionConfig()
+
+    def create_privysha_client(self, **kwargs) -> Any:
+        """Create OpenAI client with PrivySHA integration."""
+        try:
+            from ..integrations.framework_adapters import OpenAIWrapper
+        except ImportError:
+            raise ImportError("OpenAI not available")
+
+        return OpenAIWrapper(config=self.config, **kwargs)
+
+    def enhance_api_call(self, api_function: Callable, **api_kwargs) -> Callable:
+        """Enhance OpenAI API function with PrivySHA."""
+
+        def enhanced_function(**kwargs):
+            # Process messages if present
+            if "messages" in kwargs:
+                processed_messages = []
+                for message in kwargs["messages"]:
+                    if isinstance(message, dict) and "content" in message:
+                        processed_content = process(
+                            message["content"],
+                            mode=self.config.policy_mode,
+                            return_metrics=False,
+                        )
+                        processed_messages.append(
+                            {**message, "content": processed_content}
+                        )
+                    else:
+                        processed_messages.append(message)
+                kwargs["messages"] = processed_messages
+
+            # Call original API function
+            return api_function(**kwargs)
+
+        return enhanced_function
+
+
+class UniversalComposer:
+    """
+    Universal composer that works with any tool.
+
+    This is the key to making PrivySHA unavoidable - it can enhance
+    ANY existing tool or workflow.
+    """
+
+    def __init__(self, config: Optional[CompositionConfig] = None):
+        """Initialize universal composer."""
+        self.config = config or CompositionConfig()
+        self.composers = {
+            "instructor": PrivySHAInstructorComposer(config),
+            "guardrails": PrivySHAGuardrailsComposer(config),
+            "langchain": PrivySHALangChainComposer(config),
+            "openai": OpenAIComposer(config),
+        }
+
+    def compose(self, tool: Any, tool_type: str = "universal", **kwargs) -> Any:
+        """
+        Compose PrivySHA with any tool.
+
+        Args:
+            tool: The tool to compose with
+            tool_type: Type of tool for specialized handling
+            **kwargs: Additional arguments for composition
+
+        Returns:
+            Enhanced tool or composition result
+        """
+        if tool_type in self.composers:
+            return self.composers[tool_type].compose(tool, **kwargs)
+        else:
+            return self._universal_compose(tool, **kwargs)
+
+    def _universal_compose(self, tool: Any, **kwargs) -> Any:
+        """Universal composition for any tool."""
+
+        def enhanced_tool(*args, **tool_kwargs):
+            # Process string arguments
+            processed_args = []
+            for arg in args:
+                if isinstance(arg, str):
+                    processed_arg = process(
+                        arg, mode=self.config.policy_mode, return_metrics=False
+                    )
+                    processed_args.append(processed_arg)
+                else:
+                    processed_args.append(arg)
+
+            # Process string keyword arguments
+            processed_kwargs = {}
+            for key, value in tool_kwargs.items():
+                if isinstance(value, str):
+                    processed_value = process(
+                        value, mode=self.config.policy_mode, return_metrics=False
+                    )
+                    processed_kwargs[key] = processed_value
+                else:
+                    processed_kwargs[key] = value
+
+            # Call original tool
+            return tool(*processed_args, **processed_kwargs)
+
+        return enhanced_tool
+
+    def create_pipeline(self, tools: List[Any]) -> ToolChain:
+        """Create a pipeline of tools with PrivySHA integration."""
+        chain = ToolChain(self.config)
+
+        for i, tool in enumerate(tools):
+            tool_name = f"tool_{i}"
+            enhanced_tool = self.compose(tool)
+            chain.add_tool(enhanced_tool, tool_name)
+
+        return chain
+
+    def get_composition_info(self) -> Dict[str, Any]:
+        """Get composition capabilities."""
+        return {
+            "config": self.config.__dict__,
+            "supported_tools": list(self.composers.keys()),
+            "universal_composition": True,
+            "modes": [mode.value for mode in CompositionMode],
+            "capabilities": {
+                "preprocessing": True,
+                "postprocessing": True,
+                "enhancement": True,
+                "validation": True,
+                "error_handling": True,
+            },
+        }
+
+
+# Convenience functions for easy composition
+def compose_with_instructor(
+    client: Any, config: Optional[CompositionConfig] = None
+) -> PrivySHAInstructorComposer:
+    """Create Instructor composer."""
+    return PrivySHAInstructorComposer(config)
+
+
+def compose_with_guardrails(
+    guard: Any, config: Optional[CompositionConfig] = None
+) -> PrivySHAGuardrailsComposer:
+    """Create Guardrails composer."""
+    return PrivySHAGuardrailsComposer(config)
+
+
+def compose_with_langchain(
+    llm: Any, config: Optional[CompositionConfig] = None
+) -> PrivySHALangChainComposer:
+    """Create LangChain composer."""
+    return PrivySHALangChainComposer(config)
+
+
+def compose_with_openai(**kwargs) -> OpenAIComposer:
+    """Create OpenAI composer."""
+    return OpenAIComposer(**kwargs)
+
+
+def compose_universal(tool: Any, config: Optional[CompositionConfig] = None) -> Any:
+    """Compose with any tool universally."""
+    composer = UniversalComposer(config)
+    return composer.compose(tool)
+
+
+# Decorator for automatic composition
+def privysha_compose(
+    tool_type: str = "universal", config: Optional[CompositionConfig] = None
+):
+    """Decorator to automatically compose any function with PrivySHA."""
+
+    def decorator(func):
+        composer = UniversalComposer(config)
+
+        def wrapper(*args, **kwargs):
+            enhanced_func = composer.compose(func, tool_type)
+            return enhanced_func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+# Quick test function
+def test_composition_strategy():
+    """Test composition strategy."""
+    print("Testing Composition Strategy:")
+    print("=" * 50)
+
+    # Test universal composer
+    composer = UniversalComposer()
+
+    # Test with a simple function
+    def test_tool(text: str) -> str:
+        return f"Tool processed: {text}"
+
+    enhanced_tool = compose_universal(test_tool)
+    result = enhanced_tool("Contact john@email.com")
+    print(f"✅ Universal composition: {result}")
+
+    # Test pipeline
+    def tool1(text: str) -> str:
+        return f"Step 1: {text}"
+
+    def tool2(text: str) -> str:
+        return f"Step 2: {text}"
+
+    pipeline = composer.create_pipeline([tool1, tool2])
+    pipeline_result = pipeline.run("User data with john@email.com")
+    print(f"✅ Pipeline result: {pipeline_result['final_result']}")
+
+    # Test composition info
+    info = composer.get_composition_info()
+    print(f"✅ Supported tools: {info['supported_tools']}")
+    print(f"✅ Composition modes: {info['modes']}")
+
+    # Test decorator
+    @privysha_compose()
+    def decorated_tool(prompt: str) -> str:
+        return f"Decorated: {prompt}"
+
+    decorated_result = decorated_tool("Email to admin@company.com")
+    print(f"✅ Decorated tool: {decorated_result}")
+
+
+if __name__ == "__main__":
+    test_composition_strategy()

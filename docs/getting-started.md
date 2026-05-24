@@ -1,144 +1,159 @@
 # Getting Started with PrivySHA
 
-Welcome to PrivySHA! This guide will get you up and running in minutes.
+**Drop-in security + optimization layer for LLM apps**
+
+This guide will help you get PrivySHA installed and running with your first optimized prompt.
 
 ---
 
 ## 🚀 Installation
 
-### Basic Installation
+### Prerequisites
+
+- Python 3.10 or higher
+- pip package manager
+
+### Install from PyPI
 
 ```bash
 pip install privysha
 ```
 
-### With Optional Dependencies
+### Optional Dependencies
+
+Install extras for specific providers and integrations:
 
 ```bash
-# For HuggingFace models
-pip install privysha[hf]
+# LLM providers
+pip install privysha[openai]
+pip install privysha[anthropic]
+pip install privysha[gemini]
 
-# For development
-pip install privysha[dev]
+# ML-enhanced PII detection
+pip install privysha[ml]
 
-# For all features
-pip install privysha[hf,dev]
+# Framework integrations (FastAPI, LangChain, etc.)
+pip install privysha[integrations]
+
+# Everything
+pip install privysha[all]
 ```
+
+See [integrations.md](integrations.md) for the full extras table.
 
 ### Verify Installation
 
 ```python
-from privysha import Agent
-
-# Should work without errors
+from privysha import process
 print("PrivySHA installed successfully!")
-```
-
----
-
-## 🔑 Setup API Keys
-
-PrivySHA supports multiple LLM providers. Set up the ones you need:
-
-### OpenAI
-
-```bash
-export OPENAI_API_KEY=your_openai_key_here
-```
-
-### Anthropic Claude
-
-```bash
-export ANTHROPIC_API_KEY=your_anthropic_key_here
-```
-
-### xAI Grok
-
-```bash
-export GROK_API_KEY=your_grok_key_here
-```
-
-### Using .env File (Recommended)
-
-Create a `.env` file in your project:
-
-```bash
-OPENAI_API_KEY=your_openai_key_here
-ANTHROPIC_API_KEY=your_anthropic_key_here
-GROK_API_KEY=your_grok_key_here
-```
-
-Then load it:
-
-```python
-from dotenv import load_dotenv
-load_dotenv()
 ```
 
 ---
 
 ## 🎯 Your First Prompt
 
-### Basic Usage
+### Quick Start (3 lines)
 
 ```python
-from privysha import Agent
+from privysha import process
 
-# Create agent with default settings
-agent = Agent(model="gpt-4o-mini")
+result = process("My email is john@gmail.com. Analyze this dataset.")
 
-# Run a simple prompt
-response = agent.run("Analyze this dataset for anomalies")
-print(response)
+print(result["text"])
+print(result["meta"])
 ```
 
-### With Privacy Protection
+### Wrap Existing Client (Zero Refactor)
 
 ```python
-from privysha import Agent
+from privysha import wrap_llm
+import openai
 
-# Enable privacy features
-agent = Agent(
-    model="gpt-4o-mini",
-    privacy=True  # Enables PII masking and injection protection
+client = openai.OpenAI()
+secure_client = wrap_llm(client)
+
+# Same interface, automatically secured
+response = secure_client.chat.completions.create(
+    messages=[{"role": "user", "content": "My email is john@gmail.com"}]
 )
-
-response = agent.run(
-    "Analyze user data: john@email.com, phone: 555-0123"
-)
-
-print(response)
-# PII will be automatically masked
 ```
 
-### With Tracing (Debug Mode)
+### With Metrics
 
 ```python
-from privysha import Agent
+from privysha import process
 
-agent = Agent(model="gpt-4o-mini")
-
-# Run with full trace
-result = agent.run(
-    "Analyze this dataset",
-    trace=True  # Enables debugging information
-)
-
-print("Response:", result["response"])
-print("Optimization:", result["optimization_metrics"])
-print("Security:", result["security_result"])
-
-# Print full debug trace
-agent.print_debug_trace()
+result = process("prompt", return_metrics=True)
+print(f"Token reduction: {result['token_reduction']}%")
+print(f"PII detected: {len(result['security_result']['masked_entities'])}")
 ```
 
 ---
 
-## 🏗️ Basic vs Advanced Usage
+## 🛠️ CLI Tool
 
-### Basic (v1 Compatible)
+### Quick Demo
 
-Simple, backward-compatible API:
+```bash
+privysha "My email is john@gmail.com. Analyze this dataset."
+```
+
+### Quick Test Suite
+
+```bash
+privysha --quick-test
+```
+
+### See Examples
+
+```bash
+privysha --examples
+```
+
+### Debug Mode
+
+```bash
+privysha "prompt" --debug
+```
+
+---
+
+## ⚙️ Processing Modes
+
+```python
+# Balanced (default) - Smart security + optimization
+result = process(prompt, mode="balanced")
+
+# Strict - Maximum security (mask all PII)
+result = process(prompt, mode="strict")
+
+# Lite - Minimal processing (low latency)
+result = process(prompt, mode="lite")
+
+# Off - No modification
+result = process(prompt, mode="off")
+```
+
+---
+
+## 🔑 API Keys (Optional)
+
+PrivySHA works without API keys for basic processing. For LLM integration:
+
+```bash
+# OpenAI
+export OPENAI_API_KEY=your_key
+
+# Gemini
+export GOOGLE_API_KEY=your_key
+
+# Anthropic
+export ANTHROPIC_API_KEY=your_key
+```
+
+---
+
+## � Common Use Cases
 
 ```python
 from privysha import Agent

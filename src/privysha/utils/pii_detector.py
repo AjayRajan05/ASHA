@@ -12,23 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
+"""
+Compatibility shim — canonical implementation lives in security.pii_detector.
 
+Deprecated: import from privysha.security.pii_detector instead.
+"""
 
-class PIIDetector:
+from ..security.pii_detector import PIIDetector, PIIMatch
 
-    def mask(self, text):
-
-        text = re.sub(
-            r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
-            "<EMAIL_HASH>",
-            text
-        )
-
-        text = re.sub(
-            r"\+?\d[\d -]{8,12}\d",
-            "<PHONE_HASH>",
-            text
-        )
-
-        return text
+__all__ = ["PIIDetector", "PIIMatch"]

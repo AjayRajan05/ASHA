@@ -19,18 +19,44 @@ from .base import BaseAdapter
 class OllamaAdapter(BaseAdapter):
 
     def __init__(self, model="llama3"):
+        """Initialize Ollama adapter with specified model.
+
+        Args:
+            model: Ollama model name (default: 'llama3')
+
+        Note:
+            Requires Ollama server running at http://localhost:11434
+        """
         self.model = model
 
-    def generate(self, prompt):
+    def generate(self, prompt: str) -> str:
+        """Generate response using Ollama model.
 
+        Args:
+            prompt: Input prompt for Ollama model
+
+        Returns:
+            Generated response text
+
+        Raises:
+            requests.RequestException: If Ollama server is not accessible
+            KeyError: If response format is unexpected
+        """
         url = "http://localhost:11434/api/generate"
 
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False
-        }
+        payload = {"model": self.model, "prompt": prompt, "stream": False}
 
-        r = requests.post(url, json=payload)
-
-        return r.json()["response"]
+        try:
+            r = requests.post(url, json=payload, timeout=30)
+            r.raise_for_status()
+            return r.json()["response"]
+        except requests.RequestException as e:
+            raise requests.RequestException(
+                f"Failed to connect to Ollama server: {e}. "
+                "Make sure Ollama is running at http://localhost:11434"
+            )
+        except KeyError as e:
+            raise KeyError(
+                f"Unexpected response format from Ollama: {e}. "
+                "Check Ollama server version and compatibility"
+            )
