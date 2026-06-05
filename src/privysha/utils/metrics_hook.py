@@ -14,7 +14,7 @@
 
 """Best-effort metrics recording for the process() hot path."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 
 def _count_pii(pii_detected: Union[List[str], int, None]) -> int:

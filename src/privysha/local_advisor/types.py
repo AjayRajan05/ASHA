@@ -19,7 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from ..ir.prompt_ir import IntentType, PrivacyLevel
+from ..ir.prompt_ir import IntentType
 
 
 @dataclass

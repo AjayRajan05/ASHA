@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Iterable, List, Sequence, Union
+from typing import Iterable, List, Sequence
 
 from ..ir.ir_builder import IRBuilder
 from ..ir.prompt_ir import ConstraintType, IntentType, PrivacyLevel

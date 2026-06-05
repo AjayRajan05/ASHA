@@ -15,7 +15,7 @@
 """Restore masked PII in text using a reversible masking map."""
 
 import re
-from typing import Dict, Union
+from typing import Dict
 
 
 def unmask(text: str, masking_map: Dict[str, str]) -> str:

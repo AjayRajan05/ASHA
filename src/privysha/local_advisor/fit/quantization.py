@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import re
 
-from ..constants import QUANT_BYTES_PER_WEIGHT, QUANT_QUALITY_PENALTY
+from ..constants import QUANT_QUALITY_PENALTY
 from ..types import GGUFVariant, ModelInfo
 
 _NON_GGUF_BYTES = {"AWQ": 0.5, "GPTQ": 0.5, "FP16": 2.0, "BF16": 2.0}

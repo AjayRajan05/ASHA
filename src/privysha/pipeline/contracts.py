@@ -4,7 +4,7 @@ Shared pipeline contracts — types and interfaces with no implementation deps.
 Import from here when a module only needs type contracts, not orchestration logic.
 """
 
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, Protocol, runtime_checkable
 
 from .components.stage_context import StageContext, create_context
 from .components.stage_base import StageResult, StageBase

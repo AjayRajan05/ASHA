@@ -20,12 +20,14 @@ class TestAdapterFactory:
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-api-key"})
     def test_create_gpt_model(self):
+        pytest.importorskip("openai")
         adapter = AdapterFactory.create("gpt-4")
         assert isinstance(adapter, OpenAIAdapter)
         assert adapter.model == "gpt-4"
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-api-key"})
     def test_create_gpt_model_variations(self):
+        pytest.importorskip("openai")
         for model in ["gpt-3.5-turbo", "gpt-4", "gpt-4o-mini", "gpt-4-turbo"]:
             adapter = AdapterFactory.create(model)
             assert isinstance(adapter, OpenAIAdapter)
@@ -61,11 +63,13 @@ class TestAdapterFactory:
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-api-key"})
     def test_create_gpt_is_case_insensitive(self):
+        pytest.importorskip("openai")
         adapter = AdapterFactory.create("GPT-4")
         assert isinstance(adapter, OpenAIAdapter)
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-api-key"})
     def test_create_gpt_prefix_routing(self):
+        pytest.importorskip("openai")
         assert isinstance(AdapterFactory.create("gpt"), OpenAIAdapter)
         assert isinstance(AdapterFactory.create("gpt-custom"), OpenAIAdapter)
 

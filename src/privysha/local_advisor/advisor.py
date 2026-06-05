@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence
 
 from .catalog.fetcher import get_catalog
 from .hardware_profiler import detect_hardware

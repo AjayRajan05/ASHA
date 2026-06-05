@@ -15,16 +15,18 @@ def test_mock_adapter_generate():
 
 
 @pytest.mark.parametrize(
-    "model_name,adapter_class,env",
+    "model_name,adapter_class,env,required_pkg",
     [
-        ("gpt-4", "OpenAIAdapter", {"OPENAI_API_KEY": "test-key"}),
-        ("claude-3-sonnet", "ClaudeAdapter", {"ANTHROPIC_API_KEY": "test-key"}),
-        ("gemini-pro", "GeminiAdapter", {"GOOGLE_API_KEY": "test-key"}),
-        ("llama2", "OllamaAdapter", {}),
-        ("grok-beta", "GrokAdapter", {"GROK_API_KEY": "test-key"}),
+        ("gpt-4", "OpenAIAdapter", {"OPENAI_API_KEY": "test-key"}, "openai"),
+        ("claude-3-sonnet", "ClaudeAdapter", {"ANTHROPIC_API_KEY": "test-key"}, "anthropic"),
+        ("gemini-pro", "GeminiAdapter", {"GOOGLE_API_KEY": "test-key"}, "google.generativeai"),
+        ("llama2", "OllamaAdapter", {}, None),
+        ("grok-beta", "GrokAdapter", {"GROK_API_KEY": "test-key"}, "openai"),
     ],
 )
-def test_adapter_init_no_network(model_name, adapter_class, env):
+def test_adapter_init_no_network(model_name, adapter_class, env, required_pkg):
+    if required_pkg:
+        pytest.importorskip(required_pkg)
     with patch.dict("os.environ", env, clear=False):
         adapter = AdapterFactory.create(model_name)
         assert adapter.__class__.__name__ == adapter_class
@@ -36,6 +38,7 @@ def test_unsupported_provider_raises():
 
 
 def test_openai_generate_mocked():
+    pytest.importorskip("openai")
     with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=False):
         adapter = AdapterFactory.create("gpt-4")
         mock_msg = MagicMock()
@@ -60,6 +63,7 @@ def test_anthropic_generate_mocked():
 
 
 def test_gemini_generate_mocked():
+    pytest.importorskip("google.generativeai")
     with patch.dict("os.environ", {"GOOGLE_API_KEY": "test-key"}, clear=False):
         adapter = AdapterFactory.create("gemini-pro")
         mock_response = MagicMock(text="Gemini mock response")
