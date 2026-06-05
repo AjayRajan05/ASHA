@@ -61,6 +61,8 @@ class Agent:
         timeout: int = 10,
         retries: int = 3,
         api_key: str = None,
+        local_model: str = None,
+        sample_prompts: List[str] = None,
     ) -> None:
         """
         Initialize Agent with full v2 capabilities.
@@ -75,9 +77,27 @@ class Agent:
             timeout: Request timeout in seconds
             retries: Number of retry attempts
             api_key: API key (uses environment if None)
+            local_model: Set to "auto" to pick local model via PrivyFit
+            sample_prompts: Prompt corpus for PrivyFit when local_model="auto"
         """
         self.privacy = privacy
         self.token_budget = token_budget
+        self.sample_prompts = sample_prompts or []
+
+        if local_model == "auto":
+            from .local_advisor.advisor import recommend_local_model
+
+            prompts = self.sample_prompts or ["Summarize this text."]
+            report = recommend_local_model(prompts=prompts, mode="balanced", top=1)
+            if report.top_pick and report.top_pick.ollama_pull_name:
+                model = report.top_pick.ollama_pull_name
+                provider = provider or "ollama"
+            else:
+                model = model if model != "auto" else "llama3"
+                provider = provider or "ollama"
+        else:
+            model = model
+
         self.model = model
 
         # Initialize pipeline

@@ -1,9 +1,10 @@
 # Examples
 
-Runnable scripts demonstrating PrivySHA integration patterns.
+Start here for the developer preview:
 
 | Script | Description |
 |--------|-------------|
+| **[developer_preview_demo.py](developer_preview_demo.py)** | **Start here** — `process()` + PrivyFit in ~30 lines, no API keys |
 | [dropin_examples.py](dropin_examples.py) | Core API: `process`, `wrap_llm`, `optimize`, `sanitize` |
 | [basic_usage.py](basic_usage.py) | Agent and routing basics |
 | [adapter_usage.py](adapter_usage.py) | Provider adapters |
@@ -18,6 +19,7 @@ Runnable scripts demonstrating PrivySHA integration patterns.
 
 ```bash
 pip install -e .
+python examples/developer_preview_demo.py
 python examples/dropin_examples.py
 python examples/instructor_guardrails_example.py
 ```

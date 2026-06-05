@@ -1,0 +1,147 @@
+[
+  {
+    "id": "meta-llama/Meta-Llama-3-8B-Instruct-GGUF",
+    "name": "Meta-Llama-3-8B-Instruct",
+    "parameter_count": 8000000000,
+    "context_length": 8192,
+    "architecture": "llama",
+    "specialization_tags": ["general", "analysis"],
+    "instruction_following_score": 0.82,
+    "ollama_name": "llama3",
+    "downloads": 500000,
+    "gguf_variants": [
+      {"filename": "Meta-Llama-3-8B-Instruct-Q4_K_M.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 4920000000},
+      {"filename": "Meta-Llama-3-8B-Instruct-Q5_K_M.gguf", "quant_type": "Q5_K_M", "file_size_bytes": 5800000000}
+    ]
+  },
+  {
+    "id": "Qwen/Qwen2.5-7B-Instruct-GGUF",
+    "name": "Qwen2.5-7B-Instruct",
+    "parameter_count": 7000000000,
+    "context_length": 32768,
+    "architecture": "qwen2",
+    "specialization_tags": ["general", "coding", "analysis"],
+    "instruction_following_score": 0.85,
+    "ollama_name": "qwen2.5:7b",
+    "downloads": 800000,
+    "gguf_variants": [
+      {"filename": "qwen2.5-7b-instruct-q4_k_m.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 4680000000},
+      {"filename": "qwen2.5-7b-instruct-q5_k_m.gguf", "quant_type": "Q5_K_M", "file_size_bytes": 5500000000}
+    ]
+  },
+  {
+    "id": "Qwen/Qwen2.5-14B-Instruct-GGUF",
+    "name": "Qwen2.5-14B-Instruct",
+    "parameter_count": 14000000000,
+    "context_length": 32768,
+    "architecture": "qwen2",
+    "specialization_tags": ["general", "coding", "analysis"],
+    "instruction_following_score": 0.88,
+    "ollama_name": "qwen2.5:14b",
+    "downloads": 600000,
+    "gguf_variants": [
+      {"filename": "qwen2.5-14b-instruct-q4_k_m.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 9000000000}
+    ]
+  },
+  {
+    "id": "Qwen/Qwen2.5-Coder-7B-Instruct-GGUF",
+    "name": "Qwen2.5-Coder-7B-Instruct",
+    "parameter_count": 7000000000,
+    "context_length": 32768,
+    "architecture": "qwen2",
+    "specialization_tags": ["coding"],
+    "instruction_following_score": 0.84,
+    "ollama_name": "qwen2.5-coder:7b",
+    "downloads": 400000,
+    "gguf_variants": [
+      {"filename": "qwen2.5-coder-7b-instruct-q4_k_m.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 4680000000}
+    ]
+  },
+  {
+    "id": "codellama/CodeLlama-7b-Instruct-hf-GGUF",
+    "name": "CodeLlama-7b-Instruct",
+    "parameter_count": 7000000000,
+    "context_length": 16384,
+    "architecture": "llama",
+    "specialization_tags": ["coding"],
+    "instruction_following_score": 0.80,
+    "ollama_name": "codellama:7b",
+    "downloads": 300000,
+    "gguf_variants": [
+      {"filename": "codellama-7b-instruct.Q4_K_M.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 4200000000}
+    ]
+  },
+  {
+    "id": "microsoft/Phi-3-mini-4k-instruct-gguf",
+    "name": "Phi-3-mini-4k-instruct",
+    "parameter_count": 3800000000,
+    "context_length": 4096,
+    "architecture": "phi",
+    "specialization_tags": ["general"],
+    "instruction_following_score": 0.78,
+    "ollama_name": "phi3:mini",
+    "downloads": 350000,
+    "gguf_variants": [
+      {"filename": "Phi-3-mini-4k-instruct-q4.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 2400000000}
+    ]
+  },
+  {
+    "id": "mistralai/Mistral-7B-Instruct-v0.3-GGUF",
+    "name": "Mistral-7B-Instruct-v0.3",
+    "parameter_count": 7000000000,
+    "context_length": 32768,
+    "architecture": "mistral",
+    "specialization_tags": ["general", "analysis"],
+    "instruction_following_score": 0.83,
+    "ollama_name": "mistral:7b",
+    "downloads": 450000,
+    "gguf_variants": [
+      {"filename": "mistral-7b-instruct-v0.3.Q4_K_M.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 4370000000}
+    ]
+  },
+  {
+    "id": "Qwen/Qwen3-14B-GGUF",
+    "name": "Qwen3-14B",
+    "parameter_count": 14000000000,
+    "context_length": 32768,
+    "architecture": "qwen3",
+    "specialization_tags": ["general", "analysis", "coding"],
+    "instruction_following_score": 0.89,
+    "ollama_name": "qwen3:14b",
+    "downloads": 200000,
+    "gguf_variants": [
+      {"filename": "Qwen3-14B-Q4_K_M.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 9000000000},
+      {"filename": "Qwen3-14B-Q3_K_M.gguf", "quant_type": "Q3_K_M", "file_size_bytes": 7000000000}
+    ]
+  },
+  {
+    "id": "Qwen/Qwen3-30B-A3B-GGUF",
+    "name": "Qwen3-30B-A3B",
+    "parameter_count": 30000000000,
+    "parameter_count_active": 3000000000,
+    "is_moe": true,
+    "context_length": 32768,
+    "architecture": "qwen3",
+    "specialization_tags": ["general", "coding", "analysis"],
+    "instruction_following_score": 0.90,
+    "ollama_name": "qwen3:30b-a3b",
+    "downloads": 150000,
+    "gguf_variants": [
+      {"filename": "Qwen3-30B-A3B-Q4_K_M.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 19000000000}
+    ]
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B-GGUF",
+    "name": "DeepSeek-R1-Distill-Qwen-7B",
+    "parameter_count": 7000000000,
+    "context_length": 32768,
+    "architecture": "qwen2",
+    "specialization_tags": ["analysis", "coding"],
+    "instruction_following_score": 0.86,
+    "ollama_name": "deepseek-r1:7b",
+    "downloads": 250000,
+    "gguf_variants": [
+      {"filename": "DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf", "quant_type": "Q4_K_M", "file_size_bytes": 4700000000}
+    ]
+  }
+]

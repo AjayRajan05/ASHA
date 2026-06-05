@@ -27,7 +27,7 @@ This is the "non-invasive augmentation layer" that makes PrivySHA
 feel like a utility, not a system replacement.
 """
 
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, Union, Optional, List
 
 from ..adapters.factory import AdapterFactory
 from ..security.security_layer import SecurityLevel
@@ -841,12 +841,39 @@ async def sanitize_async(
         return prompt
 
 
+def _resolve_auto_local_model(
+    client: Any,
+    sample_prompts: Optional[List[str]],
+    mode: str,
+) -> Any:
+    """Resolve Ollama model via PrivyFit when auto_select_local_model is enabled."""
+    from ..local_advisor.advisor import get_last_recommendation, recommend_local_model
+
+    report = get_last_recommendation()
+    if report is None or not report.top_pick:
+        prompts = sample_prompts or ["Summarize this text."]
+        report = recommend_local_model(prompts=prompts, mode=mode, top=1)
+
+    pick = report.top_pick if report else None
+    if not pick or not pick.ollama_pull_name:
+        return client
+
+    model_name = pick.ollama_pull_name
+    if hasattr(client, "model"):
+        client.model = model_name
+    elif hasattr(client, "_model"):
+        client._model = model_name
+    return client
+
+
 def wrap_llm(
     client: Any,
     privacy: bool = True,
     token_budget: int = 1200,
     auto_detect: bool = True,
     mode: str = "balanced",
+    auto_select_local_model: bool = False,
+    sample_prompts: Optional[List[str]] = None,
 ) -> Any:
     """
     Wrap any LLM client with PrivySHA security and optimization.
@@ -889,6 +916,9 @@ def wrap_llm(
     """
     if client is None:
         raise ValueError("Client cannot be None")
+
+    if auto_select_local_model:
+        client = _resolve_auto_local_model(client, sample_prompts, mode)
 
     try:
         # 🔥 Use new unified wrapper with fail-safe support

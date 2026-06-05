@@ -18,8 +18,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "privysha"
-version = "1.0.1"
-description = "Drop-in security + optimization layer for LLM apps"
+version = "0.3.0"
+description = "Drop-in security + optimization layer for LLM apps (developer preview)"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -40,7 +40,7 @@ keywords = [
     "prompt-engineering"
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
@@ -134,6 +134,13 @@ otel = [
     "opentelemetry-api>=1.20.0,<3.0.0",
     "opentelemetry-sdk>=1.20.0,<3.0.0",
 ]
+local-advisor = [
+    "huggingface_hub>=0.20.0,<1.0.0",
+]
+local-advisor-gpu = [
+    "privysha[local-advisor]",
+    "nvidia-ml-py>=12.0.0,<13.0.0",
+]
 all = [
     "openai>=1.0.0,<2.0.0",
     "anthropic>=0.5.0,<1.0.0",
@@ -169,6 +176,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 privysha = ["py.typed"]
+"privysha.local_advisor.catalog" = ["fallback.json"]
 "*" = ["*.md", "*.txt"]
 
 [tool.black]

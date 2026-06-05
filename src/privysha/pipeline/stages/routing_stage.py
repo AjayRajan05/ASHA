@@ -72,6 +72,13 @@ class RoutingStage(StageBase):
 
         # Get routing constraints
         constraints = context.config.get("routing_constraints", {})
+        local_cfg = context.config.get("local_advisor_config") or {}
+        if local_cfg:
+            constraints = {**constraints, **local_cfg, "local_advisor": True}
+        if context.config.get("prefer_local"):
+            constraints["prefer_local"] = True
+        if getattr(context, "original_prompt", None) and "sample_prompts" not in constraints:
+            constraints.setdefault("sample_prompts", [context.original_prompt])
 
         # Perform model routing
         routing_decision = self.model_router.route(

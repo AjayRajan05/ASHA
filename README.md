@@ -1,5 +1,7 @@
 # PrivySHA
 
+> **Status: Developer Preview (v0.3.0)** — Early development. APIs and features may change before 1.0.0. See [Developer Preview](docs/developer-preview.md) for scope, limitations, and how to give feedback.
+
 <p align="center">
 <strong>Privacy-First Prompt Compilation Framework for AI Systems</strong>
 </p>
@@ -10,13 +12,44 @@ Transform raw prompts into optimized, structured, privacy-safe prompts before th
 
 <p align="center">
 
-![PyPI](https://img.shields.io/badge/pypi-v1.0.1-blue)
+![PyPI](https://img.shields.io/badge/pypi-v0.3.0-orange)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
-![Status](https://img.shields.io/badge/status-stable-green)
+![Status](https://img.shields.io/badge/status-developer%20preview-orange)
 ![Tests](https://img.shields.io/badge/tests-pytest-green)
 
 </p>
+
+---
+
+## Quick try (60 seconds)
+
+```bash
+pip install -e .
+python examples/developer_preview_demo.py
+```
+
+```python
+from privysha import process
+
+result = process(
+    "My email is alex@company.com — analyze this dataset.",
+    return_metrics=True,
+)
+print(result["optimized"])
+```
+
+---
+
+## Scope (what to expect in 0.x)
+
+| Included now | Preview / evolving | Not yet |
+|--------------|-------------------|---------|
+| `process()`, `wrap_llm()`, `optimize()`, `sanitize()` | PrivyFit (`recommend_local_model`) | Stable 1.0 API guarantee |
+| PII masking, token compression | Agent, routing, pipeline stages | Enterprise compliance reports |
+| CLI demo & benchmarks | Multi-provider routing at scale | Full HF catalog tooling |
+
+Full details: [Developer Preview](docs/developer-preview.md) · [Roadmap](docs/roadmap.md)
 
 ---
 
@@ -35,8 +68,7 @@ This improves:
 
 PrivySHA acts as a **prompt compiler layer** between your application and any LLM.
 
-> **Status:** v1.0.0 — drop-in PII masking and prompt optimization.
-> Requires Python 3.10+. Install with `pip install privysha` and use `process()` / `wrap_llm()` as the primary APIs.
+> **Release track:** `0.3.0` developer preview — use for feedback and experiments. Requires Python 3.10+. Install with `pip install privysha` (or `pip install -e .` from source). Primary APIs: `process()` and `wrap_llm()`.
 
 ---
 
@@ -89,6 +121,27 @@ Output
 ```
 <PERSON_HASH> email <EMAIL_HASH> analyze dataset
 ```
+
+---
+
+### PrivyFit — Local Model Advisor
+
+Recommend local LLMs for **your app's compiled workload** on **your hardware**:
+
+```python
+from privysha import recommend_local_model
+
+report = recommend_local_model(
+    prompts=["My email is john@x.com — analyze this dataset."],
+    mode="strict",
+    top=3,
+)
+print(report.top_pick.ollama_pull_name)
+```
+
+CLI: `privysha recommend --prompts ./samples.json --gpu "RTX 4090"`
+
+See [docs/local-advisor.md](docs/local-advisor.md).
 
 ---
 

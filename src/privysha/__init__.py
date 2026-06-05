@@ -26,12 +26,14 @@ Advanced components load lazily on first access, e.g.:
 from importlib import import_module
 from typing import Any, Tuple
 
-__version__ = "1.0.1"
+__version__ = "0.3.0"
 
 # ---------------------------------------------------------------------------
 # Core public API — eager imports only (fast startup, stable surface)
 # ---------------------------------------------------------------------------
 from .agent import Agent
+from .local_advisor.advisor import get_last_recommendation, recommend_local_model
+from .local_advisor.types import RecommendationReport
 from .pipeline.pipeline import Pipeline
 from .adapters.factory import AdapterFactory
 from .utils.dropin import (
@@ -68,6 +70,9 @@ __all__ = [
     "enable_auto_patch",
     # Core classes
     "Agent",
+    "recommend_local_model",
+    "get_last_recommendation",
+    "RecommendationReport",
     "Pipeline",
     "AdapterFactory",
     # Lazy-loaded (listed for IDE / tab-completion support)

@@ -46,7 +46,25 @@ $env:TWINE_USERNAME = "__token__"
 $env:TWINE_PASSWORD = "pypi-<your-testpypi-api-token>"
 ```
 
-Generate a token at TestPyPI → Account settings → API tokens (scope: entire account or project `privysha`).
+Generate a token at **TestPyPI** (not production PyPI) → Account settings → API tokens (scope: entire account or project `privysha`).
+
+#### Troubleshooting `403 Forbidden` on upload
+
+The build is fine; **403 means your token authenticated but is not allowed to publish `privysha`**.
+
+| Cause | Fix |
+|-------|-----|
+| **Production PyPI token used** | Create a new token at [test.pypi.org/manage/account/token/](https://test.pypi.org/manage/account/token/) — TestPyPI and PyPI accounts/tokens are separate. |
+| **Wrong TestPyPI account** | The project [test.pypi.org/project/privysha](https://test.pypi.org/project/privysha/) is owned by **`ajayrajan_05`**. Log in as that user, or add your account as a **Maintainer** on the project, then create a token. |
+| **Project-scoped token for wrong project** | Use an account-scoped token, or a token scoped to project `privysha` on the owning account. |
+
+Verify credentials before uploading:
+
+```powershell
+$env:TWINE_USERNAME = "__token__"
+$env:TWINE_PASSWORD = "pypi-<testpypi-token>"
+twine upload --repository-url https://test.pypi.org/legacy/ dist/* --verbose
+```
 
 ---
 
@@ -70,7 +88,8 @@ Generate a token at TestPyPI → Account settings → API tokens (scope: entire 
 4. **Publish a release** — After CI is green on `main`:
 
    - Go to GitHub → Releases → **Draft a new release**
-   - Tag: `v1.0.0` (must match semver in `pyproject.toml`)
+   - Tag: `v0.3.0` (must match semver in `pyproject.toml`) for developer preview releases
+   - Tag: `v1.0.0` when API is stable
    - Publish the release
 
    The `.github/workflows/publish.yml` workflow runs when a release is **published**
