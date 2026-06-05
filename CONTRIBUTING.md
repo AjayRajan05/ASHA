@@ -2,6 +2,20 @@
 
 Thank you for your interest in contributing!
 
+> **Project stage:** Developer preview (v0.3.0). We welcome bug reports, documentation fixes, and focused PRs. For large features, please open an issue first — APIs are still evolving toward 1.0.0.
+
+## What we need most right now
+
+| Priority | How you can help |
+|----------|------------------|
+| **Feedback** | Run [examples/developer_preview_demo.py](examples/developer_preview_demo.py) and open an issue |
+| **Bug reports** | Repro steps, Python version, optional `[extras]` used |
+| **Docs & examples** | Clarify setup, add real-world snippets |
+| **Tests** | PII edge cases, adapter smoke tests, PrivyFit scenarios |
+| **Large features** | Discuss in an issue before a big PR |
+
+We are **not** looking for drive-by refactors or scope creep in preview — keep PRs focused.
+
 ## Quick Links
 
 - **Full contributing guide**: [docs/contributing.md](docs/contributing.md)

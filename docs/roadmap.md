@@ -8,11 +8,14 @@ PrivySHA focuses on making LLM security and optimization accessible to everyone 
 
 ## 🚀 Current Status
 
-### Version 0.2.0 (Current — Production-Stable)
+### Version 0.3.0 (Current — Developer Preview)
 
-Core features shipped in this release:
+Early release for community feedback. **APIs may change before 1.0.0.**
+
+Shipped in this preview:
 
 - **4 Core Functions**: `process`, `wrap_llm`, `optimize`, `sanitize`
+- **PrivyFit (preview)**: `recommend_local_model()`, `privysha recommend`
 - **Drop-in Integration**: Minimal code changes required
 - **Universal Compatibility**: OpenAI, Anthropic, Gemini, Grok, Ollama, HuggingFace adapters
 - **Modular Pipeline**: 7-stage architecture under `pipeline/`
@@ -20,7 +23,33 @@ Core features shipped in this release:
 - **Fail-Safe Operation**: Graceful fallbacks when components fail
 - **Reproducible Benchmarks**: `benchmarks/run_benchmarks.py`
 
-Run benchmarks locally to measure token reduction and latency on your hardware.
+Try the minimal demo: `python examples/developer_preview_demo.py`
+
+Feedback guide: [Developer Preview](developer-preview.md)
+
+### Previously documented (internal milestones)
+
+#### Version 0.2.0 — Core pipeline stable enough for preview testing
+
+---
+
+## PrivyFit — Local Model Advisor (in 0.3.0 preview)
+
+Shipped in **0.3.0** for early feedback; will stabilize toward **1.0.0**:
+
+### Shipped in 0.3.0
+- `recommend_local_model()` API with workload fingerprinting (compiled tokens + IR)
+- HuggingFace catalog fetch with offline fallback
+- VRAM fit engine and two-axis ranking
+- `privysha recommend` CLI
+- Optional Ollama micro-benchmark (`probe=True`)
+- `RoutingStrategy.LOCAL_PRIVACY` and privacy-forced local routing
+- `Agent(local_model="auto")`, `wrap_llm(..., auto_select_local_model=True)`
+
+### Before 1.0.0
+- Harden catalog fetch and measured-speed calibration
+- Expand fallback model set and benchmark evidence
+- Production routing defaults and documentation
 
 ---
 

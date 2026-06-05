@@ -302,6 +302,13 @@ except ImportError:
     # Benchmark CLI not available
     pass
 
+try:
+    from .recommend_cli import recommend_cmd
+
+    cli.add_command(recommend_cmd)
+except ImportError:
+    pass
+
 
 def main() -> None:
     """Main entry point for the CLI."""

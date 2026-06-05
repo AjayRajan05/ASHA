@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 from dataclasses import dataclass
 from enum import Enum
 import time
@@ -27,6 +27,7 @@ class RoutingStrategy(Enum):
     PERFORMANCE_BASED = "performance_based"
     AVAILABILITY_BASED = "availability_based"
     HYBRID = "hybrid"
+    LOCAL_PRIVACY = "local_privacy"
 
 
 class ModelCapability(Enum):
@@ -88,6 +89,7 @@ class ModelRouter:
         self.performance_cache = {}
         self.cost_models = self._init_cost_models()
         self.load_balancer = LoadBalancer()
+        self._local_advisor_report = None
 
     def _init_model_registry(self) -> Dict[str, ModelConfig]:
         """Initialize model registry with available models."""
@@ -248,6 +250,13 @@ class ModelRouter:
         if constraints is None:
             constraints = {}
 
+        strategy = self._resolve_strategy(ir, strategy, constraints)
+
+        if strategy == RoutingStrategy.LOCAL_PRIVACY:
+            local_decision = self._route_local_privacy(ir, constraints)
+            if local_decision:
+                return local_decision
+
         # Get candidate models
         candidates = self._get_candidate_models(ir, constraints)
 
@@ -343,10 +352,9 @@ class ModelRouter:
         if ir.is_time_sensitive() and model.avg_latency_ms > 2000:
             return False
 
-        # Privacy constraints
-        if ir.requires_privacy_masking() and model.provider == "openai":
-            # OpenAI is less privacy-friendly than local models
-            pass  # Could implement more sophisticated logic
+        # Privacy constraints — prefer local when forced
+        if constraints.get("force_local") and model.provider != "ollama":
+            return False
 
         # Specialization requirements
         if ir.entity == EntityType.CODE and "coding" not in model.specializations:
@@ -660,6 +668,76 @@ class ModelRouter:
                 for provider in set(m.provider for m in self.model_registry.values())
             },
         }
+
+    def _resolve_strategy(
+        self,
+        ir: PromptIR,
+        strategy: RoutingStrategy | None,
+        constraints: Dict[str, Any],
+    ) -> RoutingStrategy:
+        if strategy is not None:
+            return strategy
+        if constraints.get("force_local") or constraints.get("local_advisor"):
+            return RoutingStrategy.LOCAL_PRIVACY
+        if ir.requires_privacy_masking() and constraints.get("prefer_local"):
+            return RoutingStrategy.LOCAL_PRIVACY
+        return self.default_strategy
+
+    def register_local_models(self, report) -> None:
+        """Register PrivyFit recommendations into the model registry."""
+        self._local_advisor_report = report
+        for rec in report.top_models:
+            key = rec.ollama_pull_name or rec.model_id.split("/")[-1]
+            tags = report.workload.specialization_tags
+            self.model_registry[key] = ModelConfig(
+                name=key,
+                provider="ollama",
+                capability=ModelCapability.ADVANCED,
+                cost_per_1k_tokens=0.0,
+                avg_latency_ms=int(1000 / max(rec.estimated_tok_s or 5, 1)),
+                max_tokens=max(report.workload.context_length_required, 8192),
+                supports_streaming=True,
+                reliability_score=rec.confidence,
+                specializations=tags + ["privacy"],
+            )
+
+    def _route_local_privacy(
+        self, ir: PromptIR, constraints: Dict[str, Any]
+    ) -> Optional[RoutingDecision]:
+        """Route to PrivyFit-recommended local model."""
+        from ..local_advisor.advisor import recommend_local_model
+
+        sample_prompts = constraints.get("sample_prompts") or [ir.original_prompt]
+        mode = constraints.get("mode", "balanced")
+        try:
+            report = recommend_local_model(
+                prompts=sample_prompts,
+                mode=mode,
+                top=constraints.get("local_top", 3),
+                probe=constraints.get("probe", False),
+            )
+        except Exception:
+            return None
+
+        if not report.top_pick:
+            return None
+
+        self.register_local_models(report)
+        pick = report.top_pick
+        model_key = pick.ollama_pull_name or pick.model_id.split("/")[-1]
+        selected = self.model_registry.get(model_key)
+        if not selected:
+            return None
+
+        return RoutingDecision(
+            selected_model=selected,
+            routing_strategy=RoutingStrategy.LOCAL_PRIVACY,
+            confidence_score=pick.confidence,
+            reasoning=f"PrivyFit: {pick.reasoning}",
+            alternative_models=[],
+            estimated_cost=0.0,
+            estimated_latency=selected.avg_latency_ms,
+        )
 
 
 class LoadBalancer:

@@ -2,6 +2,8 @@
 
 **Thank you for helping make LLM security and optimization accessible to everyone!**
 
+> **Developer preview (0.3.x):** APIs may change before 1.0.0. See [developer-preview.md](developer-preview.md) for release expectations and feedback questions.
+
 ---
 
 ## 🚀 Getting Started

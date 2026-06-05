@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] - 2026-06-05
+
+### Developer Preview
+
+Re-release track as **0.x developer preview**. APIs may change before 1.0.0. See [docs/developer-preview.md](docs/developer-preview.md).
+
+### Added
+- **PrivyFit** — project-aware local LLM advisor (`recommend_local_model`, `privysha recommend`)
+- Workload fingerprinting from compiled prompts + IR
+- HuggingFace catalog with offline fallback; VRAM fit ranking
+- Router integration: `RoutingStrategy.LOCAL_PRIVACY`
+- `Agent(local_model="auto")`, `wrap_llm(..., auto_select_local_model=True)`
+- [examples/developer_preview_demo.py](examples/developer_preview_demo.py) — minimal no-keys demo
+
+### Changed
+- Version **1.0.1 → 0.3.0** (semantic versioning: preview until stable 1.0)
+- PyPI classifier: Alpha / developer preview
+- README status banner, scope table, and feedback links
+
+---
+
 ## [1.0.1] - 2026-05-24
 
 ### Added

@@ -40,6 +40,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Developer Preview: developer-preview.md
   - Quickstart: quickstart.md
   - Core Concepts: core-concepts.md
   - Architecture: architecture.md
@@ -58,6 +59,7 @@ nav:
   - Migration: migration.md
   - Versioning: versioning.md
   - Benchmarks: benchmarks.md
+  - Local Model Advisor: local-advisor.md
   - Publishing: publishing.md
   - Roadmap: roadmap.md
   - Contributing: contributing.md
