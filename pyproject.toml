@@ -109,7 +109,7 @@ django = [
 ]
 langchain = [
     "langchain-core>=0.1.0,<2.0.0",
-    "langchain-openai>=0.1.0,<1.0.0",
+    "langchain-openai>=0.1.0,<2.0.0",
 ]
 instructor = [
     "instructor>=0.4.0,<2.0.0",
@@ -123,7 +123,7 @@ integrations = [
     "starlette>=0.27.0,<1.0.0",
     "uvicorn>=0.23.0,<1.0.0",
     "langchain-core>=0.1.0,<2.0.0",
-    "langchain-openai>=0.1.0,<1.0.0",
+    "langchain-openai>=0.1.0,<2.0.0",
     "instructor>=0.4.0,<2.0.0",
     "openai>=1.0.0,<2.0.0",
 ]
@@ -153,7 +153,7 @@ all = [
     "starlette>=0.27.0,<1.0.0",
     "uvicorn>=0.23.0,<1.0.0",
     "langchain-core>=0.1.0,<2.0.0",
-    "langchain-openai>=0.1.0,<1.0.0",
+    "langchain-openai>=0.1.0,<2.0.0",
     "instructor>=0.4.0,<2.0.0",
     "flask>=2.0.0,<4.0.0",
     "django>=4.0.0,<6.0.0",
