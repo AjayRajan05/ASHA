@@ -54,7 +54,9 @@ def _detect_ram_bytes() -> int:
 
             stat = MEMORYSTATUSEX()
             stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
-            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+            windll = getattr(ctypes, "windll", None)
+            kernel32 = getattr(windll, "kernel32", None) if windll is not None else None
+            if kernel32 is not None and kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
                 return int(stat.ullTotalPhys)
         elif platform.system() == "Darwin":
             import subprocess

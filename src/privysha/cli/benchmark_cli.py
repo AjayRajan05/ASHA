@@ -34,12 +34,9 @@ import sys
 from pathlib import Path
 from typing import Protocol
 
-from utils.dropin import process
-from core.policy_config import PolicyConfig, get_preset
-from core.benchmark import BenchmarkHarness
-
-# Add PrivySHA to path for CLI execution
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from privysha.core.benchmark import BenchmarkHarness
+from privysha.core.policy_config import PolicyConfig, get_preset
+from privysha.utils.dropin import process
 
 
 class BenchmarkArgs(Protocol):
