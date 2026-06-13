@@ -67,27 +67,51 @@ def test_rank_models_privacy_and_coding():
 
 
 def test_rank_models_respects_vram_simulation():
+    from privysha.local_advisor.catalog.fetcher import pick_best_variant
+    from privysha.local_advisor.fit.compatibility import check_compatibility
+
     workload = profile_workload(["Summarize this paragraph."], mode="lite")
     small_gpu = HardwareProfile(
         gpus=[GPUInfo(name="RTX 4060", vendor="nvidia", vram_bytes=8 * 1024**3)],
-        ram_bytes=16 * 1024**3,
+        ram_bytes=8 * 1024**3,
         disk_free_bytes=100 * 1024**3,
     )
-    large_gpu = detect_hardware(gpu="RTX 4090", vram_gb=24)
+    large_gpu = HardwareProfile(
+        gpus=[GPUInfo(name="RTX 4090", vendor="nvidia", vram_bytes=24 * 1024**3)],
+        ram_bytes=32 * 1024**3,
+        disk_free_bytes=100 * 1024**3,
+    )
     catalog = load_fallback_catalog()
+
+    def runnable_ids(hw: HardwareProfile) -> set[str]:
+        ids: set[str] = set()
+        for model in catalog:
+            variant = pick_best_variant(model)
+            compat = check_compatibility(
+                model, variant, hw, workload.context_length_required
+            )
+            if compat.can_run and compat.context_fits:
+                ids.add(model.id)
+        return ids
+
+    small_runnable = runnable_ids(small_gpu)
+    large_runnable = runnable_ids(large_gpu)
+    assert small_runnable
+    assert large_runnable
+    assert large_runnable > small_runnable
+
     small_ranked = rank_models(catalog, small_gpu, workload, top=5)
     large_ranked = rank_models(catalog, large_gpu, workload, top=5)
     assert small_ranked
     assert large_ranked
-    small_max_params = max(
-        next(m.parameter_count for m in catalog if m.id == r.model_id)
-        for r in small_ranked
-    )
-    large_max_params = max(
-        next(m.parameter_count for m in catalog if m.id == r.model_id)
-        for r in large_ranked
-    )
-    assert large_max_params >= small_max_params
+
+    for rec, hw in ((small_ranked, small_gpu), (large_ranked, large_gpu)):
+        allowed = runnable_ids(hw)
+        for r in rec:
+            assert r.model_id in allowed
+
+    large_only = large_runnable - small_runnable
+    assert large_only, "Expected models that fit 24GB VRAM but not 8GB"
 
 
 @patch("privysha.local_advisor.catalog.fetcher.fetch_live_catalog")
