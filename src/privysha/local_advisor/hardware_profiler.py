@@ -232,9 +232,9 @@ def detect_hardware(
         os_name = "linux"
 
     if gpu:
-        gpus = [_simulate_gpu(gpu, vram_gb)]
+        simulated_gpus = [_simulate_gpu(gpu, vram_gb)]
         return HardwareProfile(
-            gpus=gpus,
+            gpus=simulated_gpus,
             cpu_name=_detect_cpu_name(),
             cpu_cores=_detect_cpu_cores(),
             ram_bytes=_detect_ram_bytes(),
@@ -244,23 +244,22 @@ def detect_hardware(
             simulated=True,
         )
 
-    gpus: list[GPUInfo] = []
+    detected_gpus: list[GPUInfo] = []
     if not cpu_only:
-        gpus.extend(_detect_nvidia_gpus())
-        gpus.extend(_detect_apple_gpu())
-        gpus.extend(_detect_windows_gpus())
+        detected_gpus.extend(_detect_nvidia_gpus())
+        detected_gpus.extend(_detect_apple_gpu())
+        detected_gpus.extend(_detect_windows_gpus())
 
-    has_avx2, has_avx512 = _detect_avx()
+    has_avx2, _has_avx512 = _detect_avx()
     backend = "gguf"
-    if os_name == "linux" and gpus and gpus[0].vendor == "nvidia":
+    if os_name == "linux" and detected_gpus and detected_gpus[0].vendor == "nvidia":
         backend = "gguf_or_awq"
 
     return HardwareProfile(
-        gpus=gpus,
+        gpus=detected_gpus,
         cpu_name=_detect_cpu_name(),
         cpu_cores=_detect_cpu_cores(),
         has_avx2=has_avx2,
-        has_avx512=has_avx512,
         ram_bytes=_detect_ram_bytes(),
         disk_free_bytes=_detect_disk_free_bytes(),
         os=os_name,

@@ -36,7 +36,7 @@ class PIIMatch:
 class PIIDetector:
     """Intelligent PII detector with contextual analysis and multiple detection strategies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize PII detector with default patterns."""
         self.context_keywords = {
             "name": [
@@ -220,7 +220,7 @@ class PIIDetector:
 
         matches.sort(key=lambda x: (x.start, -x.confidence))
 
-        filtered = []
+        filtered: List[PIIMatch] = []
         for match in matches:
             overlaps = any(
                 not (match.end <= existing.start or match.start >= existing.end)
@@ -274,7 +274,7 @@ class PIIDetector:
     def mask_with_details(self, text: str) -> Tuple[str, Dict[str, List[str]]]:
         matches = self._detect_pii_with_context(text)
         masked_text = text
-        masked_entities = {}
+        masked_entities: Dict[str, List[str]] = {}
         matches.sort(key=lambda x: x.start, reverse=True)
 
         for match in matches:
@@ -296,7 +296,7 @@ class PIIDetector:
 
     def get_pii_summary(self, text: str) -> Dict[str, int]:
         matches = self._detect_pii_with_context(text)
-        summary = {}
+        summary: Dict[str, int] = {}
         for match in matches:
             summary[match.pii_type] = summary.get(match.pii_type, 0) + 1
         return summary

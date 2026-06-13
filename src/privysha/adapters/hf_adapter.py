@@ -25,7 +25,7 @@ from .base import BaseAdapter
 
 class HuggingFaceAdapter(BaseAdapter):
 
-    def __init__(self, model=None):
+    def __init__(self, model: str | None = None) -> None:
         """Initialize HuggingFace adapter with specified model.
 
         Args:
@@ -130,7 +130,7 @@ class HuggingFaceAdapter(BaseAdapter):
                 if response.startswith(prompt):
                     response = response[len(prompt):].strip()
 
-            return response.strip()
+            return str(response).strip()
 
         except Exception as e:
             return f"HuggingFace generation error: {str(e)}"

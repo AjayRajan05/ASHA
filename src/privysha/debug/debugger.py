@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import json
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from ..ir.prompt_ir import PromptIR
@@ -31,7 +33,7 @@ class PipelineStage:
     execution_time_ms: float
     success: bool
     error_message: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -66,13 +68,13 @@ class PrivySHADebugger:
     - Export capabilities
     """
 
-    def __init__(self, enabled: bool = True, trace_level: str = "detailed"):
+    def __init__(self, enabled: bool = True, trace_level: str = "detailed") -> None:
         """Initialize debugger with configuration."""
         self.enabled = enabled
         self.trace_level = trace_level  # "basic", "standard", "detailed"
-        self.current_trace = None
-        self.trace_history = []
-        self.performance_baseline = {}
+        self.current_trace: Optional[DebugTrace] = None
+        self.trace_history: List[DebugTrace] = []
+        self.performance_baseline: Dict[str, Any] = {}
         self.metrics_collector = MetricsCollector()
 
     def start_trace(self, prompt: str) -> str:
@@ -105,8 +107,8 @@ class PrivySHADebugger:
         input_data: str,
         output_data: str,
         success: bool = True,
-        error_message: str = None,
-        metadata: Dict[str, Any] = None,
+        error_message: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> float:
         """Add a pipeline stage to the current trace."""
         if not self.enabled or not self.current_trace:
@@ -135,25 +137,52 @@ class PrivySHADebugger:
 
         return execution_time
 
-    def set_ir_representation(self, ir: PromptIR):
+    def set_ir_representation(self, ir: PromptIR) -> None:
         """Set the IR representation for the current trace."""
         if self.enabled and self.current_trace:
             self.current_trace.ir_representation = ir
 
-    def set_security_result(self, security_result: SecurityResult):
+    def set_security_result(self, security_result: SecurityResult) -> None:
         """Set the security result for the current trace."""
         if self.enabled and self.current_trace:
             self.current_trace.security_result = security_result
 
-    def set_routing_decision(self, routing_decision: RoutingDecision):
+    def set_routing_decision(self, routing_decision: RoutingDecision) -> None:
         """Set the routing decision for the current trace."""
         if self.enabled and self.current_trace:
             self.current_trace.routing_decision = routing_decision
 
-    def set_final_response(self, response: str):
+    def set_final_response(self, response: str) -> None:
         """Set the final response for the current trace."""
         if self.enabled and self.current_trace:
             self.current_trace.final_response = response
+
+    def start_session(self, prompt: str) -> str:
+        """Start a debug session (alias for start_trace)."""
+        return self.start_trace(prompt)
+
+    def complete_stage(self, stage_name: str, output_data: str) -> float:
+        """Update the output of the most recent stage with the given name."""
+        if not self.enabled or not self.current_trace:
+            return 0.0
+        for stage in reversed(self.current_trace.stages):
+            if stage.stage_name == stage_name:
+                stage.output_data = output_data
+                return stage.execution_time_ms
+        return self.add_stage(stage_name, "", output_data)
+
+    def end_session(self, final_response: str) -> Optional[DebugTrace]:
+        """Finalize the current debug session."""
+        self.set_final_response(final_response)
+        return self.finalize_trace()
+
+    def get_trace(self) -> Optional[DebugTrace]:
+        """Return the active trace or the most recently completed trace."""
+        if self.current_trace is not None:
+            return self.current_trace
+        if self.trace_history:
+            return self.trace_history[-1]
+        return None
 
     def finalize_trace(self) -> Optional[DebugTrace]:
         """Finalize the current trace and calculate metrics."""
@@ -183,7 +212,7 @@ class PrivySHADebugger:
 
         return completed_trace
 
-    def get_trace_summary(self, trace: DebugTrace = None) -> Dict[str, Any]:
+    def get_trace_summary(self, trace: Optional[DebugTrace] = None) -> Dict[str, Any]:
         """Get a summary of the trace."""
         if trace is None:
             trace = self.current_trace
@@ -232,7 +261,7 @@ class PrivySHADebugger:
 
         return summary
 
-    def get_detailed_trace(self, trace: DebugTrace = None) -> Dict[str, Any]:
+    def get_detailed_trace(self, trace: Optional[DebugTrace] = None) -> Dict[str, Any]:
         """Get detailed trace information."""
         if trace is None:
             trace = self.current_trace
@@ -240,7 +269,7 @@ class PrivySHADebugger:
         if not trace:
             return {"error": "No trace available"}
 
-        detailed = {
+        detailed: Dict[str, Any] = {
             "session_info": {
                 "session_id": trace.session_id,
                 "timestamp": trace.timestamp.isoformat(),
@@ -334,7 +363,7 @@ class PrivySHADebugger:
         return detailed
 
     def print_debug_trace(
-        self, trace: DebugTrace = None, format_type: str = "readable"
+        self, trace: Optional[DebugTrace] = None, format_type: str = "readable"
     ) -> str:
         """Print debug trace in specified format."""
         if trace is None:
@@ -588,7 +617,9 @@ class PrivySHADebugger:
         """Rough token estimation."""
         return int(len(text.split()) * 1.3)
 
-    def export_trace(self, trace: DebugTrace = None, format_type: str = "json") -> str:
+    def export_trace(
+        self, trace: Optional[DebugTrace] = None, format_type: str = "json"
+    ) -> str:
         """Export trace in specified format."""
         if trace is None:
             trace = self.current_trace
@@ -669,8 +700,8 @@ class PrivySHADebugger:
 class MetricsCollector:
     """Collects and aggregates metrics across traces."""
 
-    def __init__(self):
-        self.metrics = {
+    def __init__(self) -> None:
+        self.metrics: Dict[str, Any] = {
             "total_requests": 0,
             "successful_requests": 0,
             "failed_requests": 0,
@@ -680,7 +711,7 @@ class MetricsCollector:
             "stage_performance": {},
         }
 
-    def collect_from_trace(self, trace: DebugTrace):
+    def collect_from_trace(self, trace: DebugTrace) -> None:
         """Collect metrics from a completed trace."""
         self.metrics["total_requests"] += 1
 

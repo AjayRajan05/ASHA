@@ -366,7 +366,7 @@ class DiffEngine:
         self, original: str, modified: str, existing_changes: List[DiffChange]
     ) -> List[DiffChange]:
         """Detect remaining changes using generic diff algorithm."""
-        changes = []
+        changes: List[DiffChange] = []
 
         # Create unified diff
         diff_lines = list(
@@ -457,14 +457,14 @@ class DiffEngine:
     ) -> Dict[str, Any]:
         """Generate summary of processing changes."""
         # Count changes by category
-        category_counts = {}
+        category_counts: Dict[str, int] = {}
         for change in changes:
             category_counts[change.category] = (
                 category_counts.get(change.category, 0) + 1
             )
 
         # Count changes by type
-        type_counts = {}
+        type_counts: Dict[str, int] = {}
         for change in changes:
             type_counts[change.change_type.value] = (
                 type_counts.get(change.change_type.value, 0) + 1

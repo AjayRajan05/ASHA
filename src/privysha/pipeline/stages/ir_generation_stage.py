@@ -4,7 +4,7 @@ IR Generation Stage - Stage 2 of the pipeline
 Converts content to Intermediate Representation with intent analysis.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ..components.stage_base import StageBase, StageResult, StageContext
 from ...security.service import get_sanitized_content
 from ..policy_gate import modification_disabled
@@ -22,12 +22,12 @@ class IRGenerationStage(StageBase):
     - IR creation and validation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize IR generation stage."""
         super().__init__("ir_generation")
-        self.ir_builder = None
+        self.ir_builder: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize IR builder component."""
         if self.ir_builder is None:
             try:
@@ -66,6 +66,8 @@ class IRGenerationStage(StageBase):
         # Initialize components
         if self.ir_builder is None:
             self._initialize_components(context)
+
+        assert self.ir_builder is not None
 
         # Get input content (use sanitized content if privacy enabled)
         if context.config.get("privacy", True) and context.security_result:
@@ -120,7 +122,7 @@ class IRGenerationStage(StageBase):
             success=validation_result["valid"], data=ir, metrics=custom_metrics
         )
 
-    def _validate_ir(self, ir) -> Dict[str, Any]:
+    def _validate_ir(self, ir: Any) -> Dict[str, Any]:
         """Validate generated IR for completeness and correctness."""
         errors = []
         warnings = []

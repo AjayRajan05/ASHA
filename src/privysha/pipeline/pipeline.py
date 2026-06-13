@@ -53,7 +53,7 @@ class Pipeline:
         security_level: str = "MEDIUM",
         routing_strategy: str = "HYBRID",
         debug_enabled: bool = False,
-        optimization_targets: List[str] = None,
+        optimization_targets: Optional[List[str]] = None,
         fallback_mode: bool = True,
         timeout_ms: int = 0,
         deterministic: bool = False,
@@ -118,8 +118,8 @@ class Pipeline:
     def process(
         self,
         content: str,
-        adapter=None,
-        constraints: Dict[str, Any] = None,
+        adapter: Optional[Any] = None,
+        constraints: Optional[Dict[str, Any]] = None,
         trace: bool = False,
         log_level: Union[str, LogLevel] = LogLevel.INFO,
         debug: bool = False,
@@ -150,6 +150,8 @@ class Pipeline:
         if len(content.strip()) == 0:
             return self._create_empty_result(content)
 
+        trace_context: Optional[TraceContext] = None
+
         if should_passthrough(self.config):
             result = create_passthrough_result(content, self.config)
             if trace or debug or log_level != LogLevel.INFO:
@@ -169,7 +171,6 @@ class Pipeline:
             return result
 
         # Create trace context if observability is enabled
-        trace_context = None
         if trace or debug or log_level != LogLevel.INFO:
             trace_context = TraceContext(
                 input_prompt=content,
@@ -192,8 +193,8 @@ class Pipeline:
         context = create_context(
             original_content=content,
             config=self.config,
-            debug_enabled=self.config["debug_enabled"] or debug,
-            fallback_mode=self.config["fallback_mode"],
+            debug_enabled=bool(self.config["debug_enabled"]) or debug,
+            fallback_mode=bool(self.config["fallback_mode"]),
         )
 
         # Add trace context to pipeline context
@@ -240,11 +241,17 @@ class Pipeline:
             "result",
         ]
 
-        timeout_ms = self.config.get("timeout_ms", 0) or 0
+        _timeout_val = self.config.get("timeout_ms", 0)
+        if isinstance(_timeout_val, (int, float)):
+            timeout_ms = int(_timeout_val)
+        elif isinstance(_timeout_val, str) and _timeout_val.isdigit():
+            timeout_ms = int(_timeout_val)
+        else:
+            timeout_ms = 0
         deadline = (
             time.perf_counter() + (timeout_ms / 1000.0) if timeout_ms > 0 else None
         )
-        enforcer = None
+        enforcer: Optional[Any] = None
         if timeout_ms > 0:
             from ..core.latency_budget import LatencyBudgetEnforcer
 
@@ -308,7 +315,7 @@ class Pipeline:
         # Return final result from result stage
         result_stage_data = context.get_stage_data("result_assembly")
         if result_stage_data and isinstance(result_stage_data, dict):
-            return result_stage_data
+            return dict(result_stage_data)
         return self._create_fallback_result(context)
 
     def _create_timeout_result(
@@ -435,12 +442,11 @@ class Pipeline:
             raise ValueError(f"Unknown stage: {stage_name}")
 
         # Add stage-specific configuration
-        if "stages" not in self.config:
-            self.config["stages"] = {}
+        stages_config = self.config.setdefault("stages", {})
+        if isinstance(stages_config, dict):
+            stages_config[stage_name] = config
 
-        self.config["stages"][stage_name] = config
-
-    def get_stage_metrics(self, stage_name: str = None) -> Dict[str, Any]:
+    def get_stage_metrics(self, stage_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Get metrics for a specific stage or all stages.
 
@@ -456,16 +462,21 @@ class Pipeline:
 
     def reset(self) -> None:
         """Reset pipeline to initial state."""
-        # Re-initialize all stages
-        for stage_name in self.stages:
-            stage_class = type(self.stages[stage_name])
-            self.stages[stage_name] = stage_class()
+        self.stages = {
+            "security": SecurityStage(),
+            "ir_generation": IRGenerationStage(),
+            "routing": RoutingStage(),
+            "compilation": CompilationStage(),
+            "optimization": OptimizationStage(),
+            "generation": GenerationStage(),
+            "result": ResultStage(),
+        }
 
     def __len__(self) -> int:
         """Return number of stages in pipeline."""
         return len(self.stages)
 
-    def __getitem__(self, stage_name: str):
+    def __getitem__(self, stage_name: str) -> Any:
         """Get a specific stage by name."""
         return self.stages.get(stage_name)
 

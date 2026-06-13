@@ -19,7 +19,7 @@ Provides enterprise-required safety controls and deterministic mode.
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 
@@ -43,7 +43,7 @@ class PrivySHAConfig:
     auto_observability: bool = True
 
     # Auto-patch settings
-    auto_patch_providers: list = None
+    auto_patch_providers: Optional[List[str]] = None
 
     # Performance settings
     cache_enabled: bool = False
@@ -65,13 +65,13 @@ def get_config() -> PrivySHAConfig:
     return _global_config
 
 
-def set_config(config: PrivySHAConfig):
+def set_config(config: PrivySHAConfig) -> None:
     """Set global PrivySHA configuration."""
     global _global_config
     _global_config = config
 
 
-def update_from_env():
+def update_from_env() -> None:
     """Update configuration from environment variables."""
 
     # Safety kill switch
@@ -114,7 +114,7 @@ def is_enabled() -> bool:
     return _global_config.enabled
 
 
-def set_enabled(enabled: bool):
+def set_enabled(enabled: bool) -> None:
     """Enable or disable PrivySHA globally."""
     _global_config.enabled = enabled
 
@@ -124,7 +124,7 @@ def is_deterministic() -> bool:
     return _global_config.deterministic_mode
 
 
-def set_deterministic(deterministic: bool):
+def set_deterministic(deterministic: bool) -> None:
     """Enable or disable deterministic mode."""
     _global_config.deterministic_mode = deterministic
 
@@ -134,7 +134,7 @@ def get_timeout_ms() -> int:
     return _global_config.default_timeout_ms
 
 
-def set_timeout_ms(timeout_ms: int):
+def set_timeout_ms(timeout_ms: int) -> None:
     """Set default timeout in milliseconds."""
     _global_config.default_timeout_ms = timeout_ms
 
@@ -144,7 +144,7 @@ def get_security_level() -> str:
     return _global_config.default_security_level
 
 
-def set_security_level(level: str):
+def set_security_level(level: str) -> None:
     """Set default security level."""
     _global_config.default_security_level = level.lower()
 
@@ -154,7 +154,7 @@ def is_observability_enabled() -> bool:
     return _global_config.auto_observability
 
 
-def set_observability(enabled: bool):
+def set_observability(enabled: bool) -> None:
     """Enable or disable auto-observability."""
     _global_config.auto_observability = enabled
 

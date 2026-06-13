@@ -4,7 +4,7 @@ Stage 3: Confidence Scoring Engine - Calculate and adjust entity confidence scor
 
 import re
 import math
-from typing import Dict, Any, List
+from typing import Dict, Any, List, cast
 from .base_stage import BaseStage, StageResult, PIIContext, PIIEntity
 
 
@@ -164,7 +164,7 @@ class ScoringStage(BaseStage):
         """Determine the detection method for an entity"""
         # Check entity metadata first
         if "detection_method" in entity.metadata:
-            return entity.metadata["detection_method"]
+            return cast(str, entity.metadata["detection_method"])
 
         # Determine based on entity characteristics
         text = entity.text.lower()
@@ -401,20 +401,21 @@ class ScoringStage(BaseStage):
 
     def _count_entities_by_type(self, entities: List[PIIEntity]) -> Dict[str, int]:
         """Count entities by type"""
-        counts = {}
+        counts: Dict[str, int] = {}
         for entity in entities:
             counts[entity.pii_type] = counts.get(entity.pii_type, 0) + 1
         return counts
 
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for scoring stage"""
-        if not context.entities:
+        entities: object = context.entities
+        if not entities:
             return True  # No entities is valid
 
-        if not isinstance(context.entities, list):
+        if not isinstance(entities, list):
             return False
 
-        for entity in context.entities:
+        for entity in entities:
             if not isinstance(entity, PIIEntity):
                 return False
 

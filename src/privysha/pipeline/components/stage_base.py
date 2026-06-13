@@ -3,7 +3,7 @@ Base class for all pipeline stages
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, cast
 from dataclasses import dataclass
 import time
 
@@ -226,7 +226,10 @@ class StageBase(ABC):
         Returns:
             Stage configuration dictionary
         """
-        return context.config.get("stages", {}).get(self.name, {})
+        return cast(
+            Dict[str, Any],
+            context.config.get("stages", {}).get(self.name, {}),
+        )
 
     def add_debug_info(
         self, context: StageContext, message: str, data: Any = None
@@ -295,24 +298,24 @@ class StageBase(ABC):
                 )
         elif self.name == "ir_generation" and hasattr(context, "ir"):
             if context.ir and hasattr(context.ir, "to_text"):
-                return context.ir.to_text()
+                return cast(str, context.ir.to_text())
         elif self.name == "compilation" and hasattr(context, "compiled_prompt"):
-            return context.compiled_prompt
+            return context.compiled_prompt or ""
         elif self.name == "optimization" and hasattr(context, "optimized_prompt"):
-            return context.optimized_prompt
+            return context.optimized_prompt or ""
         elif self.name == "generation" and hasattr(context, "model_response"):
-            return context.model_response
+            return context.model_response or ""
 
         # Try to get from result data
         if result.data:
             if isinstance(result.data, str):
                 return result.data
             elif hasattr(result.data, "sanitized_content"):
-                return result.data.sanitized_content
+                return cast(str, result.data.sanitized_content)
             elif hasattr(result.data, "to_text"):
-                return result.data.to_text()
+                return cast(str, result.data.to_text())
             elif hasattr(result.data, "response"):
-                return result.data.response
+                return cast(str, result.data.response)
 
         # Fallback to empty string
         return ""

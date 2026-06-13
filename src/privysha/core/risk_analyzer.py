@@ -20,7 +20,7 @@ This provides smarter mode selection beyond basic mapping.
 
 import re
 from typing import Dict, List, Any, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -32,14 +32,8 @@ class RiskAssessment:
     recommended_mode: str
     reasoning: str
     level: str = "medium"
-    detected_pii_types: List[str] = None
-    injection_indicators: List[str] = None
-
-    def __post_init__(self) -> None:
-        if self.detected_pii_types is None:
-            self.detected_pii_types = []
-        if self.injection_indicators is None:
-            self.injection_indicators = []
+    detected_pii_types: List[str] = field(default_factory=list)
+    injection_indicators: List[str] = field(default_factory=list)
 
 
 class RiskAnalyzer:
@@ -53,8 +47,8 @@ class RiskAnalyzer:
         recommended_mode = "balanced"
         reasoning = "Standard prompt analysis"
         level = "medium"
-        detected_pii_types = []
-        injection_indicators = []
+        detected_pii_types: List[str] = []
+        injection_indicators: List[str] = []
 
         return RiskAssessment(
             score=risk_score,
@@ -74,13 +68,9 @@ class EnhancedRiskAssessment(RiskAssessment):
     prompt_length: int = 0
     business_context_score: float = 0.0
     complexity_score: float = 0.0
-    contextual_factors: Dict[str, Any] = None
+    contextual_factors: Dict[str, Any] = field(default_factory=dict)
     auto_mode_reasoning: str = ""
     confidence_boost: float = 0.0
-
-    def __post_init__(self) -> None:
-        if self.contextual_factors is None:
-            self.contextual_factors = {}
 
 
 class EnhancedRiskAnalyzer(RiskAnalyzer):
@@ -303,7 +293,7 @@ class EnhancedRiskAnalyzer(RiskAnalyzer):
         business_context_score: float,
         complexity_score: float,
         contextual_factors: Dict[str, Any],
-    ) -> Tuple[str, str]:
+    ) -> Tuple[Any, str]:
         """
         Intelligent mode recommendation based on comprehensive analysis.
 

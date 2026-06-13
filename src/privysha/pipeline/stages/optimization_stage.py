@@ -4,7 +4,7 @@ Optimization Stage - Stage 5 of the pipeline
 MSDPC optimization for token reduction and prompt enhancement.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ..components.stage_base import StageBase, StageResult, StageContext
 from ...security.service import get_sanitized_content
 from ..policy_gate import optimization_disabled
@@ -22,12 +22,12 @@ class OptimizationStage(StageBase):
     - Performance metrics
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize optimization stage."""
         super().__init__("prompt_optimization")
-        self.prompt_optimizer = None
+        self.prompt_optimizer: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize prompt optimizer component."""
         if self.prompt_optimizer is None:
             try:
@@ -69,6 +69,8 @@ class OptimizationStage(StageBase):
         # Initialize components
         if self.prompt_optimizer is None:
             self._initialize_components(context)
+
+        assert self.prompt_optimizer is not None
 
         # Determine source content based on privacy setting
         if context.config.get("privacy", True) and context.security_result:

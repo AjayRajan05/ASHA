@@ -21,7 +21,7 @@ class GrokAdapter(BaseAdapter):
     Grok (xAI) adapter using OpenAI-compatible API interface.
     """
 
-    def __init__(self, model="grok-beta"):
+    def __init__(self, model: str = "grok-beta") -> None:
         try:
             from openai import OpenAI
         except ImportError:
@@ -45,6 +45,7 @@ class GrokAdapter(BaseAdapter):
                 temperature=0.7,
                 max_tokens=1024,
             )
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            return (content or "").strip()
         except Exception as e:
             raise RuntimeError(f"Grok generation failed: {str(e)}")

@@ -18,10 +18,10 @@ from .base import BaseAdapter
 class MockAdapter(BaseAdapter):
     """Mock adapter for testing purposes without requiring external LLM services"""
 
-    def __init__(self, model="mock"):
+    def __init__(self, model: str = "mock") -> None:
         self.model = model
 
-    def generate(self, prompt):
+    def generate(self, prompt: str) -> str:
         """Generate a mock response based on the prompt content"""
 
         # Simple mock responses based on prompt content

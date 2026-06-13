@@ -18,6 +18,8 @@ Unified wrapper for PrivySHA with async and streaming support.
 Provides drop-in wrapping for any LLM client with fail-safe execution.
 """
 
+from __future__ import annotations
+
 import inspect
 from typing import Any, Callable, Optional
 from functools import wraps
@@ -82,8 +84,17 @@ def _process_prompt_for_wrap(
     return _coerce_process_output(processed, prompt)
 
 
+def _guard_response(output_guard: OutputGuard, response: Any, kwargs: dict[str, Any]) -> Any:
+    """Validate LLM response with optional format constraint."""
+    response_format = kwargs.get("response_format")
+    fmt: Optional[str] = (
+        response_format if isinstance(response_format, str) else None
+    )
+    return output_guard.guard_output(response, fmt)
+
+
 def _wrap_nested_chat_completions(
-    client,
+    client: Any,
     mode: str,
     *,
     privacy: bool = True,
@@ -104,7 +115,7 @@ def _wrap_nested_chat_completions(
     if not callable(original_create):
         return False
 
-    def wrapped_create(*args, **kwargs):
+    def wrapped_create(*args: Any, **kwargs: Any) -> Any:
         try:
             prompt = extract_prompt_from_kwargs(kwargs)
             if prompt:
@@ -118,7 +129,7 @@ def _wrap_nested_chat_completions(
             if kwargs.get("stream", False) and is_streaming_response(response):
                 return handle_streaming_response(response)
             output_guard = OutputGuard()
-            return output_guard.guard_output(response, kwargs.get("response_format"))
+            return _guard_response(output_guard, response, kwargs)
         except Exception:
             return original_create(*args, **kwargs)
 
@@ -127,12 +138,12 @@ def _wrap_nested_chat_completions(
 
 
 def wrap_llm(
-    client,
-    mode="balanced",
+    client: Any,
+    mode: str = "balanced",
     *,
     privacy: bool = True,
     token_budget: int = 1200,
-):
+) -> Any:
     """
     Wrap any LLM client with PrivySHA security and optimization.
 
@@ -166,7 +177,7 @@ def wrap_llm(
     # Check if method is async
     if inspect.iscoroutinefunction(original_method):
         # Wrap async method
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 # Extract and process prompt
                 prompt = extract_prompt_from_kwargs(kwargs)
@@ -189,9 +200,7 @@ def wrap_llm(
 
                 # Validate output
                 output_guard = OutputGuard()
-                return output_guard.guard_output(
-                    response, kwargs.get("response_format")
-                )
+                return _guard_response(output_guard, response, kwargs)
 
             except Exception:
                 # 🔥 FAIL SAFE - return original behavior
@@ -201,7 +210,7 @@ def wrap_llm(
 
     else:
         # Wrap sync method
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 # Extract and process prompt
                 prompt = extract_prompt_from_kwargs(kwargs)
@@ -224,9 +233,7 @@ def wrap_llm(
 
                 # Validate output
                 output_guard = OutputGuard()
-                return output_guard.guard_output(
-                    response, kwargs.get("response_format")
-                )
+                return _guard_response(output_guard, response, kwargs)
 
             except Exception:
                 # 🔥 FAIL SAFE - return original behavior
@@ -237,7 +244,7 @@ def wrap_llm(
     return client
 
 
-def wrap_function(func: Callable, mode="balanced") -> Callable:
+def wrap_function(func: Callable[..., Any], mode: str = "balanced") -> Callable[..., Any]:
     """
     Wrap a function that takes a prompt as first argument.
 
@@ -251,7 +258,7 @@ def wrap_function(func: Callable, mode="balanced") -> Callable:
     if inspect.iscoroutinefunction(func):
 
         @wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 if args:
                     # Process first positional argument (prompt)
@@ -274,7 +281,7 @@ def wrap_function(func: Callable, mode="balanced") -> Callable:
     else:
 
         @wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 if args:
                     # Process first positional argument (prompt)
@@ -295,7 +302,7 @@ def wrap_function(func: Callable, mode="balanced") -> Callable:
         return sync_wrapper
 
 
-def _find_generation_method(client) -> Optional[str]:
+def _find_generation_method(client: Any) -> Optional[str]:
     """
     Find the main generation method on an LLM client.
 
@@ -338,7 +345,7 @@ class UniversalWrapper:
     Provides automatic method detection and wrapping with fail-safe execution.
     """
 
-    def __init__(self, mode="balanced", auto_detect=True):
+    def __init__(self, mode: str = "balanced", auto_detect: bool = True) -> None:
         """
         Initialize universal wrapper.
 
@@ -350,7 +357,7 @@ class UniversalWrapper:
         self.auto_detect = auto_detect
         self.output_guard = OutputGuard()
 
-    def wrap_client(self, client) -> Any:
+    def wrap_client(self, client: Any) -> Any:
         """
         Wrap an entire LLM client.
 
@@ -366,7 +373,7 @@ class UniversalWrapper:
             # Manual wrapping for specific methods
             return self._manual_wrap(client)
 
-    def wrap_method(self, client, method_name: str) -> Any:
+    def wrap_method(self, client: Any, method_name: str) -> Any:
         """
         Wrap a specific method on a client.
 
@@ -387,7 +394,7 @@ class UniversalWrapper:
 
         if inspect.iscoroutinefunction(original_method):
 
-            async def async_method_wrapper(*args, **kwargs):
+            async def async_method_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
                     # Process prompt if present
                     prompt = extract_prompt_from_kwargs(kwargs)
@@ -407,9 +414,7 @@ class UniversalWrapper:
                     if kwargs.get("stream", False) and is_streaming_response(response):
                         return handle_async_streaming_response(response)
 
-                    return self.output_guard.guard_output(
-                        response, kwargs.get("response_format")
-                    )
+                    return _guard_response(self.output_guard, response, kwargs)
 
                 except Exception:
                     return await original_method(*args, **kwargs)
@@ -418,7 +423,7 @@ class UniversalWrapper:
 
         else:
 
-            def sync_method_wrapper(*args, **kwargs):
+            def sync_method_wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
                     # Process prompt if present
                     prompt = extract_prompt_from_kwargs(kwargs)
@@ -438,9 +443,7 @@ class UniversalWrapper:
                     if kwargs.get("stream", False) and is_streaming_response(response):
                         return handle_streaming_response(response)
 
-                    return self.output_guard.guard_output(
-                        response, kwargs.get("response_format")
-                    )
+                    return _guard_response(self.output_guard, response, kwargs)
 
                 except Exception:
                     return original_method(*args, **kwargs)
@@ -449,7 +452,7 @@ class UniversalWrapper:
 
         return client
 
-    def _manual_wrap(self, client) -> Any:
+    def _manual_wrap(self, client: Any) -> Any:
         """
         Manual wrapping when auto-detect is disabled.
 
@@ -470,7 +473,7 @@ class UniversalWrapper:
 
 
 # Convenience functions for quick wrapping
-def safe_wrap(client, mode="balanced"):
+def safe_wrap(client: Any, mode: str = "balanced") -> Any:
     """
     Quick safe wrapper with maximum compatibility.
 
@@ -488,7 +491,7 @@ def safe_wrap(client, mode="balanced"):
         return client
 
 
-def auto_wrap(*clients, mode="balanced"):
+def auto_wrap(*clients: Any, mode: str = "balanced") -> list[Any]:
     """
     Wrap multiple clients automatically.
 

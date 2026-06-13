@@ -26,16 +26,33 @@ Usage:
     privysha benchmark --custom "prompt"  # Test custom prompt
 """
 
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Protocol
+
 from utils.dropin import process
 from core.policy_config import PolicyConfig, get_preset
 from core.benchmark import BenchmarkHarness
-import argparse
-import sys
-import json
-from pathlib import Path
 
 # Add PrivySHA to path for CLI execution
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+
+class BenchmarkArgs(Protocol):
+    mode: str
+    config: str | None
+    custom: str | None
+    compare: str | None
+    output: str | None
+    save: bool
+    format: str
+    verbose: bool
+    quiet: bool
+    timeout: int
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -119,7 +136,7 @@ Examples:
     return parser
 
 
-def run_benchmark(args) -> int:
+def run_benchmark(args: BenchmarkArgs) -> int:
     """Run benchmark based on arguments."""
     try:
         # Initialize benchmark harness
@@ -259,7 +276,7 @@ def run_single_test(prompt: str, mode: str = "balanced", verbose: bool = False) 
         return 1
 
 
-def main():
+def main() -> int:
     """Main CLI entry point."""
     parser = create_parser()
     args = parser.parse_args()

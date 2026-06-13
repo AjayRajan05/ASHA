@@ -16,7 +16,7 @@ class RegexDetector:
     PII patterns with very high precision and low false positive rate.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize regex detector with comprehensive pattern library."""
         self.patterns = self._compile_patterns()
         self.confidence_weights = self._get_confidence_weights()
@@ -198,7 +198,9 @@ class RegexDetector:
         """Get count of patterns by type."""
         return {pii_type: len(patterns) for pii_type, patterns in self.patterns.items()}
 
-    def add_custom_pattern(self, pii_type: str, pattern: str, confidence: float = 0.8):
+    def add_custom_pattern(
+        self, pii_type: str, pattern: str, confidence: float = 0.8
+    ) -> None:
         """Add a custom regex pattern."""
         if pii_type not in self.patterns:
             self.patterns[pii_type] = []

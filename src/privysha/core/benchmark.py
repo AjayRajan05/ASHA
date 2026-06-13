@@ -27,7 +27,7 @@ This enables data-driven optimization and regression testing.
 import time
 import statistics
 import json
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional, Callable, cast
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import traceback
@@ -64,7 +64,7 @@ class BenchmarkResult:
     threats_blocked: int
     false_positive: bool
     error: Optional[str] = None
-    metrics: Dict[str, Any] = None
+    metrics: Optional[Dict[str, Any]] = None
 
     def __post_init__(self) -> None:
         if self.metrics is None:
@@ -128,7 +128,10 @@ class BenchmarkHarness:
         )
         if sample_path.is_file():
             try:
-                return json.loads(sample_path.read_text(encoding="utf-8"))
+                return cast(
+                    List[Dict[str, Any]],
+                    json.loads(sample_path.read_text(encoding="utf-8")),
+                )
             except Exception:
                 pass
 

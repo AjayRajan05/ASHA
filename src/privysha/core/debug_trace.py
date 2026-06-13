@@ -214,9 +214,9 @@ class DebugTracer:
         stages = self.current_trace.stages
 
         # Stage timings
-        stage_timings = {}
+        stage_timings: Dict[str, List[float]] = {}
         for stage in stages:
-            if stage.stage not in stage_timings:
+            if stage.stage.value not in stage_timings:
                 stage_timings[stage.stage.value] = []
             stage_timings[stage.stage.value].append(stage.execution_time_ms)
 
@@ -247,7 +247,7 @@ class DebugTracer:
         if not self.current_trace or not self.current_trace.stages:
             return {}
 
-        token_changes = []
+        token_changes: List[Dict[str, Any]] = []
         prev_tokens = 0
 
         for stage in self.current_trace.stages:
@@ -261,19 +261,19 @@ class DebugTracer:
                             "tokens": tokens,
                             "change": change,
                             "change_percentage": (
-                                (change / prev_tokens *
-                                 100) if prev_tokens > 0 else 0
+                                (change / prev_tokens * 100) if prev_tokens > 0 else 0
                             ),
                         }
                     )
                 prev_tokens = tokens
 
+        negative_changes = [
+            int(tc["change"]) for tc in token_changes if int(tc["change"]) < 0
+        ]
         return {
             "token_changes": token_changes,
-            "total_token_change": sum(tc["change"] for tc in token_changes),
-            "max_token_reduction": min(
-                [tc["change"] for tc in token_changes if tc["change"] < 0], default=0
-            ),
+            "total_token_change": sum(int(tc["change"]) for tc in token_changes),
+            "max_token_reduction": min(negative_changes, default=0),
         }
 
     def _calculate_success_rates(self) -> Dict[str, Any]:
@@ -454,7 +454,7 @@ class DebugTracer:
         max_time = max(times) if times else 0
 
         # Stage statistics
-        stage_counts = {}
+        stage_counts: Dict[str, int] = {}
         for trace in self.trace_history:
             for stage in trace.stages:
                 stage_name = stage.stage.value
@@ -608,7 +608,7 @@ class TraceManager:
         """Disable automatic tracing."""
         self.auto_trace = False
 
-    def start_session(self, content: str, **kwargs) -> str:
+    def start_session(self, content: str, **kwargs: Any) -> str:
         """Start a new tracing session."""
         if not self.auto_trace:
             return "disabled"
@@ -622,7 +622,7 @@ class TraceManager:
         output_content: str,
         success: bool = True,
         error: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Trace a stage execution."""
         if not self.auto_trace:
@@ -639,7 +639,7 @@ class TraceManager:
 
     def end_session(
         self, final_output: Optional[str] = None, error: Optional[str] = None
-    ):
+    ) -> Optional[PipelineTrace]:
         """End current tracing session."""
         if not self.auto_trace:
             return None
@@ -730,17 +730,21 @@ trace_manager = TraceManager()
 
 
 # Convenience functions for easy access
-def start_trace(content: str, **kwargs) -> str:
+def start_trace(content: str, **kwargs: Any) -> str:
     """Start a new trace session."""
     return trace_manager.start_session(content, **kwargs)
 
 
-def trace_stage(stage: str, input_content: str, output_content: str, **kwargs) -> None:
+def trace_stage(
+    stage: str, input_content: str, output_content: str, **kwargs: Any
+) -> None:
     """Trace a stage execution."""
     trace_manager.trace_stage(stage, input_content, output_content, **kwargs)
 
 
-def end_trace(final_output: Optional[str] = None, error: Optional[str] = None):
+def end_trace(
+    final_output: Optional[str] = None, error: Optional[str] = None
+) -> Optional[PipelineTrace]:
     """End current trace session."""
     return trace_manager.end_session(final_output, error)
 

@@ -15,7 +15,7 @@ class DictionaryDetector:
     to identify PII that might not match exact patterns.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize dictionary detector with PII dictionaries."""
         self.dictionaries = self._load_dictionaries()
         self.context_keywords = self._load_context_keywords()
@@ -695,7 +695,7 @@ class DictionaryDetector:
         context_end = min(len(text), end + window_size)
         return text[context_start:context_end]
 
-    def add_dictionary_entry(self, pii_type: str, entry: str):
+    def add_dictionary_entry(self, pii_type: str, entry: str) -> None:
         """Add an entry to a dictionary."""
         if pii_type == "first_names":
             self.dictionaries["first_names"].add(entry.lower())
@@ -706,7 +706,7 @@ class DictionaryDetector:
         elif pii_type == "cities":
             self.dictionaries["cities"].add(entry.lower())
 
-    def add_context_keyword(self, pii_type: str, keyword: str):
+    def add_context_keyword(self, pii_type: str, keyword: str) -> None:
         """Add a context keyword."""
         if pii_type not in self.context_keywords:
             self.context_keywords[pii_type] = []

@@ -22,7 +22,7 @@ class TemplateResult:
 class TemplateEngine:
     """Map intents to predefined prompt templates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize template library."""
         self.templates = {
             IntentType.ANALYZE: {

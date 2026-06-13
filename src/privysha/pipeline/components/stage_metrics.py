@@ -37,8 +37,8 @@ class MetricsCollector:
         execution_time_ms: float,
         input_size: int,
         output_size: int,
-        custom_metrics: Dict[str, Any] = None,
-        error: str = None,
+        custom_metrics: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
         fallback_used: bool = False,
     ) -> None:
         """
@@ -143,7 +143,7 @@ class MetricsCollector:
 
     def get_quality_metrics(self) -> Dict[str, Any]:
         """Get quality-related metrics."""
-        quality_metrics = {}
+        quality_metrics: Dict[str, List[Any]] = {}
 
         # Collect custom metrics from all stages
         for metrics in self.stage_metrics:

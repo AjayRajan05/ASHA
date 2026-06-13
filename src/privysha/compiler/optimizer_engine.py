@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 from ..ir.prompt_ir import PromptIR
 from ..core.safety_constraints import SafetyConstraints
 from ..core.format_lock import FormatLock
@@ -48,7 +48,7 @@ class PromptOptimizer:
         self,
         prompt: str,
         ir: PromptIR,
-        optimization_targets: List[str] = None,
+        optimization_targets: Optional[List[str]] = None,
         optimization_level: int = 2,
         preserve_format: bool = True,
     ) -> Tuple[str, Dict[str, Any]]:
@@ -221,7 +221,7 @@ Performance Classification:
         enable_output_shaping: bool = True,
         enable_templates: bool = False,
         target_reduction: float = 0.4,
-    ):
+    ) -> None:
         """
         Configure MSDPC optimizer settings.
 
@@ -241,20 +241,20 @@ Performance Classification:
         else:
             raise RuntimeError("MSDPC is not enabled.")
 
-    def switch_to_msdpc(self):
+    def switch_to_msdpc(self) -> None:
         """Switch to MSDPC optimizer (already enabled by default)."""
         if not self.use_msdpc:
             self.use_msdpc = True
             self.msdpc_optimizer = MSDPCOptimizer()
 
-    def switch_to_legacy(self):
+    def switch_to_legacy(self) -> None:
         """Legacy mode is deprecated."""
         raise DeprecationWarning(
             "Legacy optimizer is deprecated. Use MSDPC instead.")
 
     def benchmark_optimization(self, prompt: str, ir: PromptIR) -> Dict[str, Any]:
         """Benchmark optimization performance using MSDPC."""
-        results = {"msdpc_enabled": self.use_msdpc, "benchmark_results": {}}
+        results: Dict[str, Any] = {"msdpc_enabled": self.use_msdpc, "benchmark_results": {}}
 
         # Test different optimization strategies
         strategies = ["tokens", "speed", "accuracy", "cost"]

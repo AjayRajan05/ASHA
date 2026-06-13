@@ -40,7 +40,7 @@ class MSDPCOptimizer:
     while maintaining intent and improving clarity.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize all MSDPC components."""
         self.intent_extractor = IntentExtractor()
         self.semantic_compressor = SemanticCompressor()
@@ -66,7 +66,7 @@ class MSDPCOptimizer:
         enable_templates: bool = False,
         target_reduction: float = 0.4,
         aggressive_pruning: bool = False,
-    ):
+    ) -> None:
         """
         Configure MSDPC optimization parameters.
 
@@ -122,7 +122,7 @@ class MSDPCOptimizer:
 
         # Stage 4: Token Pruning
         pruning_result = self.token_pruner.prune(
-            current_prompt, self.config["aggressive_pruning"]
+            current_prompt, bool(self.config["aggressive_pruning"])
         )
         current_prompt = pruning_result.pruned_text
         stages_applied.append("token_pruning")
@@ -257,7 +257,7 @@ class MSDPCOptimizer:
         Returns:
             Benchmark results with aggregated metrics
         """
-        results = []
+        results: List[Dict[str, Any]] = []
 
         for prompt in prompts:
             optimized, metrics = self.optimize(prompt)
@@ -268,22 +268,47 @@ class MSDPCOptimizer:
         # Calculate aggregates
         total_prompts = len(results)
         avg_reduction = (
-            sum(r["metrics"].token_reduction_percentage for r in results)
+            sum(
+                r["metrics"].token_reduction_percentage
+                for r in results
+                if isinstance(r["metrics"], OptimizationMetrics)
+            )
             / total_prompts
         )
         avg_time = sum(
-            r["metrics"].processing_time_ms for r in results) / total_prompts
+            r["metrics"].processing_time_ms
+            for r in results
+            if isinstance(r["metrics"], OptimizationMetrics)
+        ) / total_prompts
         avg_clarity = sum(
-            r["metrics"].clarity_score for r in results) / total_prompts
+            r["metrics"].clarity_score
+            for r in results
+            if isinstance(r["metrics"], OptimizationMetrics)
+        ) / total_prompts
         avg_structure = (
-            sum(r["metrics"].structure_score for r in results) / total_prompts
+            sum(
+                r["metrics"].structure_score
+                for r in results
+                if isinstance(r["metrics"], OptimizationMetrics)
+            )
+            / total_prompts
         )
         avg_efficiency = (
-            sum(r["metrics"].efficiency_score for r in results) / total_prompts
+            sum(
+                r["metrics"].efficiency_score
+                for r in results
+                if isinstance(r["metrics"], OptimizationMetrics)
+            )
+            / total_prompts
         )
         intent_preserved_rate = (
-            sum(1 for r in results if r["metrics"]
-                .intent_preserved) / total_prompts
+            sum(
+                1
+                for r in results
+                if isinstance(r["metrics"], OptimizationMetrics)
+                and r["metrics"].intent_preserved
+            )
+            / total_prompts
         )
 
         return {

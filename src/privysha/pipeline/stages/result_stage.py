@@ -4,8 +4,9 @@ Result Assembly Stage - Stage 7 of the pipeline
 Compiles final result with comprehensive metrics and debugging information.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional, cast
 from ..components.stage_base import StageBase, StageResult, StageContext
+from ...security.service import get_sanitized_content
 
 
 class ResultStage(StageBase):
@@ -20,13 +21,13 @@ class ResultStage(StageBase):
     - Final validation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize result assembly stage."""
         super().__init__("result_assembly")
-        self.explainability_engine = None
-        self.diff_engine = None
+        self.explainability_engine: Optional[Any] = None
+        self.diff_engine: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize explainability and diff engines."""
         if self.explainability_engine is None:
             try:
@@ -249,7 +250,10 @@ class ResultStage(StageBase):
         if not optimization_stage:
             return {"token_reduction_percentage": 0}
 
-        return optimization_stage.get("metrics", {"token_reduction_percentage": 0})
+        return cast(
+            Dict[str, Any],
+            optimization_stage.get("metrics", {"token_reduction_percentage": 0}),
+        )
 
     def _compile_performance_metrics(self, context: StageContext) -> Dict[str, Any]:
         """Compile performance metrics from all stages."""
@@ -277,6 +281,8 @@ class ResultStage(StageBase):
 
     def _generate_explainability(self, context: StageContext) -> Dict[str, Any]:
         """Generate explainability data."""
+        if self.explainability_engine is None:
+            return {"error": "Explainability engine not available"}
         try:
             processing_result = {
                 "success": True,
@@ -304,6 +310,8 @@ class ResultStage(StageBase):
 
     def _generate_diff_analysis(self, context: StageContext) -> Dict[str, Any]:
         """Generate diff analysis between original and optimized content."""
+        if self.diff_engine is None:
+            return {"error": "Diff engine not available"}
         try:
             original = context.original_content
             optimized = context.optimized_prompt or context.compiled_prompt or original

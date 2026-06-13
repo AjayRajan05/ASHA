@@ -18,6 +18,10 @@ PrivySHA CLI - Demo and quick testing interface.
 This is the BIGGEST adoption driver - lets developers try PrivySHA instantly.
 """
 
+from __future__ import annotations
+
+from typing import Any, Dict, List, cast
+
 import click
 import sys
 
@@ -68,14 +72,17 @@ def demo(
         )
 
         # Process the prompt with enhanced features
-        result = process(
-            prompt,
-            return_metrics=True,
-            debug=debug,
-            security_level=security_level,
-            use_stages=stages,
-            context_config=context_config,
-            debug_mode=debug_mode,
+        result = cast(
+            Dict[str, Any],
+            process(
+                prompt,
+                return_metrics=True,
+                debug=debug,
+                security_level=security_level,
+                use_stages=stages,
+                context_config=context_config,
+                debug_mode=debug_mode,
+            ),
         )
 
         # Display results
@@ -158,7 +165,7 @@ def quick_test() -> None:
     print("\nPrivySHA Quick Test Suite")
     print("=" * 40)
 
-    test_cases = [
+    test_cases: List[Dict[str, Any]] = [
         {
             "name": "Basic PII Detection",
             "prompt": "My email is john@gmail.com",
@@ -184,7 +191,10 @@ def quick_test() -> None:
         print(f"   Input: {test['prompt']}")
 
         try:
-            result = process(test["prompt"], return_metrics=True)
+            result = cast(
+                Dict[str, Any],
+                process(str(test["prompt"]), return_metrics=True),
+            )
             pii_masked = result.get("pii_masked", False)
 
             if pii_masked == test["should_mask"]:
@@ -230,7 +240,7 @@ def examples(count: int) -> None:
         print(f"\n{i}. {example}")
 
         try:
-            result = process(example, return_metrics=True)
+            result = cast(Dict[str, Any], process(example, return_metrics=True))
             print(f"{result['optimized']}")
             print(
                 f"Saved: {result.get('token_reduction', 0)}% | PII: {result.get('pii_masked', False)}"
@@ -283,7 +293,18 @@ try:
 
         # Create args object for benchmark function
         class Args:
-            def __init__(self):
+            mode: str
+            config: str | None
+            custom: str | None
+            compare: str | None
+            output: str | None
+            save: bool
+            format: str
+            verbose: bool
+            quiet: bool
+            timeout: int
+
+            def __init__(self) -> None:
                 self.mode = mode
                 self.config = config
                 self.custom = custom
@@ -295,7 +316,7 @@ try:
                 self.quiet = quiet
                 self.timeout = timeout
 
-        return run_benchmark(Args())
+        run_benchmark(Args())
 
     cli.add_command(benchmark)
 except ImportError:

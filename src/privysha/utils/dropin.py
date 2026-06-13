@@ -27,7 +27,9 @@ This is the "non-invasive augmentation layer" that makes PrivySHA
 feel like a utility, not a system replacement.
 """
 
-from typing import Dict, Any, Union, Optional, List
+from __future__ import annotations
+
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from ..adapters.factory import AdapterFactory
 from ..security.security_layer import SecurityLevel
@@ -100,7 +102,8 @@ def apply_stage_processing(
         result = pipeline.process(prompt)
 
         if result.get("success", False):
-            return result.get("prompts", {}).get("optimized", prompt)
+            optimized = result.get("prompts", {}).get("optimized", prompt)
+            return str(optimized)
 
         return prompt
 
@@ -345,7 +348,7 @@ def process(
             security_level=_normalize_security_level(security_level),
             debug_enabled=debug or debug_mode,
             fallback_mode=True,
-            policy_config=policy_config,
+            policy_config=policy_config.to_dict(),
             pii_mode=pii_mode,
             reversible=reversible,
         )
@@ -364,7 +367,7 @@ def process(
         import concurrent.futures as _cf
 
         _last_exc: Optional[Exception] = None
-        result = None
+        result: Optional[Dict[str, Any]] = None
         for _attempt in range(max_retries + 1):
             try:
                 if timeout_seconds is not None:
@@ -390,6 +393,11 @@ def process(
                         f"[PrivySHA] process() attempt {_attempt + 1} failed "
                         f"({type(_exc).__name__}), retrying..."
                     )
+
+        if result is None:
+            if _last_exc is not None:
+                raise _last_exc
+            raise RuntimeError("Pipeline processing failed")
 
         if debugger:
             debugger.complete_stage(
@@ -553,22 +561,23 @@ def process(
             if debugger:
                 debugger.end_session(result["prompts"]["optimized"])
                 debug_trace = debugger.get_trace()
-                response["comprehensive_debug"] = {
-                    "session_id": debug_trace.session_id,
-                    "total_execution_time_ms": debug_trace.total_execution_time_ms,
-                    "stages": [
-                        {
-                            "stage_name": stage.stage_name,
-                            "execution_time_ms": stage.execution_time_ms,
-                            "success": stage.success,
-                            "input_length": len(stage.input_data),
-                            "output_length": len(stage.output_data),
-                        }
-                        for stage in debug_trace.stages
-                    ],
-                    "token_metrics": debug_trace.token_metrics,
-                    "final_response": debug_trace.final_response,
-                }
+                if debug_trace is not None:
+                    response["comprehensive_debug"] = {
+                        "session_id": debug_trace.session_id,
+                        "total_execution_time_ms": debug_trace.total_execution_time_ms,
+                        "stages": [
+                            {
+                                "stage_name": stage.stage_name,
+                                "execution_time_ms": stage.execution_time_ms,
+                                "success": stage.success,
+                                "input_length": len(stage.input_data),
+                                "output_length": len(stage.output_data),
+                            }
+                            for stage in debug_trace.stages
+                        ],
+                        "token_metrics": debug_trace.token_metrics,
+                        "final_response": debug_trace.final_response,
+                    }
 
             # Add observability trace if available
             if trace or debug or log_level != "INFO":
@@ -1152,9 +1161,12 @@ def sanitize(
             "masked_entities": summary["masked_entities"],
             "pii_detected": _extract_pii_types(security_result, prompt, True),
         }
-        if reversible and security_result.masking_map:
+        if reversible and security_result is not None and security_result.masking_map:
             details["masking_map"] = security_result.masking_map
         return details
+
+    if security_result is None:
+        return prompt
 
     return _get_sanitized_content(security_result, prompt)
 
@@ -1184,6 +1196,8 @@ class SecureLLMWrapper:
         self.client_type = self._detect_client_type() if auto_detect else "unknown"
 
         # Initialize pipeline with error handling
+        self.pipeline: Optional[Any] = None
+        self._pipeline_error: Optional[str] = None
         try:
             from ..pipeline.pipeline import Pipeline
 
@@ -1191,7 +1205,6 @@ class SecureLLMWrapper:
                 privacy=privacy, token_budget=token_budget)
         except Exception as e:
             # Fallback: create minimal pipeline
-            self.pipeline = None
             self._pipeline_error = str(e)
 
     def _detect_client_type(self) -> str:
@@ -1218,13 +1231,13 @@ class SecureLLMWrapper:
         else:
             return "unknown"
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         """Delegate all other method calls to the original client."""
         try:
             attr = getattr(self.client, name)
             if callable(attr):
                 # If it's a method, wrap it to process prompts
-                def wrapped_method(*args, **kwargs):
+                def wrapped_method(*args: Any, **kwargs: Any) -> Any:
                     # Extract prompt from arguments based on client type
                     prompt = self._extract_prompt_from_args(args, kwargs)
                     if prompt:
@@ -1246,7 +1259,7 @@ class SecureLLMWrapper:
                 f"'{self.__class__.__name__}' object has no attribute '{name}'"
             )
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Make the wrapper callable."""
         if hasattr(self.client, "__call__"):
             # Extract prompt from arguments
@@ -1264,7 +1277,9 @@ class SecureLLMWrapper:
             raise TypeError(
                 f"'{self.__class__.__name__}' object is not callable")
 
-    def _extract_prompt_from_args(self, args, kwargs):
+    def _extract_prompt_from_args(
+        self, args: Tuple[Any, ...], kwargs: Dict[str, Any]
+    ) -> Optional[str]:
         """Extract prompt from arguments based on common patterns."""
         # Check for prompt in common positions
         if args:
@@ -1275,16 +1290,18 @@ class SecureLLMWrapper:
             if isinstance(args[0], list) and args[0]:
                 first_msg = args[0][0]
                 if isinstance(first_msg, dict) and "content" in first_msg:
-                    return first_msg["content"]
+                    return str(first_msg["content"])
 
         # Check kwargs for common prompt keys
         for key in ["prompt", "content", "message", "text"]:
             if key in kwargs and isinstance(kwargs[key], str):
-                return kwargs[key]
+                return str(kwargs[key])
 
         return None
 
-    def _replace_prompt_in_args(self, args, new_prompt):
+    def _replace_prompt_in_args(
+        self, args: Tuple[Any, ...], new_prompt: str
+    ) -> Tuple[Any, ...]:
         """Replace prompt in arguments with optimized prompt."""
         if not args:
             return args
@@ -1316,10 +1333,10 @@ class SecureLLMWrapper:
         ]
         return any(gen in method_name.lower() for gen in generation_methods)
 
-    def _wrap_generation_method(self, method):
+    def _wrap_generation_method(self, method: Callable[..., Any]) -> Callable[..., Any]:
         """Wrap generation method to process prompts."""
 
-        def wrapped_method(*args, **kwargs):
+        def wrapped_method(*args: Any, **kwargs: Any) -> Any:
             # Extract prompt from arguments
             prompt = self._extract_prompt_from_args(args, kwargs)
             if prompt:
@@ -1334,7 +1351,9 @@ class SecureLLMWrapper:
 
         return wrapped_method
 
-    def _extract_prompt(self, args, kwargs) -> Optional[str]:
+    def _extract_prompt(
+        self, args: Tuple[Any, ...], kwargs: Dict[str, Any]
+    ) -> Optional[str]:
         """Extract prompt from various LLM client call patterns."""
         # OpenAI pattern: messages=[{"role": "user", "content": "..."}]
         if "messages" in kwargs:
@@ -1342,14 +1361,12 @@ class SecureLLMWrapper:
             if messages and isinstance(messages, list):
                 for msg in messages:
                     if isinstance(msg, dict) and msg.get("role") == "user":
-                        return msg.get("content", "")
-
-        # Anthropic pattern: messages=[{"role": "user", "content": "..."}]
-        # Same as OpenAI
+                        content = msg.get("content", "")
+                        return str(content) if content is not None else ""
 
         # Simple prompt pattern
         if "prompt" in kwargs:
-            return kwargs["prompt"]
+            return str(kwargs["prompt"])
 
         # Input pattern (some clients use 'input')
         if "input" in kwargs:
@@ -1365,7 +1382,12 @@ class SecureLLMWrapper:
 
         return None
 
-    def _replace_prompt(self, args, kwargs, new_prompt: str):
+    def _replace_prompt(
+        self,
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        new_prompt: str,
+    ) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
         """Replace the original prompt with the optimized one."""
         # OpenAI/Anthropic pattern
         if "messages" in kwargs:

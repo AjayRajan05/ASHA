@@ -33,12 +33,10 @@ def normalize_security_level(
     """Convert config string or enum to SecurityLevel."""
     if isinstance(level, SecurityLevel):
         return level
-    if isinstance(level, str):
-        try:
-            return SecurityLevel[level.upper()]
-        except KeyError:
-            return default
-    return default
+    try:
+        return SecurityLevel[level.upper()]
+    except KeyError:
+        return default
 
 
 def _apply_safety_classifier(
@@ -61,7 +59,7 @@ def _apply_safety_classifier(
         return None
 
 
-def _build_hybrid_masked_entities(pii_entities) -> Dict[str, Any]:
+def _build_hybrid_masked_entities(pii_entities: List[Any]) -> Dict[str, Any]:
     """Normalize hybrid PII entities to masked_entities dict format."""
     masked_entities: Dict[str, Any] = {}
     for i, entity in enumerate(pii_entities):
@@ -112,20 +110,20 @@ def _merge_with_safety(
         except (AttributeError, KeyError):
             pass
 
-        return SecurityResult(
-            is_safe=getattr(safety_result, "is_safe", base.is_safe),
-            threat_level=threat_level,
-            detected_threats=extra_threats,
-            sanitized_content=base.sanitized_content,
-            masked_entities=base.masked_entities,
-            security_score=getattr(safety_result, "confidence_score", base.security_score),
-            recommendations=getattr(safety_result, "recommendations", base.recommendations)
-            or base.recommendations,
-            processing_time_ms=base.processing_time_ms,
-            hybrid_pii_used=hybrid_pii_used,
-            safety_classifier_used=True,
-            masking_map=getattr(base, "masking_map", {}) or {},
-        )
+    return SecurityResult(
+        is_safe=getattr(safety_result, "is_safe", base.is_safe),
+        threat_level=threat_level,
+        detected_threats=extra_threats,
+        sanitized_content=base.sanitized_content,
+        masked_entities=base.masked_entities,
+        security_score=getattr(safety_result, "confidence_score", base.security_score),
+        recommendations=getattr(safety_result, "recommendations", base.recommendations)
+        or base.recommendations,
+        processing_time_ms=base.processing_time_ms,
+        hybrid_pii_used=hybrid_pii_used,
+        safety_classifier_used=True,
+        masking_map=getattr(base, "masking_map", {}) or {},
+    )
 
 
 def run_security(
@@ -190,7 +188,7 @@ def run_security(
             hybrid_detector = None
 
     if hybrid_detector:
-        pii_result = hybrid_detector.detect(content)
+        pii_result = hybrid_detector.detect_and_mask(content)
         masked_content = pii_result.masked_text
         masked_entities = _build_hybrid_masked_entities(pii_result.entities)
         base = SecurityResult(

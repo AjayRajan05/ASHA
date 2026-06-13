@@ -19,7 +19,7 @@ Ensures hard timeout enforcement at pipeline level for real-time applications.
 """
 
 import time
-from typing import Dict, Optional, Callable
+from typing import Any, Callable, Dict, List, Literal, Optional, Type
 
 
 class LatencyBudgetEnforcer:
@@ -47,12 +47,12 @@ class LatencyBudgetEnforcer:
             "total": timeout_ms,  # Total budget
         }
         self.start_time = 0.0
-        self.layer_start_times = {}
+        self.layer_start_times: Dict[str, float] = {}
         self.accumulated_time = 0.0
         self.budget_exceeded = False
-        self.skipped_layers = []
+        self.skipped_layers: List[str] = []
 
-    def start_timing(self):
+    def start_timing(self) -> None:
         """Start timing the overall operation."""
         self.start_time = time.time()
         self.accumulated_time = 0.0
@@ -60,7 +60,7 @@ class LatencyBudgetEnforcer:
         self.skipped_layers = []
         self.layer_start_times = {}
 
-    def start_layer(self, layer_name: str):
+    def start_layer(self, layer_name: str) -> None:
         """Start timing a specific pipeline layer."""
         self.layer_start_times[layer_name] = time.time()
 
@@ -69,7 +69,9 @@ class LatencyBudgetEnforcer:
         if layer_name not in self.layer_start_times:
             return 0.0
 
-        elapsed_ms = (time.time() - self.layer_start_times[layer_name]) * 1000
+        elapsed_ms = float(
+            (time.time() - self.layer_start_times[layer_name]) * 1000
+        )
         self.accumulated_time += elapsed_ms
         del self.layer_start_times[layer_name]
 
@@ -111,7 +113,7 @@ class LatencyBudgetEnforcer:
         remaining = self.layer_budgets["total"] - elapsed_ms
         return max(0.0, remaining)
 
-    def get_budget_status(self) -> Dict[str, any]:
+    def get_budget_status(self) -> Dict[str, Any]:
         """
         Get comprehensive budget status.
 
@@ -132,7 +134,7 @@ class LatencyBudgetEnforcer:
             "recommendations": self._get_recommendations(),
         }
 
-    def _get_recommendations(self) -> list:
+    def _get_recommendations(self) -> List[str]:
         """Get budget-based recommendations."""
         recommendations = []
 
@@ -154,7 +156,9 @@ class LatencyBudgetEnforcer:
 
         return recommendations
 
-    def enforce_timeout(self, fallback_func: Optional[Callable] = None):
+    def enforce_timeout(
+        self, fallback_func: Optional[Callable[[], Any]] = None
+    ) -> Optional[Any]:
         """
         Enforce timeout and return fallback if exceeded.
 
@@ -177,7 +181,7 @@ class LatencyBudgetEnforcer:
 
     def create_fallback_result(
         self, original_prompt: str, reason: str = "timeout"
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Create a fallback result for timeout scenarios.
 
@@ -208,13 +212,18 @@ class PipelineTimer:
         self.layer_name = layer_name
         self.start_time = 0.0
 
-    def __enter__(self):
+    def __enter__(self) -> "PipelineTimer":
         """Enter context and start timing."""
         self.enforcer.start_layer(self.layer_name)
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> Literal[False]:
         """Exit context and check budget."""
         elapsed_ms = self.enforcer.end_layer(self.layer_name)
 

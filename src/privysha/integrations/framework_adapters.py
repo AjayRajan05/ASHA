@@ -25,31 +25,73 @@ Goal: Works in <3 lines everywhere with no breaking changes.
 """
 
 import json
-from typing import Dict, List, Any, Optional, Union, Callable, Type
+from typing import (
+    Dict,
+    List,
+    Any,
+    Optional,
+    Union,
+    Callable,
+    Type,
+    TypeVar,
+    TYPE_CHECKING,
+    cast,
+)
 from dataclasses import dataclass
 from functools import wraps
 
 # Framework imports from our local source
 from .fastapi.middleware import BaseHTTPMiddleware, FASTAPI_AVAILABLE
 
-try:
+if TYPE_CHECKING:
     from fastapi import FastAPI, Request, Response
     from fastapi.responses import JSONResponse
-except ImportError:
-    FastAPI = Request = Response = JSONResponse = None
+    from langchain.prompts import PromptTemplate
+    from langchain.chains import LLMChain
+    from langchain.llms.base import LLM
+else:
+    try:
+        from fastapi import FastAPI, Request, Response
+        from fastapi.responses import JSONResponse
+    except ImportError:
+        class FastAPI:
+            pass
+
+        class Request:
+            pass
+
+        class Response:
+            pass
+
+        class JSONResponse:
+            pass
+
+    try:
+        from langchain.prompts import PromptTemplate
+        from langchain.chains import LLMChain
+        from langchain.llms.base import LLM
+    except ImportError:
+        class PromptTemplate:
+            pass
+
+        class LLMChain:
+            pass
+
+        class LLM:
+            def _call(self, *args: Any, **kwargs: Any) -> str:
+                return ""
+
+            @property
+            def _llm_type(self) -> str:
+                return "llm"
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 # LangChain imports from our local source
 from .langchain.wrapper import BasePromptTemplate, LANGCHAIN_AVAILABLE
 
 # LLM imports from our local source
 from .langchain.wrapper import BaseLLM as LangChainLLM
-
-try:
-    from langchain.prompts import PromptTemplate
-    from langchain.chains import LLMChain
-    from langchain.llms.base import LLM
-except ImportError:
-    PromptTemplate = LLMChain = LLM = None
 
 try:
     import instructor
@@ -122,7 +164,7 @@ class FastAPIMiddleware(BaseHTTPMiddleware):
         app.add_middleware(PrivySHAMiddleware, config=config)
     """
 
-    def __init__(self, app: FastAPI, config: Optional[IntegrationConfig] = None):
+    def __init__(self, app: FastAPI, config: Optional[IntegrationConfig] = None) -> None:
         """Initialize FastAPI middleware."""
         if not FASTAPI_AVAILABLE:
             raise ImportError(
@@ -136,23 +178,23 @@ class FastAPIMiddleware(BaseHTTPMiddleware):
             SchemaValidationMode() if self.config.enable_schema_validation else None
         )
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         """Process request through PrivySHA pipeline."""
         # Only process POST/PUT/PATCH requests with JSON body
         if request.method not in ["POST", "PUT", "PATCH"]:
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         try:
             # Get request body
             body = await request.body()
             if not body:
-                return await call_next(request)
+                return cast(Response, await call_next(request))
 
             # Parse JSON
             try:
                 data = json.loads(body.decode())
             except json.JSONDecodeError:
-                return await call_next(request)
+                return cast(Response, await call_next(request))
 
             # Process through PrivySHA
             processed_data = await self._process_data(data)
@@ -163,16 +205,18 @@ class FastAPIMiddleware(BaseHTTPMiddleware):
             # Create new request with processed body
             request._body = processed_body
 
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         except Exception as e:
             if self.config.debug_mode:
-                return JSONResponse(
-                    status_code=500,
-                    content={"error": f"PrivySHA middleware error: {str(e)}"},
+                return cast(
+                    Response,
+                    JSONResponse(
+                        status_code=500,
+                        content={"error": f"PrivySHA middleware error: {str(e)}"},
+                    ),
                 )
-            else:
-                return await call_next(request)
+            return cast(Response, await call_next(request))
 
     async def _process_data(self, data: Any) -> Any:
         """Process data through PrivySHA components."""
@@ -222,8 +266,8 @@ class LangChainPromptTemplate(BasePromptTemplate):
         input_variables: List[str],
         template: str,
         config: Optional[IntegrationConfig] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize LangChain prompt template."""
         if not LANGCHAIN_AVAILABLE:
             raise ImportError(
@@ -235,7 +279,7 @@ class LangChainPromptTemplate(BasePromptTemplate):
         self.config = config or IntegrationConfig()
         self.policy_config = self.config.to_policy_config()
 
-    def format(self, **kwargs) -> str:
+    def format(self, **kwargs: Any) -> str:
         """Format prompt with PrivySHA processing."""
         # Format the template
         formatted = self.template.format(**kwargs)
@@ -266,7 +310,7 @@ class PrivySHALLM(LangChainLLM):
         )
     """
 
-    def __init__(self, base_llm: LLM, config: Optional[IntegrationConfig] = None):
+    def __init__(self, base_llm: LLM, config: Optional[IntegrationConfig] = None) -> None:
         """Initialize PrivySHA LLM wrapper."""
         if not LANGCHAIN_AVAILABLE:
             raise ImportError(
@@ -278,7 +322,13 @@ class PrivySHALLM(LangChainLLM):
         self.config = config or IntegrationConfig()
         self.policy_config = self.config.to_policy_config()
 
-    def _call(self, prompt: str, stop=None, run_manager=None, **kwargs) -> str:
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Any = None,
+        **kwargs: Any,
+    ) -> str:
         """Call LLM with PrivySHA processing."""
         # Process input prompt
         processed_prompt = self._process_prompt(prompt)
@@ -320,7 +370,7 @@ class PrivySHAInstructorClient:
         )
     """
 
-    def __init__(self, base_client: Any, config: Optional[IntegrationConfig] = None):
+    def __init__(self, base_client: Any, config: Optional[IntegrationConfig] = None) -> None:
         """Initialize Instructor client."""
         if not INSTRUCTOR_AVAILABLE:
             raise ImportError(
@@ -339,9 +389,9 @@ class PrivySHAInstructorClient:
 
     def create(
         self,
-        response_model: Type,
+        response_model: Type[Any],
         messages: Optional[List[Dict[str, str]]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """Create structured output with PrivySHA processing."""
         # Process messages
@@ -365,6 +415,9 @@ class PrivySHAInstructorClient:
     def _process_text(self, text: str) -> str:
         """Process text through PrivySHA via process()."""
         return _integration_process_text(text, self.config)
+
+
+class OpenAIWrapper:
     """
     OpenAI client wrapper with PrivySHA integration.
 
@@ -379,8 +432,8 @@ class PrivySHAInstructorClient:
         self,
         api_key: Optional[str] = None,
         config: Optional[IntegrationConfig] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize OpenAI wrapper."""
         if not OPENAI_AVAILABLE:
             raise ImportError(
@@ -392,7 +445,7 @@ class PrivySHAInstructorClient:
         # Initialize OpenAI client
         self.client = openai.OpenAI(api_key=api_key, **kwargs)
 
-    def chat_completions_create(self, **kwargs) -> Any:
+    def chat_completions_create(self, **kwargs: Any) -> Any:
         """Create chat completion with PrivySHA processing."""
         # Process messages
         if "messages" in kwargs:
@@ -416,8 +469,14 @@ class PrivySHAInstructorClient:
         return _integration_process_text(text, self.config)
 
 
+# Backward-compatible alias used by composition_strategy
+PrivySHAPromptTemplate = LangChainPromptTemplate
+
+
 # Convenience functions for easy integration
-def add_privysha_to_fastapi(app: FastAPI, config: Optional[IntegrationConfig] = None):
+def add_privysha_to_fastapi(
+    app: FastAPI, config: Optional[IntegrationConfig] = None
+) -> None:
     """Add PrivySHA middleware to FastAPI app."""
     if not FASTAPI_AVAILABLE:
         raise ImportError("FastAPI not available")
@@ -444,7 +503,9 @@ def wrap_instructor_client(
 
 
 def wrap_openai_client(
-    api_key: Optional[str] = None, config: Optional[IntegrationConfig] = None, **kwargs
+    api_key: Optional[str] = None,
+    config: Optional[IntegrationConfig] = None,
+    **kwargs: Any,
 ) -> OpenAIWrapper:
     """Wrap OpenAI client with PrivySHA."""
     if not OPENAI_AVAILABLE:
@@ -454,42 +515,46 @@ def wrap_openai_client(
 
 
 # Decorator for easy integration
-def privysha_process(config: Optional[IntegrationConfig] = None):
+def privysha_process(
+    config: Optional[IntegrationConfig] = None,
+) -> Callable[[_F], _F]:
     """Decorator to add PrivySHA processing to any function."""
 
-    def decorator(func):
+    def decorator(func: _F) -> _F:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            policy_mode = config.policy_mode if config else "balanced"
             # Process string arguments
-            processed_args = []
+            processed_args: List[Any] = []
             for arg in args:
                 if isinstance(arg, str):
                     processed_args.append(
-                        process(
-                            arg, mode=config.policy_mode if config else "balanced")
+                        _coerce_process_output(
+                            process(arg, mode=policy_mode), arg
+                        )
                     )
                 else:
                     processed_args.append(arg)
 
             # Process string keyword arguments
-            processed_kwargs = {}
+            processed_kwargs: Dict[str, Any] = {}
             for key, value in kwargs.items():
                 if isinstance(value, str):
-                    processed_kwargs[key] = process(
-                        value, mode=config.policy_mode if config else "balanced"
+                    processed_kwargs[key] = _coerce_process_output(
+                        process(value, mode=policy_mode), value
                     )
                 else:
                     processed_kwargs[key] = value
 
             return func(*processed_args, **processed_kwargs)
 
-        return wrapper
+        return cast(_F, wrapper)
 
     return decorator
 
 
 # Quick test function
-def test_framework_integrations():
+def test_framework_integrations() -> None:
     """Test framework integrations."""
     print("Testing Framework Integrations:")
     print("=" * 50)

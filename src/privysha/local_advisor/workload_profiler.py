@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Any, Iterable, List, Sequence, cast
 
 from ..ir.ir_builder import IRBuilder
 from ..ir.prompt_ir import ConstraintType, IntentType, PrivacyLevel
@@ -143,11 +143,14 @@ def profile_workload(
         if ConstraintType.PRIVACY in ir.constraints:
             specialization.add("compliance")
 
-        result = process(
-            prompt,
-            mode=mode,
-            security_level=security_level,
-            return_metrics=True,
+        result = cast(
+            dict[str, Any],
+            process(
+                prompt,
+                mode=mode,
+                security_level=security_level,
+                return_metrics=True,
+            ),
         )
         optimized = result.get("optimized") or prompt
         compiled_samples.append(optimized)

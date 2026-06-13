@@ -81,15 +81,15 @@ class ModelRouter:
     - Specialization requirements
     """
 
-    def __init__(self, default_strategy: RoutingStrategy = RoutingStrategy.HYBRID):
+    def __init__(self, default_strategy: RoutingStrategy = RoutingStrategy.HYBRID) -> None:
         """Initialize model router with strategy."""
         self.default_strategy = default_strategy
         self.model_registry = self._init_model_registry()
         self.routing_weights = self._init_routing_weights()
-        self.performance_cache = {}
+        self.performance_cache: Dict[str, Any] = {}
         self.cost_models = self._init_cost_models()
         self.load_balancer = LoadBalancer()
-        self._local_advisor_report = None
+        self._local_advisor_report: Optional[Any] = None
 
     def _init_model_registry(self) -> Dict[str, ModelConfig]:
         """Initialize model registry with available models."""
@@ -230,8 +230,8 @@ class ModelRouter:
     def route(
         self,
         ir: PromptIR,
-        strategy: RoutingStrategy = None,
-        constraints: Dict[str, Any] = None,
+        strategy: Optional[RoutingStrategy] = None,
+        constraints: Optional[Dict[str, Any]] = None,
     ) -> RoutingDecision:
         """
         Route prompt to optimal model.
@@ -625,7 +625,7 @@ class ModelRouter:
 
         return base_latency
 
-    def update_model_load(self, model_name: str, load_change: float):
+    def update_model_load(self, model_name: str, load_change: float) -> None:
         """Update model load for load balancing."""
         if model_name in self.model_registry:
             model = self.model_registry[model_name]
@@ -683,7 +683,7 @@ class ModelRouter:
             return RoutingStrategy.LOCAL_PRIVACY
         return self.default_strategy
 
-    def register_local_models(self, report) -> None:
+    def register_local_models(self, report: Any) -> None:
         """Register PrivyFit recommendations into the model registry."""
         self._local_advisor_report = report
         for rec in report.top_models:
@@ -743,11 +743,11 @@ class ModelRouter:
 class LoadBalancer:
     """Load balancer for model requests."""
 
-    def __init__(self):
-        self.request_counts = {}
+    def __init__(self) -> None:
+        self.request_counts: Dict[str, int] = {}
         self.last_reset = time.time()
 
-    def record_request(self, model_name: str):
+    def record_request(self, model_name: str) -> None:
         """Record a request to a model."""
         if model_name not in self.request_counts:
             self.request_counts[model_name] = 0
@@ -757,7 +757,7 @@ class LoadBalancer:
         """Get least loaded model from candidates."""
         return min(candidates, key=lambda m: m.current_load)
 
-    def reset_counts(self):
+    def reset_counts(self) -> None:
         """Reset request counts (call periodically)."""
         current_time = time.time()
         if current_time - self.last_reset > 3600:  # Reset every hour

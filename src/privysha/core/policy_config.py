@@ -132,7 +132,7 @@ class PolicyConfig:
             self.enable_context_analysis = False
 
     @classmethod
-    def from_mode(cls, mode: Union[str, PolicyMode], **overrides) -> "PolicyConfig":
+    def from_mode(cls, mode: Union[str, PolicyMode], **overrides: Any) -> "PolicyConfig":
         """
         Create PolicyConfig from mode with optional overrides.
 

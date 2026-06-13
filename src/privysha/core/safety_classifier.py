@@ -568,15 +568,20 @@ class PrivySHASafetyClassifier:
         if not self.loaded:
             return 0.0, "unknown"
 
+        tokenizer = self.tokenizer
+        model = self.model
+        if tokenizer is None or model is None:
+            return 0.0, "unknown"
+
         try:
             # Tokenize input
-            inputs = self.tokenizer(
+            inputs = tokenizer(
                 text, return_tensors="pt", truncation=True, max_length=512
             )
 
             # Get prediction
             with torch.no_grad():
-                outputs = self.model(**inputs)
+                outputs = model(**inputs)
                 predictions = torch.softmax(outputs.logits, dim=1)
 
             # Get toxicity score (assuming binary classification)
@@ -657,7 +662,7 @@ class SafetyClassifier:
         # ML-based classification if available
         ml_score = 0.0
         ml_classification = "unknown"
-        if self.enable_ml:
+        if self.enable_ml and self.ml_classifier is not None:
             ml_score, ml_classification = self.ml_classifier.classify_safety(
                 text)
 

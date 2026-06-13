@@ -30,7 +30,7 @@ class SafetyConstraints:
     from silently changing prompt intent or breaking logic.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Words that indicate negation - must be preserved
         self.negative_keywords = [
             "not",

@@ -15,7 +15,7 @@ class ContextualDetector:
     not match exact patterns but is clearly PII based on surrounding context.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize contextual detector with context rules."""
         self.contextual_rules = self._load_contextual_rules()
         self.confidence_weights = self._get_confidence_weights()
@@ -297,7 +297,7 @@ class ContextualDetector:
         context_end = min(len(text), end + window_size)
         return text[context_start:context_end]
 
-    def add_contextual_rule(self, pii_type: str, rule: Dict[str, Any]):
+    def add_contextual_rule(self, pii_type: str, rule: Dict[str, Any]) -> None:
         """Add a new contextual rule."""
         if pii_type not in self.contextual_rules:
             self.contextual_rules[pii_type] = []
@@ -318,7 +318,7 @@ class ContextualDetector:
 
     def add_indicator(
         self, pii_type: str, indicator: str, confidence_adjustment: float = 0.1
-    ):
+    ) -> None:
         """Add a contextual indicator for a PII type."""
         if pii_type in self.contextual_rules:
             for rule in self.contextual_rules[pii_type]:
@@ -326,7 +326,7 @@ class ContextualDetector:
                     rule["indicators"].append(indicator)
                     rule["confidence_boost"] = confidence_adjustment
 
-    def add_booster(self, pii_type: str, booster: str, confidence_boost: float = 0.1):
+    def add_booster(self, pii_type: str, booster: str, confidence_boost: float = 0.1) -> None:
         """Add a confidence booster for a PII type."""
         if pii_type in self.contextual_rules:
             for rule in self.contextual_rules[pii_type]:
@@ -336,7 +336,7 @@ class ContextualDetector:
 
     def add_reducer(
         self, pii_type: str, reducer: str, confidence_reduction: float = 0.2
-    ):
+    ) -> None:
         """Add a confidence reducer for a PII type."""
         if pii_type in self.contextual_rules:
             for rule in self.contextual_rules[pii_type]:

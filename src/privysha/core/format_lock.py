@@ -33,7 +33,7 @@ class FormatLock:
     - Markdown headers and formatting
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.structure_detectors = self._init_structure_detectors()
         self.lock_rules = self._init_lock_rules()
 

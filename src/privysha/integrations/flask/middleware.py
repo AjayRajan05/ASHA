@@ -19,39 +19,45 @@ This module provides Flask middleware that automatically processes requests
 containing prompts through PrivySHA's security and optimization pipeline.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable, TypeVar, TYPE_CHECKING, cast
+
 import json
 import time
 
-# Optional Flask imports with graceful fallback
-try:
+if TYPE_CHECKING:
     from flask import Flask, request, Response, g
     from werkzeug.local import LocalProxy
 
     FLASK_AVAILABLE = True
-except ImportError:
-    FLASK_AVAILABLE = False
+else:
+    try:
+        from flask import Flask, request, Response, g
+        from werkzeug.local import LocalProxy
 
-    # Create fallback classes for when Flask is not available
-    class Flask:
-        pass
+        FLASK_AVAILABLE = True
+    except ImportError:
+        FLASK_AVAILABLE = False
 
-    class request:
-        pass
+        class Flask:
+            pass
 
-    class Response:
-        pass
+        class request:
+            pass
 
-    class g:
-        pass
+        class Response:
+            headers: Dict[str, str]
 
-    class LocalProxy:
-        def __init__(self, func):
-            self.func = func
+        class g:
+            pass
 
-        def __getattr__(self, name):
-            return getattr(self.func(), name)
+        class LocalProxy:
+            def __init__(self, func: Callable[[], Any]) -> None:
+                self.func = func
 
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self.func(), name)
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 from ...utils.dropin import process
 
@@ -81,13 +87,13 @@ class PrivySHAMiddleware:
 
     def __init__(
         self,
-        app,
+        app: Any,
         privacy: bool = True,
         token_budget: int = 1200,
         endpoints: Optional[List[str]] = None,
         prompt_fields: Optional[List[str]] = None,
         debug_mode: bool = False,
-    ):
+    ) -> None:
         """
         Initialize PrivySHA middleware for Flask.
 
@@ -139,11 +145,20 @@ class PrivySHAMiddleware:
         # Register middleware
         self._register_middleware()
 
-    def _register_middleware(self):
+    def _register_middleware(self) -> None:
         """Register the middleware with Flask."""
 
-        @self.app.before_request
-        def before_request():
+        before_request_hook = cast(
+            Callable[[Callable[..., Any]], Callable[..., Any]],
+            self.app.before_request,
+        )
+        after_request_hook = cast(
+            Callable[[Callable[..., Any]], Callable[..., Any]],
+            self.app.after_request,
+        )
+
+        @before_request_hook
+        def before_request() -> None:
             """Process request before it reaches the endpoint."""
             # Store original request data
             g.privysha_original_data = None
@@ -190,8 +205,8 @@ class PrivySHAMiddleware:
                     print(f"PrivySHA Error: {str(e)}")
                 # Fail gracefully - continue with original request
 
-        @self.app.after_request
-        def after_request(response):
+        @after_request_hook
+        def after_request(response: Response) -> Response:
             """Add processing info to response headers."""
             if hasattr(g, "privysha_processing_info") and g.privysha_processing_info:
                 processing_info = g.privysha_processing_info
@@ -230,11 +245,14 @@ class PrivySHAMiddleware:
                 content_type = request.content_type or ""
 
                 if "application/json" in content_type:
-                    return request.get_json() or {}
+                    return cast(Dict[str, Any], request.get_json() or {})
                 elif "application/x-www-form-urlencoded" in content_type:
-                    return request.form.to_dict()
+                    return cast(Dict[str, Any], request.form.to_dict())
                 elif "multipart/form-data" in content_type:
-                    return {key: value for key, value in request.form.items()}
+                    return cast(
+                        Dict[str, Any],
+                        {key: value for key, value in request.form.items()},
+                    )
 
             return None
 
@@ -254,7 +272,7 @@ class PrivySHAMiddleware:
             Tuple of (processed_data, processing_info)
         """
         processed_data = data.copy()
-        processing_info = {
+        processing_info: Dict[str, Any] = {
             "prompts_processed": 0,
             "total_token_reduction": 0,
             "avg_token_reduction": 0,
@@ -268,16 +286,20 @@ class PrivySHAMiddleware:
         for field_path, prompt in prompts_found:
             try:
                 # Process prompt through PrivySHA
-                result = process(
-                    prompt,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
+                result = cast(
+                    Dict[str, Any],
+                    process(
+                        prompt,
+                        privacy=self.privacy,
+                        token_budget=self.token_budget,
+                        return_metrics=True,
+                    ),
                 )
 
                 # Update the field in the processed data
                 self._update_field(
-                    processed_data, field_path, result["optimized"])
+                    processed_data, field_path, str(result["optimized"])
+                )
 
                 # Track processing info
                 processing_info["prompts_processed"] += 1
@@ -285,7 +307,9 @@ class PrivySHAMiddleware:
                     "token_reduction", 0
                 )
 
-                security_result = result.get("security_result", {})
+                security_result = cast(
+                    Dict[str, Any], result.get("security_result", {})
+                )
                 if not security_result.get("is_safe", True):
                     processing_info["security_threats_detected"] += 1
 
@@ -361,7 +385,9 @@ class PrivySHAMiddleware:
 
         return prompts
 
-    def _update_field(self, data: Dict[str, Any], field_path: str, new_value: str):
+    def _update_field(
+        self, data: Dict[str, Any], field_path: str, new_value: str
+    ) -> None:
         """
         Update a field in the data using the field path.
 
@@ -399,7 +425,7 @@ class PrivySHAMiddleware:
             # If field update fails, skip it
             pass
 
-    def _replace_request_data(self, processed_data: Dict[str, Any]):
+    def _replace_request_data(self, processed_data: Dict[str, Any]) -> None:
         """Replace the request data with processed data."""
         # Store processed data in Flask's g context
         g.privysha_processed_data = processed_data
@@ -418,7 +444,7 @@ def add_privysha_middleware(
     endpoints: Optional[List[str]] = None,
     prompt_fields: Optional[List[str]] = None,
     debug_mode: bool = False,
-):
+) -> None:
     """
     Add PrivySHA middleware to Flask app.
 
@@ -459,7 +485,7 @@ privysha_processed_data = LocalProxy(
 # Flask decorator for endpoint-specific processing
 def privysha_endpoint(
     privacy: bool = True, token_budget: int = 1200, debug_metrics: bool = False
-):
+) -> Callable[[_F], _F]:
     """
     Decorator to apply PrivySHA processing to specific Flask endpoints.
 
@@ -477,8 +503,8 @@ def privysha_endpoint(
             return jsonify(response)
     """
 
-    def decorator(f):
-        def wrapper(*args, **kwargs):
+    def decorator(f: _F) -> _F:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Get request data
             data = request.get_json() or {}
 
@@ -497,9 +523,9 @@ def privysha_endpoint(
 
                 # Update request data
                 processed_data = (
-                    json.loads(result["optimized"])
+                    cast(Dict[str, Any], json.loads(str(result["optimized"])))
                     if isinstance(result, dict)
-                    else result
+                    else cast(Dict[str, Any], result)
                 )
 
             except Exception as e:
@@ -513,6 +539,6 @@ def privysha_endpoint(
 
             return f(*args, **kwargs)
 
-        return wrapper
+        return cast(_F, wrapper)
 
     return decorator

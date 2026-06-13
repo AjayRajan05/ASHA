@@ -176,7 +176,7 @@ class VerificationStage(BaseStage):
 
         # Check for same entity same mask
         if consistency_config.get("same_entity_same_mask", True):
-            entity_masks = {}
+            entity_masks: Dict[str, List[str]] = {}
 
             # Extract masks from text
             mask_pattern = r"\[(\w+)(?:_[^]]+)?\]"
@@ -336,7 +336,7 @@ class VerificationStage(BaseStage):
     ) -> Dict[str, Any]:
         """Collect performance metrics"""
         performance_config = config.get("performance_metrics", {})
-        metrics = {}
+        metrics: Dict[str, Any] = {}
 
         # Execution time metrics
         if performance_config.get("track_execution_time", True):
@@ -490,10 +490,11 @@ class VerificationStage(BaseStage):
 
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for verification stage"""
-        if not context.entities:
+        entities: object = context.entities
+        if not entities:
             return True  # No entities is valid
 
-        if not isinstance(context.entities, list):
+        if not isinstance(entities, list):
             return False
 
         if not context.current_text:
@@ -505,7 +506,7 @@ class VerificationStage(BaseStage):
         if not context.stage_results:
             return False
 
-        for entity in context.entities:
+        for entity in entities:
             if not isinstance(entity, PIIEntity):
                 return False
 

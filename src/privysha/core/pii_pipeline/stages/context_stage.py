@@ -173,7 +173,7 @@ class ContextStage(BaseStage):
     def _detect_intent(self, text: str, config: Dict[str, Any]) -> str:
         """Detect the overall intent of the text"""
         text_lower = text.lower()
-        intent_scores = {}
+        intent_scores: Dict[str, int] = {}
 
         for intent_name, intent_config in config.get("intent_patterns", {}).items():
             score = 0
@@ -192,7 +192,7 @@ class ContextStage(BaseStage):
 
         # Return intent with highest score
         if intent_scores:
-            detected_intent = max(intent_scores, key=intent_scores.get)
+            detected_intent = max(intent_scores, key=lambda k: intent_scores[k])
             if intent_scores[detected_intent] > 0:
                 return detected_intent
 
@@ -426,14 +426,14 @@ class ContextStage(BaseStage):
 
     def _count_entities_by_type(self, entities: List[PIIEntity]) -> Dict[str, int]:
         """Count entities by type"""
-        counts = {}
+        counts: Dict[str, int] = {}
         for entity in entities:
             counts[entity.pii_type] = counts.get(entity.pii_type, 0) + 1
         return counts
 
     def _get_confidence_by_intent(
         self, entities: List[PIIEntity], intent: str
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Any]:
         """Get confidence statistics by intent"""
         confidences = [e.confidence for e in entities]
 
@@ -446,13 +446,14 @@ class ContextStage(BaseStage):
 
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for context stage"""
-        if not context.entities:
+        entities: object = context.entities
+        if not entities:
             return True  # No entities is valid
 
-        if not isinstance(context.entities, list):
+        if not isinstance(entities, list):
             return False
 
-        for entity in context.entities:
+        for entity in entities:
             if not isinstance(entity, PIIEntity):
                 return False
 

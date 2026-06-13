@@ -23,7 +23,7 @@ class StructureResult:
 class StructureBuilder:
     """Convert prompts into structured, clear instructions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize structure templates and rules."""
         self.structure_templates = {
             IntentType.ANALYZE: "TASK: {intent}\nINPUT: {object}\nFOCUS: {constraints}\nOUTPUT: insights",

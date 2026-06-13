@@ -177,7 +177,7 @@ class DetectionStage(BaseStage):
         # Sort by confidence (highest first) then by position
         entities.sort(key=lambda e: (-e.confidence, e.start, e.end))
 
-        deduplicated = []
+        deduplicated: List[PIIEntity] = []
         overlap_threshold = config.get("overlap_threshold", 0.5)
 
         for entity in entities:
@@ -233,7 +233,7 @@ class DetectionStage(BaseStage):
         self, all_entities: List[PIIEntity], deduplicated: List[PIIEntity]
     ) -> Dict[str, Any]:
         """Get detection statistics"""
-        stats = {
+        stats: Dict[str, Any] = {
             "by_type": {},
             "by_confidence": {
                 "high": 0,  # > 0.8
@@ -263,10 +263,11 @@ class DetectionStage(BaseStage):
 
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for detection stage"""
-        if not context.current_text:
+        current_text: object = context.current_text
+        if not current_text:
             return False
 
-        if not isinstance(context.current_text, str):
+        if not isinstance(current_text, str):
             return False
 
         return True

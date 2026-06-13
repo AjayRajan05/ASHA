@@ -90,7 +90,7 @@ class MaskingStage(BaseStage):
 
         # Step 3: Apply masking
         masked_text = text
-        masking_stats = {
+        masking_stats: Dict[str, Any] = {
             "total_entities": len(entities),
             "masked_entities": 0,
             "by_type": {},
@@ -160,7 +160,7 @@ class MaskingStage(BaseStage):
         # Check entity type specific strategy
         entity_type_strategies = config.get("entity_type_strategies", {})
         if entity.pii_type in entity_type_strategies:
-            return entity_type_strategies[entity.pii_type]
+            return str(entity_type_strategies[entity.pii_type])
 
         # Check confidence-based strategy
         if entity.confidence >= 0.85:
@@ -204,7 +204,7 @@ class MaskingStage(BaseStage):
         hash_object = hashlib.sha256(hash_input.encode())
         hash_hex = hash_object.hexdigest()[:hash_length]
 
-        return format_template.format(type=entity.pii_type.upper(), hash=hash_hex)
+        return str(format_template.format(type=entity.pii_type.upper(), hash=hash_hex))
 
     def _generate_preserve_length_mask(
         self, entity: PIIEntity, strategy_config: Dict[str, Any], config: Dict[str, Any]
@@ -213,8 +213,10 @@ class MaskingStage(BaseStage):
         format_template = strategy_config.get("format", "[{type}_{length}]")
         mask_char = strategy_config.get("mask_char", "*")
 
-        return format_template.format(
-            type=entity.pii_type.upper(), length=len(entity.text)
+        return str(
+            format_template.format(
+                type=entity.pii_type.upper(), length=len(entity.text)
+            )
         )
 
     def _generate_partial_mask(
@@ -236,7 +238,9 @@ class MaskingStage(BaseStage):
         mask_length = len(text) - (preserve_chars * 2)
         mask = mask_char * mask_length
 
-        return format_template.format(first=first_chars, mask=mask, last=last_chars)
+        return str(
+            format_template.format(first=first_chars, mask=mask, last=last_chars)
+        )
 
     def _generate_generic_mask(
         self, entity: PIIEntity, strategy_config: Dict[str, Any], config: Dict[str, Any]
@@ -246,7 +250,7 @@ class MaskingStage(BaseStage):
             return "[REDACTED]"
         format_template = strategy_config.get("format", "[{type}]")
 
-        return format_template.format(type=entity.pii_type.upper())
+        return str(format_template.format(type=entity.pii_type.upper()))
 
     def _validate_masking(
         self, masked_text: str, entity_mapping: Dict[str, Any], config: Dict[str, Any]
@@ -292,19 +296,12 @@ class MaskingStage(BaseStage):
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for masking stage"""
         if not context.entities:
-            return True  # No entities is valid
-
-        if not isinstance(context.entities, list):
-            return False
+            return True
 
         if not context.current_text:
             return False
 
-        for entity in context.entities:
-            if not isinstance(entity, PIIEntity):
-                return False
-
-        return True
+        return all(isinstance(entity, PIIEntity) for entity in context.entities)
 
     def fallback(self, context: PIIContext) -> StageResult:
         """Fallback masking - simple generic masks"""

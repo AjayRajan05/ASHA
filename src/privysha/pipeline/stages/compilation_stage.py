@@ -4,7 +4,7 @@ Prompt Compilation Stage - Stage 4 of the pipeline
 Compiles IR into optimized prompt format.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional, cast
 from ..components.stage_base import StageBase, StageResult, StageContext
 from ..policy_gate import modification_disabled
 from ...security.service import get_sanitized_content
@@ -21,12 +21,12 @@ class CompilationStage(StageBase):
     - Structure validation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize prompt compilation stage."""
         super().__init__("prompt_compilation")
-        self.prompt_compiler = None
+        self.prompt_compiler: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize prompt compiler component."""
         if self.prompt_compiler is None:
             try:
@@ -66,6 +66,8 @@ class CompilationStage(StageBase):
         # Initialize components
         if self.prompt_compiler is None:
             self._initialize_components(context)
+
+        assert self.prompt_compiler is not None
 
         # Validate input
         if not context.ir:
@@ -137,7 +139,7 @@ class CompilationStage(StageBase):
                     return "analysis_optimized"
 
         # Check IR complexity
-        if hasattr(context.ir, "get_complexity_level"):
+        if context.ir and hasattr(context.ir, "get_complexity_level"):
             complexity = context.ir.get_complexity_level()
             if complexity == "high":
                 return "comprehensive"
@@ -147,7 +149,7 @@ class CompilationStage(StageBase):
         # Check configuration
         config_level = context.config.get("compilation_level")
         if config_level:
-            return config_level
+            return cast(str, config_level)
 
         # Default to standard
         return "standard"

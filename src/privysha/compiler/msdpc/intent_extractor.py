@@ -37,7 +37,7 @@ class IntentExtractionResult:
 class IntentExtractor:
     """Rule-based intent extraction for prompt analysis."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize intent extraction patterns."""
         self.intent_patterns = {
             IntentType.ANALYZE: [
@@ -155,7 +155,7 @@ class IntentExtractor:
             return IntentType.ANALYZE, 0.5  # Default fallback
 
         # Get best intent
-        best_intent = max(intent_scores, key=intent_scores.get)
+        best_intent = max(intent_scores, key=lambda k: intent_scores[k])
         # Normalize to 0-1
         confidence = min(intent_scores[best_intent] / 20, 1.0)
 
@@ -166,7 +166,7 @@ class IntentExtractor:
         for pattern in self.object_patterns:
             matches = re.findall(pattern, prompt, re.IGNORECASE)
             if matches:
-                return matches[0]
+                return str(matches[0])
 
         # Fallback: look for nouns after intent verbs
         intent_words = ["analyze", "summarize",

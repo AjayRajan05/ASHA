@@ -4,7 +4,7 @@ Model Routing Stage - Stage 3 of the pipeline
 Intelligent model selection based on IR analysis.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ..components.stage_base import StageBase, StageResult, StageContext
 
 
@@ -20,12 +20,12 @@ class RoutingStage(StageBase):
     - Fallback routing strategies
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize model routing stage."""
         super().__init__("model_routing")
-        self.model_router = None
+        self.model_router: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize model router component."""
         if self.model_router is None:
             try:
@@ -60,6 +60,8 @@ class RoutingStage(StageBase):
         if self.model_router is None:
             self._initialize_components(context)
 
+        assert self.model_router is not None
+
         # Validate input
         if not context.ir:
             raise ValueError("IR is required for model routing")
@@ -77,8 +79,9 @@ class RoutingStage(StageBase):
             constraints = {**constraints, **local_cfg, "local_advisor": True}
         if context.config.get("prefer_local"):
             constraints["prefer_local"] = True
-        if getattr(context, "original_prompt", None) and "sample_prompts" not in constraints:
-            constraints.setdefault("sample_prompts", [context.original_prompt])
+        original_prompt = getattr(context, "original_prompt", None)
+        if original_prompt and "sample_prompts" not in constraints:
+            constraints.setdefault("sample_prompts", [original_prompt])
 
         # Perform model routing
         routing_decision = self.model_router.route(
@@ -135,7 +138,7 @@ class RoutingStage(StageBase):
             metrics=custom_metrics,
         )
 
-    def _validate_routing_decision(self, routing_decision) -> Dict[str, Any]:
+    def _validate_routing_decision(self, routing_decision: Any) -> Dict[str, Any]:
         """Validate routing decision for completeness."""
         errors = []
         warnings = []

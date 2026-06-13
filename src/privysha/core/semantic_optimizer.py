@@ -188,11 +188,11 @@ class IntentExtractor:
         Returns:
             Tuple of (intent_type, confidence_score)
         """
-        intent_scores = {}
+        intent_scores: Dict[str, float] = {}
 
         # Pattern-based detection
         for intent, patterns in self.intent_patterns.items():
-            score = 0
+            score = 0.0
             for pattern in patterns:
                 matches = len(re.findall(pattern, text))
                 score += matches
@@ -206,7 +206,7 @@ class IntentExtractor:
 
         # Select best intent
         if intent_scores:
-            best_intent = max(intent_scores, key=intent_scores.get)
+            best_intent = max(intent_scores, key=lambda k: intent_scores[k])
             confidence = min(
                 1.0, intent_scores[best_intent] / 3.0)  # Normalize
             return best_intent, confidence
@@ -219,7 +219,7 @@ class IntentExtractor:
             return {}
 
         doc = self.nlp(text)
-        intent_scores = {}
+        intent_scores: Dict[str, float] = {}
 
         # Look for action verbs
         for token in doc:

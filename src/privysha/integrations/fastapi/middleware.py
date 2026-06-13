@@ -19,39 +19,33 @@ Automatically processes requests containing prompts through PrivySHA
 security and optimization pipeline.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable, Awaitable, TYPE_CHECKING, cast
+
 import json
 
-# Optional FastAPI imports with graceful fallback
-try:
-    from fastapi import Request, Response, HTTPException
-    from fastapi.responses import JSONResponse
+if TYPE_CHECKING:
+    from fastapi import Request, Response
     from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.responses import StreamingResponse
 
     FASTAPI_AVAILABLE = True
-except ImportError:
-    FASTAPI_AVAILABLE = False
+else:
+    try:
+        from fastapi import Request, Response
+        from starlette.middleware.base import BaseHTTPMiddleware
 
-    # Create fallback classes for when FastAPI is not available
-    class Request:
-        pass
+        FASTAPI_AVAILABLE = True
+    except ImportError:
+        FASTAPI_AVAILABLE = False
 
-    class Response:
-        pass
+        class BaseHTTPMiddleware:
+            def __init__(self, app: Any, **kwargs: Any) -> None:
+                self.app = app
 
-    class HTTPException:
-        pass
+        class Request:
+            pass
 
-    class JSONResponse:
-        pass
-
-    class BaseHTTPMiddleware:
-        pass
-
-    class StreamingResponse:
-        pass
-
+        class Response:
+            pass
 
 from ...utils.dropin import process
 
@@ -78,13 +72,13 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: Any,
         privacy: bool = True,
         token_budget: int = 1200,
         endpoints: Optional[List[str]] = None,
         prompt_fields: Optional[List[str]] = None,
         debug_mode: bool = False,
-    ):
+    ) -> None:
         """
         Initialize PrivySHA middleware.
 
@@ -110,7 +104,11 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
             "prompt", "messages", "input", "text"]
         self.debug_mode = debug_mode
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         """
         Process request through PrivySHA pipeline.
 
@@ -181,7 +179,7 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
 
                 if "application/json" in content_type:
                     body = await request.body()
-                    return json.loads(body.decode())
+                    return cast(Dict[str, Any], json.loads(body.decode()))
                 elif "application/x-www-form-urlencoded" in content_type:
                     form_data = await request.form()
                     return dict(form_data)
@@ -207,7 +205,7 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
             Tuple of (processed_body, processing_info)
         """
         processed_body = body.copy()
-        processing_info = {
+        processing_info: Dict[str, Any] = {
             "prompts_processed": 0,
             "total_token_reduction": 0,
             "avg_token_reduction": 0,
@@ -220,16 +218,20 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
         for field_path, prompt in prompts_found:
             try:
                 # Process prompt through PrivySHA
-                result = process(
-                    prompt,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
+                result = cast(
+                    Dict[str, Any],
+                    process(
+                        prompt,
+                        privacy=self.privacy,
+                        token_budget=self.token_budget,
+                        return_metrics=True,
+                    ),
                 )
 
                 # Update the field in the processed body
                 self._update_field(
-                    processed_body, field_path, result["optimized"])
+                    processed_body, field_path, str(result["optimized"])
+                )
 
                 # Track processing info
                 processing_info["prompts_processed"] += 1
@@ -237,7 +239,10 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
                     "token_reduction", 0
                 )
 
-                if not result["security_result"]["is_safe"]:
+                security_result = cast(
+                    Dict[str, Any], result.get("security_result", {})
+                )
+                if not security_result.get("is_safe", True):
                     processing_info["security_threats_detected"] += 1
 
                 if self.debug_mode:
@@ -308,7 +313,9 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
 
         return prompts
 
-    def _update_field(self, body: Dict[str, Any], field_path: str, new_value: str):
+    def _update_field(
+        self, body: Dict[str, Any], field_path: str, new_value: str
+    ) -> None:
         """
         Update a field in the body using the field path.
 
@@ -364,7 +371,7 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
             processed_json = json.dumps(processed_body).encode()
 
             # Create a custom receive function that returns our processed body
-            async def receive():
+            async def receive() -> Dict[str, Any]:
                 return {
                     "type": "http.request",
                     "body": processed_json,
@@ -384,7 +391,7 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
 
             processed_request = Request(scope, receive)
 
-            return processed_request
+            return cast(Request, processed_request)
 
         except Exception as e:
             if self.debug_mode:
@@ -395,12 +402,12 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
 
 # Convenience function for easy setup
 def add_privysha_middleware(
-    app,
+    app: Any,
     privacy: bool = True,
     token_budget: int = 1200,
-    endpoints: Optional[list] = None,
+    endpoints: Optional[List[str]] = None,
     debug_mode: bool = False,
-):
+) -> None:
     """
     Add PrivySHA middleware to FastAPI app.
 

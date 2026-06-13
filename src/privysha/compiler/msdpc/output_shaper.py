@@ -3,7 +3,7 @@ Output Shaper - Add output constraints to reduce output tokens
 """
 
 import re
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
 
 from .intent_extractor import IntentType
@@ -22,7 +22,7 @@ class ShapingResult:
 class OutputShaper:
     """Add output constraints to reduce output token usage."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize output shaping templates."""
         self.output_templates = {
             IntentType.ANALYZE: [
@@ -109,7 +109,7 @@ class OutputShaper:
         self,
         prompt: str,
         intent_type: IntentType,
-        existing_constraints: List[str] = None,
+        existing_constraints: Optional[List[str]] = None,
     ) -> ShapingResult:
         """
         Add output shaping constraints to prompt.

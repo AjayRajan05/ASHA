@@ -19,10 +19,12 @@ Provides middleware for automatic prompt security and optimization
 in FastAPI applications.
 """
 
+from typing import Any
+
 from .middleware import PrivySHAMiddleware
 
 
-def add_privysha_middleware(app, **kwargs):
+def add_privysha_middleware(app: Any, **kwargs: Any) -> None:
     """
     Convenience function to add PrivySHA middleware to FastAPI app.
 

@@ -15,9 +15,12 @@
 import re
 import hashlib
 import secrets
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
+
+if TYPE_CHECKING:
+    from .pii_detector import PIIDetector
 
 
 class SecurityLevel(Enum):
@@ -82,7 +85,7 @@ class SecurityLayer:
         self.malicious_patterns = self._init_malicious_patterns()
         self.pii_patterns = self._init_pii_patterns()
         self.privacy_rules = self._init_privacy_rules()
-        self.pii_detector = None  # Will be initialized lazily to avoid circular import
+        self.pii_detector: Optional["PIIDetector"] = None  # lazy init avoids circular import
         self.security_weights = self._init_security_weights()
 
     def _init_injection_patterns(self) -> List[Dict[str, Any]]:
@@ -433,17 +436,12 @@ class SecurityLayer:
         CONFIDENCE_THRESHOLD = 0.8
 
         for pattern_info in self.injection_patterns:
-            # Ensure pattern_info is a dictionary
-            if not isinstance(pattern_info, dict):
-                continue
-
             pattern = pattern_info.get("pattern")
-            severity = pattern_info.get("severity", 0.5)
+            severity = float(pattern_info.get("severity", 0.5))
             threat = pattern_info.get("threat")
-            # Default confidence to severity so high-severity patterns are detected
-            confidence = pattern_info.get("confidence", severity)
+            confidence = float(pattern_info.get("confidence", severity))
 
-            if not all([pattern, threat]):
+            if not isinstance(pattern, str) or not isinstance(threat, ThreatType):
                 continue
 
             # Only detect high-confidence threats
@@ -453,7 +451,7 @@ class SecurityLayer:
 
         return max_severity, detected_threats
 
-    def _get_pii_detector(self):
+    def _get_pii_detector(self) -> "PIIDetector":
         """Lazy initialization of PII detector to avoid circular import."""
         if self.pii_detector is None:
             from .pii_detector import PIIDetector
@@ -461,7 +459,7 @@ class SecurityLayer:
             self.pii_detector = PIIDetector()
         return self.pii_detector
 
-    def _mask_pii(self, content: str) -> Tuple[str, Dict[str, str]]:
+    def _mask_pii(self, content: str) -> Tuple[str, Dict[str, Any]]:
         """Detect and mask PII in content based on security level."""
         # Use the enhanced PII detector for comprehensive detection
         pii_detector = self._get_pii_detector()
@@ -567,7 +565,7 @@ class SecurityLayer:
         has_risk_indicators = any(
             risk in content_lower for risk in risk_indicators)
 
-        filtered_entities = {}
+        filtered_entities: Dict[str, List[str]] = {}
         for pii_type, entities in detected_entities.items():
             filtered_entities[pii_type] = []
 
@@ -605,15 +603,11 @@ class SecurityLayer:
         detected_threats = []
 
         for pattern_info in self.malicious_patterns:
-            # Ensure pattern_info is a dictionary
-            if not isinstance(pattern_info, dict):
-                continue
-
             pattern = pattern_info.get("pattern")
-            severity = pattern_info.get("severity", 0.5)
+            severity = float(pattern_info.get("severity", 0.5))
             threat = pattern_info.get("threat")
 
-            if not all([pattern, threat]):
+            if not isinstance(pattern, str) or not isinstance(threat, ThreatType):
                 continue
 
             if re.search(pattern, content):
@@ -869,7 +863,7 @@ class SecurityLayer:
             ),
         }
 
-    def update_security_level(self, new_level: SecurityLevel):
+    def update_security_level(self, new_level: SecurityLevel) -> None:
         """Update security level and reconfigure."""
         self.security_level = new_level
 

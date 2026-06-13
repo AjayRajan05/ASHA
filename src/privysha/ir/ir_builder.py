@@ -25,7 +25,7 @@ class IRBuilder:
     user prompts into structured intermediate representations.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize IR Builder with patterns and rules."""
         self.intent_patterns = self._init_intent_patterns()
         self.entity_patterns = self._init_entity_patterns()
@@ -567,7 +567,7 @@ class IRBuilder:
         self, prompt: str, ast_analysis: Optional[Dict[str, Any]] = None
     ) -> IntentType:
         """Extract primary intent from prompt with AST analysis enhancement."""
-        intent_scores = {}
+        intent_scores: Dict[IntentType, int] = {}
 
         # Enhanced intent extraction with AST analysis
         if ast_analysis and ast_analysis.get("intent"):
@@ -595,7 +595,7 @@ class IRBuilder:
 
         # Return intent with highest score, default to ANALYZE
         if intent_scores:
-            best_intent = max(intent_scores, key=intent_scores.get)
+            best_intent = max(intent_scores, key=lambda k: intent_scores[k])
             return best_intent if intent_scores[best_intent] > 0 else IntentType.ANALYZE
 
         return IntentType.ANALYZE
@@ -604,7 +604,7 @@ class IRBuilder:
         self, prompt: str, ast_analysis: Optional[Dict[str, Any]] = None
     ) -> EntityType:
         """Extract primary entity from prompt with AST analysis enhancement."""
-        entity_scores = {}
+        entity_scores: Dict[EntityType, int] = {}
 
         # Enhanced entity extraction with AST analysis
         if ast_analysis and ast_analysis.get("object"):
@@ -632,7 +632,7 @@ class IRBuilder:
 
         # Return entity with highest score, default to DATA
         if entity_scores:
-            best_entity = max(entity_scores, key=entity_scores.get)
+            best_entity = max(entity_scores, key=lambda k: entity_scores[k])
             return best_entity if entity_scores[best_entity] > 0 else EntityType.DATA
 
         return EntityType.DATA
@@ -765,6 +765,6 @@ class IRBuilder:
         for pattern in context_patterns:
             matches = re.findall(pattern, prompt, re.IGNORECASE)
             if matches:
-                return matches[0].strip()
+                return str(matches[0]).strip()
 
         return None

@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import time
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import requests
 
@@ -35,7 +35,7 @@ def _ollama_available() -> bool:
 
 
 def _probe_model(model_name: str, prompt: str, timeout: int = 60) -> Optional[float]:
-    payload = {"model": model_name, "prompt": prompt, "stream": False}
+    payload: dict[str, Any] = {"model": model_name, "prompt": prompt, "stream": False}
     start = time.perf_counter()
     try:
         r = requests.post(_OLLAMA_URL, json=payload, timeout=timeout)

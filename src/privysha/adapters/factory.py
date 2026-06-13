@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from .universal_adapter import UniversalModelAdapter
+from .base import BaseAdapter
+from typing import Any, Dict, List, Optional, cast
 import os
 
 
@@ -25,7 +27,7 @@ class AdapterFactory:
     """
 
     @staticmethod
-    def create(model_name: str):
+    def create(model_name: str) -> Any:
         """
         Create adapter based on model name pattern (v1 compatibility).
 
@@ -86,8 +88,8 @@ class AdapterFactory:
     @staticmethod
     def create_universal(
         provider: str,
-        model: str = None,
-        api_key: str = None,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None,
         timeout: int = 10,
         retries: int = 3,
     ) -> UniversalModelAdapter:
@@ -115,8 +117,8 @@ class AdapterFactory:
     @staticmethod
     def create_with_fallbacks(
         primary_provider: str,
-        primary_model: str = None,
-        fallback_providers: list = None,
+        primary_model: Optional[str] = None,
+        fallback_providers: Optional[List[Dict[str, Any]]] = None,
     ) -> UniversalModelAdapter:
         """
         Create adapter with fallback configuration.
@@ -142,7 +144,7 @@ class AdapterFactory:
                 fallback_adapters.append(fallback)
 
             # Store fallbacks on the primary adapter
-            primary._fallback_adapters = fallback_adapters
+            primary._fallback_adapters = cast(List[BaseAdapter], fallback_adapters)
 
         return primary
 
@@ -190,9 +192,9 @@ class SmartRoutingAdapter:
     based on task type, cost, latency, and complexity.
     """
 
-    def __init__(self, routing_config: dict):
+    def __init__(self, routing_config: Dict[str, str]) -> None:
         self.routing_config = routing_config
-        self.adapters = {}
+        self.adapters: Dict[str, UniversalModelAdapter] = {}
 
         # Initialize adapters for each model in routing config
         for task_type, model_name in routing_config.items():

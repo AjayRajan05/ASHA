@@ -2,7 +2,7 @@
 Stage context utilities for data sharing between pipeline stages
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from dataclasses import dataclass, field
 import uuid
 import time
@@ -48,7 +48,7 @@ class StageContext:
         """
         return self.stage_metrics.get(stage_name, {}).get("data")
 
-    def set_stage_data(self, stage_name: str, data: Any):
+    def set_stage_data(self, stage_name: str, data: Any) -> None:
         """
         Set data for a specific stage.
 
@@ -71,9 +71,9 @@ class StageContext:
         Returns:
             Stage metrics or empty dict
         """
-        return self.stage_metrics.get(stage_name, {})
+        return cast(Dict[str, Any], self.stage_metrics.get(stage_name, {}))
 
-    def add_stage_metric(self, stage_name: str, key: str, value: Any):
+    def add_stage_metric(self, stage_name: str, key: str, value: Any) -> None:
         """
         Add a metric for a specific stage.
 
@@ -156,7 +156,7 @@ class StageContext:
 
         return False
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Finalize the context with end time."""
         self.end_time = time.time()
 

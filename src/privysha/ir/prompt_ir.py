@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
@@ -67,6 +67,7 @@ class ConstraintType(Enum):
     COST = "cost"
     FORMAT = "format"
     LENGTH = "length"
+    TOKEN_LIMIT = "token_limit"
     STYLE = "style"
     TONE = "tone"
     LANGUAGE = "language"
@@ -110,19 +111,14 @@ class PromptIR:
     token_estimate: Optional[int] = None
 
     # Optimization hints
-    optimization_targets: List[str] = None
-    fallback_intents: List[IntentType] = None
+    optimization_targets: List[str] = field(
+        default_factory=lambda: ["tokens", "accuracy"]
+    )
+    fallback_intents: List[IntentType] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Post-initialization processing."""
-        if self.optimization_targets is None:
-            self.optimization_targets = ["tokens", "accuracy"]
-        if self.fallback_intents is None:
-            self.fallback_intents = []
-        if self.parameters is None:
-            self.parameters = {}
-        if self.extracted_entities is None:
-            self.extracted_entities = []
+        pass
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert IR to dictionary representation."""
@@ -164,17 +160,17 @@ class PromptIR:
                               for i in data.get("fallback_intents", [])],
         )
 
-    def add_constraint(self, constraint: ConstraintType):
+    def add_constraint(self, constraint: ConstraintType) -> None:
         """Add a constraint to the IR."""
         if constraint not in self.constraints:
             self.constraints.append(constraint)
 
-    def remove_constraint(self, constraint: ConstraintType):
+    def remove_constraint(self, constraint: ConstraintType) -> None:
         """Remove a constraint from the IR."""
         if constraint in self.constraints:
             self.constraints.remove(constraint)
 
-    def add_parameter(self, key: str, value: Any):
+    def add_parameter(self, key: str, value: Any) -> None:
         """Add a parameter to the IR."""
         self.parameters[key] = value
 

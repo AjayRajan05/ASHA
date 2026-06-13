@@ -5,7 +5,7 @@ This is the main entry point for the advanced multi-stage PII detection pipeline
 It orchestrates all 7 stages to provide comprehensive PII detection and masking.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from .stages import (
     NormalizationStage,
     DetectionStage,
@@ -33,7 +33,7 @@ class PIIPipeline:
     """
 
     def __init__(
-        self, config: Dict[str, Any] = None, debug_enabled: bool = False
+        self, config: Optional[Dict[str, Any]] = None, debug_enabled: bool = False
     ) -> None:
         """
         Initialize the PII pipeline.
@@ -57,7 +57,7 @@ class PIIPipeline:
         }
 
         # Default configuration
-        self.default_config = {
+        self.default_config: Dict[str, Dict[str, Any]] = {
             "normalization": {
                 "enable_unicode_normalization": True,
                 "enable_obfuscation_removal": True,
@@ -137,7 +137,7 @@ class PIIPipeline:
                 if key not in self.config[stage_name]:
                     self.config[stage_name][key] = value
 
-    def process(self, text: str, config: Dict[str, Any] = None) -> Dict[str, Any]:
+    def process(self, text: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Process text through the complete PII pipeline.
 
@@ -291,7 +291,7 @@ class PIIPipeline:
         return token_map
 
     def _create_error_result(
-        self, error: str, original_text: str, context: PIIContext = None
+        self, error: str, original_text: str, context: Optional[PIIContext] = None
     ) -> Dict[str, Any]:
         """Create error result."""
         return {
@@ -352,7 +352,7 @@ class PIIPipeline:
         self.config[stage_name].update(config)
 
     def get_entities_by_type(
-        self, text: str, pii_types: List[str] = None
+        self, text: str, pii_types: Optional[List[str]] = None
     ) -> List[PIIEntity]:
         """
         Get entities of specific types from text.
@@ -386,7 +386,8 @@ class PIIPipeline:
             Masked text
         """
         result = self.process(text)
-        return result.get("masked_text", text)
+        masked = result.get("masked_text", text)
+        return str(masked)
 
     def get_verification_report(self, text: str) -> Dict[str, Any]:
         """
@@ -399,20 +400,26 @@ class PIIPipeline:
             Verification report
         """
         result = self.process(text)
-        return result.get("verification_report", {})
+        report = result.get("verification_report", {})
+        return dict(report) if isinstance(report, dict) else {}
 
     def reset(self) -> None:
         """Reset pipeline to initial state."""
-        # Re-initialize all stages
-        for stage_name in self.stages:
-            stage_class = type(self.stages[stage_name])
-            self.stages[stage_name] = stage_class()
+        self.stages = {
+            "normalization": NormalizationStage(),
+            "detection": DetectionStage(),
+            "scoring": ScoringStage(),
+            "context": ContextStage(),
+            "masking": MaskingStage(),
+            "integrity": IntegrityStage(),
+            "verification": VerificationStage(),
+        }
 
     def __len__(self) -> int:
         """Return number of stages in pipeline."""
         return len(self.stages)
 
-    def __getitem__(self, stage_name: str):
+    def __getitem__(self, stage_name: str) -> Any:
         """Get a specific stage by name."""
         return self.stages.get(stage_name)
 
@@ -422,7 +429,7 @@ class PIIPipeline:
 
 
 # Convenience functions for backward compatibility
-def detect_pii(text: str, config: Dict[str, Any] = None) -> List[PIIEntity]:
+def detect_pii(text: str, config: Optional[Dict[str, Any]] = None) -> List[PIIEntity]:
     """
     Convenience function to detect PII in text.
 
@@ -438,7 +445,7 @@ def detect_pii(text: str, config: Dict[str, Any] = None) -> List[PIIEntity]:
     return [PIIEntity(**entity) for entity in result.get("entities", [])]
 
 
-def mask_pii(text: str, config: Dict[str, Any] = None) -> str:
+def mask_pii(text: str, config: Optional[Dict[str, Any]] = None) -> str:
     """
     Convenience function to mask PII in text.
 
@@ -453,7 +460,9 @@ def mask_pii(text: str, config: Dict[str, Any] = None) -> str:
     return pipeline.get_masked_text(text)
 
 
-def verify_pii_masking(text: str, config: Dict[str, Any] = None) -> Dict[str, Any]:
+def verify_pii_masking(
+    text: str, config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Convenience function to verify PII masking.
 

@@ -15,7 +15,7 @@ class HeuristicDetector:
     to identify PII that might not match exact regex patterns.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize heuristic detector with pattern heuristics."""
         self.patterns = self._compile_heuristic_patterns()
         self.confidence_weights = self._get_confidence_weights()
@@ -301,7 +301,7 @@ class HeuristicDetector:
 
     def add_custom_heuristic(
         self, pii_type: str, pattern: str, confidence: float = 0.6
-    ):
+    ) -> None:
         """Add a custom heuristic pattern."""
         if pii_type not in self.patterns:
             self.patterns[pii_type] = []

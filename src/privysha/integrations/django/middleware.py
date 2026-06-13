@@ -20,36 +20,58 @@ containing prompts through PrivySHA's security and optimization pipeline.
 """
 
 from functools import wraps
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable, TypeVar, TYPE_CHECKING, cast
 import json
 import time
 
-# Optional Django imports with graceful fallback
-try:
+if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse, JsonResponse
     from django.conf import settings
     from django.utils.deprecation import MiddlewareMixin
+    from django.core.management.base import BaseCommand
 
     DJANGO_AVAILABLE = True
-except ImportError:
-    DJANGO_AVAILABLE = False
+    DJANGO_COMMAND_AVAILABLE = True
+else:
+    try:
+        from django.http import HttpRequest, HttpResponse, JsonResponse
+        from django.conf import settings
+        from django.utils.deprecation import MiddlewareMixin
 
-    # Create fallback classes for when Django is not available
-    class HttpRequest:
-        pass
+        DJANGO_AVAILABLE = True
+    except ImportError:
+        DJANGO_AVAILABLE = False
 
-    class HttpResponse:
-        pass
+        class HttpRequest:
+            pass
 
-    class JsonResponse:
-        pass
+        class HttpResponse:
+            pass
 
-    class settings:
-        pass
+        class JsonResponse:
+            pass
 
-    class MiddlewareMixin:
-        pass
+        class settings:
+            pass
 
+        class MiddlewareMixin:
+            def __init__(self, get_response: Callable[..., Any]) -> None:
+                self.get_response = get_response
+
+    try:
+        from django.core.management.base import BaseCommand
+
+        DJANGO_COMMAND_AVAILABLE = True
+    except ImportError:
+        DJANGO_COMMAND_AVAILABLE = False
+
+        class BaseCommand:
+            help = "Base command placeholder"
+
+            def handle(self, *args: Any, **options: Any) -> None:
+                pass
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 from ...utils.dropin import process
 
@@ -82,7 +104,7 @@ class PrivySHAMiddleware(MiddlewareMixin):
         }
     """
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         """Initialize the middleware."""
         if not DJANGO_AVAILABLE:
             raise ImportError(
@@ -247,7 +269,7 @@ class PrivySHAMiddleware(MiddlewareMixin):
                 content_type = request.content_type or ""
 
                 if "application/json" in content_type:
-                    return json.loads(request.body.decode("utf-8"))
+                    return cast(Dict[str, Any], json.loads(request.body.decode("utf-8")))
                 elif "application/x-www-form-urlencoded" in content_type:
                     return dict(request.POST)
                 elif "multipart/form-data" in content_type:
@@ -271,7 +293,7 @@ class PrivySHAMiddleware(MiddlewareMixin):
             Tuple of (processed_data, processing_info)
         """
         processed_data = data.copy()
-        processing_info = {
+        processing_info: Dict[str, Any] = {
             "prompts_processed": 0,
             "total_token_reduction": 0,
             "avg_token_reduction": 0,
@@ -285,16 +307,20 @@ class PrivySHAMiddleware(MiddlewareMixin):
         for field_path, prompt in prompts_found:
             try:
                 # Process prompt through PrivySHA
-                result = process(
-                    prompt,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
+                result = cast(
+                    Dict[str, Any],
+                    process(
+                        prompt,
+                        privacy=self.privacy,
+                        token_budget=self.token_budget,
+                        return_metrics=True,
+                    ),
                 )
 
                 # Update the field in the processed data
                 self._update_field(
-                    processed_data, field_path, result["optimized"])
+                    processed_data, field_path, str(result["optimized"])
+                )
 
                 # Track processing info
                 processing_info["prompts_processed"] += 1
@@ -302,7 +328,9 @@ class PrivySHAMiddleware(MiddlewareMixin):
                     "token_reduction", 0
                 )
 
-                security_result = result.get("security_result", {})
+                security_result = cast(
+                    Dict[str, Any], result.get("security_result", {})
+                )
                 if not security_result.get("is_safe", True):
                     processing_info["security_threats_detected"] += 1
 
@@ -378,7 +406,9 @@ class PrivySHAMiddleware(MiddlewareMixin):
 
         return prompts
 
-    def _update_field(self, data: Dict[str, Any], field_path: str, new_value: str):
+    def _update_field(
+        self, data: Dict[str, Any], field_path: str, new_value: str
+    ) -> None:
         """
         Update a field in the data using the field path.
 
@@ -418,7 +448,7 @@ class PrivySHAMiddleware(MiddlewareMixin):
 
     def _replace_request_data(
         self, request: HttpRequest, processed_data: Dict[str, Any]
-    ):
+    ) -> None:
         """Replace the request data with processed data."""
         # Store processed data in request object
         request.privysha_processed_data = processed_data
@@ -433,22 +463,26 @@ class PrivySHAMiddleware(MiddlewareMixin):
 
 # Optional Django decorators
 try:
-    from django.views.decorators.http import require_http_methods
+    from django.views.decorators.http import require_http_methods as _require_http_methods
 
     DJANGO_DECORATORS_AVAILABLE = True
 except ImportError:
     DJANGO_DECORATORS_AVAILABLE = False
 
-    def require_http_methods(*args, **kwargs):
-        def decorator(func):
+    def _require_http_methods(
+        *args: Any, **kwargs: Any
+    ) -> Callable[[_F], _F]:
+        def decorator(func: _F) -> _F:
             return func
 
         return decorator
 
+require_http_methods = _require_http_methods
+
 
 def privysha_view(
     privacy: bool = True, token_budget: int = 1200, debug_metrics: bool = False
-):
+) -> Callable[[_F], _F]:
     """
     Decorator to apply PrivySHA processing to specific Django views.
 
@@ -465,9 +499,9 @@ def privysha_view(
             return JsonResponse(response)
     """
 
-    def decorator(view_func):
+    def decorator(view_func: _F) -> _F:
         @wraps(view_func)
-        def wrapper(request, *args, **kwargs):
+        def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Any:
             # Only process POST/PUT/PATCH requests
             if request.method not in ["POST", "PUT", "PATCH"]:
                 return view_func(request, *args, **kwargs)
@@ -497,9 +531,9 @@ def privysha_view(
 
                 # Update request data
                 processed_data = (
-                    json.loads(result["optimized"])
+                    cast(Dict[str, Any], json.loads(str(result["optimized"])))
                     if isinstance(result, dict)
-                    else result
+                    else cast(Dict[str, Any], result)
                 )
 
             except Exception as e:
@@ -513,7 +547,7 @@ def privysha_view(
 
             return view_func(request, *args, **kwargs)
 
-        return wrapper
+        return cast(_F, wrapper)
 
     return decorator
 
@@ -547,33 +581,22 @@ def privysha_context(request: HttpRequest) -> Dict[str, Any]:
 
 
 # Django management command to test PrivySHA integration
-try:
-    from django.core.management.base import BaseCommand
-
-    DJANGO_COMMAND_AVAILABLE = True
-except ImportError:
-    DJANGO_COMMAND_AVAILABLE = False
-
-    class BaseCommand:
-        help = "Base command placeholder"
-
-        def handle(self, *args, **options):
-            pass
-
-
 if DJANGO_COMMAND_AVAILABLE:
 
     class Command(BaseCommand):
         help = "Test PrivySHA Django integration"
 
-        def handle(self, *args, **options):
+        def handle(self, *args: Any, **options: Any) -> None:
             """Test the PrivySHA middleware integration."""
             self.stdout.write(self.style.SUCCESS(
                 "Testing PrivySHA Django integration..."))
 
             # Test basic processing
             test_prompt = "Hey bro analyze this dataset with john@email.com"
-            result = process(test_prompt, return_metrics=True)
+            result = cast(
+                Dict[str, Any],
+                process(test_prompt, return_metrics=True),
+            )
 
             self.stdout.write(f"Original: {test_prompt}")
             self.stdout.write(f"Optimized: {result['optimized']}")

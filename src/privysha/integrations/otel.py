@@ -15,7 +15,10 @@
 """Optional OpenTelemetry integration for stage tracing."""
 
 from contextlib import contextmanager
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable, Iterator, Optional, ParamSpec, TypeVar
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 _otel_enabled = False
 _tracer = None
@@ -56,11 +59,11 @@ def stage_span(stage_name: str) -> Iterator[Optional[Any]]:
         yield span
 
 
-def trace_stage(stage_name: str) -> Callable:
+def trace_stage(stage_name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator for ad-hoc stage spans."""
 
-    def decorator(func: Callable) -> Callable:
-        def wrapper(*args, **kwargs):
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             with stage_span(stage_name):
                 return func(*args, **kwargs)
 

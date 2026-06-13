@@ -20,14 +20,16 @@ Provides async-compatible processing without blocking the event loop.
 
 import asyncio
 from functools import partial
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from ..pipeline import Pipeline
 from ..adapters.universal_adapter import UniversalModelAdapter
 
 
 async def process_async(
-    prompt: str, adapter: Optional[UniversalModelAdapter] = None, **kwargs
+    prompt: str,
+    adapter: Optional[UniversalModelAdapter] = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Async version of PrivySHA processing.
@@ -50,7 +52,7 @@ async def process_async(
     return await loop.run_in_executor(None, func)
 
 
-async def optimize_async(prompt: str, **kwargs) -> Dict[str, Any]:
+async def optimize_async(prompt: str, **kwargs: Any) -> Dict[str, Any]:
     """
     Async version of optimization only.
 
@@ -80,7 +82,7 @@ async def optimize_async(prompt: str, **kwargs) -> Dict[str, Any]:
     }
 
 
-async def sanitize_async(prompt: str, **kwargs) -> Dict[str, Any]:
+async def sanitize_async(prompt: str, **kwargs: Any) -> Dict[str, Any]:
     """
     Async version of security processing only.
 
@@ -116,7 +118,7 @@ class AsyncPipeline:
     Provides async methods while maintaining all pipeline functionality.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize async pipeline with same parameters as Pipeline."""
         self.pipeline = Pipeline(**kwargs)
 
@@ -124,7 +126,7 @@ class AsyncPipeline:
         self,
         content: str,
         adapter: Optional[UniversalModelAdapter] = None,
-        constraints: Dict[str, Any] = None,
+        constraints: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Async process method."""
         loop = asyncio.get_event_loop()
@@ -134,26 +136,32 @@ class AsyncPipeline:
     async def optimize(self, prompt: str) -> str:
         """Async optimization only."""
         loop = asyncio.get_event_loop()
-        func = partial(self.pipeline._aggressive_optimize, prompt)
-        return await loop.run_in_executor(None, func)
+        pipeline_any = cast(Any, self.pipeline)
+        func = partial(pipeline_any._aggressive_optimize, prompt)
+        result = await loop.run_in_executor(None, func)
+        return cast(str, result)
 
     async def get_explanation(
-        self, session_id: str = None, format_type: str = "json"
+        self, session_id: Optional[str] = None, format_type: str = "json"
     ) -> Optional[str]:
         """Async explanation retrieval."""
         loop = asyncio.get_event_loop()
-        func = partial(self.pipeline.get_explanation, session_id, format_type)
+        pipeline_any = cast(Any, self.pipeline)
+        func = partial(pipeline_any.get_explanation, session_id, format_type)
         return await loop.run_in_executor(None, func)
 
-    async def get_debug_trace(self, session_id: str = None) -> Optional[Dict[str, Any]]:
+    async def get_debug_trace(
+        self, session_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """Async debug trace retrieval."""
         loop = asyncio.get_event_loop()
-        func = partial(self.pipeline.get_debug_trace, session_id)
+        pipeline_any = cast(Any, self.pipeline)
+        func = partial(pipeline_any.get_debug_trace, session_id)
         return await loop.run_in_executor(None, func)
 
 
 # Convenience functions for drop-in async usage
-async def process_async_entry(prompt: str, **kwargs) -> Dict[str, Any]:
+async def process_async_entry(prompt: str, **kwargs: Any) -> Dict[str, Any]:
     """Entry point for async processing with fail-safe."""
     try:
         return await process_async(prompt, **kwargs)

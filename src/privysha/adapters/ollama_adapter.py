@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import requests
+from typing import Any
+
 from .base import BaseAdapter
 
 
 class OllamaAdapter(BaseAdapter):
 
-    def __init__(self, model="llama3"):
+    def __init__(self, model: str = "llama3") -> None:
         """Initialize Ollama adapter with specified model.
 
         Args:
@@ -44,12 +46,12 @@ class OllamaAdapter(BaseAdapter):
         """
         url = "http://localhost:11434/api/generate"
 
-        payload = {"model": self.model, "prompt": prompt, "stream": False}
+        payload: dict[str, Any] = {"model": self.model, "prompt": prompt, "stream": False}
 
         try:
             r = requests.post(url, json=payload, timeout=30)
             r.raise_for_status()
-            return r.json()["response"]
+            return str(r.json()["response"])
         except requests.RequestException as e:
             raise requests.RequestException(
                 f"Failed to connect to Ollama server: {e}. "

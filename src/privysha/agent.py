@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union, cast
 from .pipeline.pipeline import Pipeline
 from .adapters.factory import AdapterFactory
 from .adapters.base import BaseAdapter
@@ -52,17 +52,17 @@ class Agent:
 
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
+        model: Optional[str] = "gpt-4o-mini",
         privacy: bool = True,
         token_budget: int = 1200,
-        provider: str = None,
-        fallback_providers: List[Dict] = None,
-        routing_config: Dict[str, str] = None,
+        provider: Optional[str] = None,
+        fallback_providers: Optional[List[Dict[str, Any]]] = None,
+        routing_config: Optional[Dict[str, str]] = None,
         timeout: int = 10,
         retries: int = 3,
-        api_key: str = None,
-        local_model: str = None,
-        sample_prompts: List[str] = None,
+        api_key: Optional[str] = None,
+        local_model: Optional[str] = None,
+        sample_prompts: Optional[List[str]] = None,
     ) -> None:
         """
         Initialize Agent with full v2 capabilities.
@@ -107,6 +107,8 @@ class Agent:
         if not provider:
             provider = self._infer_provider(model)
 
+        self.adapter: Any
+
         # Initialize adapter based on configuration
         if routing_config:
             # Smart routing mode
@@ -131,10 +133,12 @@ class Agent:
             )
             self.mode = "universal"
 
-    def _infer_provider(self, model: str) -> str:
+    def _infer_provider(self, model: Optional[str]) -> str:
         """Infer provider from model name."""
         if model == "mock":
             return "mock"
+        if model is None:
+            raise AttributeError("'NoneType' object has no attribute 'startswith'")
         elif model.startswith("gpt"):
             return "openai"
         elif model.startswith("claude"):
@@ -191,16 +195,16 @@ class Agent:
             processed["response"] = response
             processed["adapter_info"] = self._get_adapter_info()
             processed["mode"] = self.mode
-            return processed
+            return cast(Union[str, Dict[str, Any]], processed)
 
-        return response
+        return cast(Union[str, Dict[str, Any]], response)
 
     def run_with_fallback(
         self,
         prompt: str,
         trace: bool = False,
-        fallback_adapters: List[BaseAdapter] = None,
-    ) -> Union[str, Dict]:
+        fallback_adapters: Optional[List[BaseAdapter]] = None,
+    ) -> Union[str, Dict[str, Any]]:
         """
         Run prompt with explicit fallback adapters.
 
@@ -241,14 +245,14 @@ class Agent:
         if trace:
             processed["response"] = response
             processed["adapter_info"] = self._get_adapter_info()
-            return processed
+            return cast(Union[str, Dict[str, Any]], processed)
 
-        return response
+        return cast(Union[str, Dict[str, Any]], response)
 
     def _get_adapter_info(self) -> Dict[str, Any]:
         """Get adapter information for tracing."""
         if hasattr(self.adapter, "get_provider_info"):
-            return self.adapter.get_provider_info()
+            return cast(Dict[str, Any], self.adapter.get_provider_info())
         elif hasattr(self.adapter, "routing_config"):
             return {"routing_config": self.adapter.routing_config}
         else:
@@ -286,26 +290,28 @@ class Agent:
             ),
         }
 
-    def get_debug_trace(self, session_id: str = None) -> Optional[Dict[str, Any]]:
+    def get_debug_trace(
+        self, session_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get debug trace for session."""
         # For now, return adapter info - could be enhanced with full tracing
         return self._get_adapter_info()
 
     def print_debug_trace(
-        self, session_id: str = None, format_type: str = "readable"
+        self, session_id: Optional[str] = None, format_type: str = "readable"
     ) -> str:
         """Print debug trace in specified format."""
         info = self._get_adapter_info()
         return f"Debug Trace ({format_type}): {info}"
 
-    def switch_provider(self, provider: str, model: str = None) -> None:
+    def switch_provider(self, provider: str, model: Optional[str] = None) -> None:
         """Switch to a different provider."""
         self.adapter = AdapterFactory.create_universal(
             provider=provider, model=model)
         self.mode = "universal"
         self.model = model or self.model
 
-    def add_fallback(self, provider: str, model: str = None) -> None:
+    def add_fallback(self, provider: str, model: Optional[str] = None) -> None:
         """Add a fallback provider."""
         if not hasattr(self.adapter, "_fallback_adapters"):
             self.adapter._fallback_adapters = []
@@ -366,7 +372,9 @@ class Agent:
 
     # Class methods for different creation patterns
     @classmethod
-    def create_simple(cls, provider: str = "openai", model: str = None) -> "Agent":
+    def create_simple(
+        cls, provider: str = "openai", model: Optional[str] = None
+    ) -> "Agent":
         """Create simple agent with single provider."""
         return cls(provider=provider, model=model)
 
@@ -374,8 +382,8 @@ class Agent:
     def create_advanced(
         cls,
         provider: str = "openai",
-        model: str = None,
-        fallback_providers: List[Dict] = None,
+        model: Optional[str] = None,
+        fallback_providers: Optional[List[Dict[str, Any]]] = None,
     ) -> "Agent":
         """Create advanced agent with fallback providers."""
         if fallback_providers is None:
@@ -388,7 +396,9 @@ class Agent:
         )
 
     @classmethod
-    def create_smart_routing(cls, routing_config: Dict[str, str] = None) -> "Agent":
+    def create_smart_routing(
+        cls, routing_config: Optional[Dict[str, str]] = None
+    ) -> "Agent":
         """Create agent with smart routing configuration."""
         if routing_config is None:
             routing_config = {

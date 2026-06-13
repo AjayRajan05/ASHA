@@ -65,16 +65,16 @@ class ExplainabilityEngine:
     """
 
     def __init__(self) -> None:
-        self.explanations = {}
+        self.explanations: Dict[str, ProcessingExplanation] = {}
 
     def generate_explanation(
         self,
         session_id: str,
         processing_result: Dict[str, Any],
-        risk_assessment: Dict[str, Any] = None,
-        security_result: Dict[str, Any] = None,
-        optimization_metrics: Dict[str, Any] = None,
-        performance_metrics: Dict[str, Any] = None,
+        risk_assessment: Optional[Dict[str, Any]] = None,
+        security_result: Optional[Dict[str, Any]] = None,
+        optimization_metrics: Optional[Dict[str, Any]] = None,
+        performance_metrics: Optional[Dict[str, Any]] = None,
     ) -> ProcessingExplanation:
         """
         Generate comprehensive explanation for PrivySHA processing.

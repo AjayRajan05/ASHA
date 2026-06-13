@@ -101,8 +101,9 @@ def build_security_summary(security_result: Any) -> Dict[str, Any]:
 
 def finalize_privacy_output(result: Dict[str, Any], privacy: bool) -> str:
     """Ensure optimized output does not leak PII or dangerous patterns."""
-    prompts = result.get("prompts", {})
-    output = prompts.get("optimized", "")
+    prompts_raw = result.get("prompts", {})
+    prompts = prompts_raw if isinstance(prompts_raw, dict) else {}
+    output = str(prompts.get("optimized", "") or "")
     if not output:
         return output
 

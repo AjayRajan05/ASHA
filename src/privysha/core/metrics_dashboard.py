@@ -410,7 +410,7 @@ class MetricsDashboard:
 
         # Threat breakdown
         if threat_events:
-            threat_types = defaultdict(int)
+            threat_types: Dict[str, int] = defaultdict(int)
             for event in threat_events:
                 threat_type = event.metadata.get("threat_type", "unknown")
                 threat_types[threat_type] += 1
@@ -424,7 +424,7 @@ class MetricsDashboard:
 
         # PII breakdown
         if pii_events:
-            pii_types = defaultdict(int)
+            pii_types: Dict[str, int] = defaultdict(int)
             for event in pii_events:
                 pii_type = event.metadata.get("pii_type", "unknown")
                 pii_types[pii_type] += 1

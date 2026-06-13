@@ -4,7 +4,7 @@ Model Generation Stage - Stage 6 of the pipeline
 Handles LLM API integration and response generation.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, cast
 from ..components.stage_base import StageBase, StageResult, StageContext
 
 
@@ -20,12 +20,12 @@ class GenerationStage(StageBase):
     - Response validation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize model generation stage."""
         super().__init__("model_generation")
-        self.universal_adapter = None
+        self.universal_adapter: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize universal adapter component."""
         # Universal adapter is optional - provided by caller
 
@@ -105,7 +105,7 @@ class GenerationStage(StageBase):
         )
 
     def _generate_response(
-        self, adapter, prompt: str, context: StageContext
+        self, adapter: Any, prompt: str, context: StageContext
     ) -> Optional[str]:
         """Generate response using the provided adapter."""
         try:
@@ -115,7 +115,7 @@ class GenerationStage(StageBase):
             # Generate response
             response = adapter.generate(prompt, timeout=timeout)
 
-            return response
+            return cast(Optional[str], response)
 
         except Exception as e:
             if context.debug_enabled:
@@ -126,8 +126,8 @@ class GenerationStage(StageBase):
 
     def _validate_response(self, response: Optional[str]) -> Dict[str, Any]:
         """Validate generated response."""
-        errors = []
-        warnings = []
+        errors: List[str] = []
+        warnings: List[str] = []
 
         if response is None:
             warnings.append("No response generated")

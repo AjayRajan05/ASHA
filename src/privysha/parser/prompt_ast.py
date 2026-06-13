@@ -69,7 +69,7 @@ class PromptAST:
 class PromptParser:
     """Enhanced prompt parser with comprehensive analysis."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize parser with intent and object patterns."""
         self.intent_patterns = {
             IntentType.ANALYZE: [
@@ -282,7 +282,7 @@ class PromptParser:
 
         # Return intent with highest score
         if intent_scores:
-            best_intent = max(intent_scores, key=intent_scores.get)
+            best_intent = max(intent_scores, key=lambda k: intent_scores[k])
             return best_intent if intent_scores[best_intent] > 0 else IntentType.UNKNOWN
 
         return IntentType.UNKNOWN

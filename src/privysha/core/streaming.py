@@ -18,11 +18,13 @@ Streaming compatibility layer for PrivySHA.
 Ensures PrivySHA never blocks or buffers streaming responses.
 """
 
-from typing import Generator
+from typing import Any, AsyncGenerator, Dict, Generator, Optional, cast
 import inspect
 
 
-def handle_streaming_response(response, expected_format=None):
+def handle_streaming_response(
+    response: Any, expected_format: Optional[str] = None
+) -> Generator[Any, None, None]:
     """
     Handle streaming responses with pass-through behavior.
 
@@ -50,7 +52,7 @@ def handle_streaming_response(response, expected_format=None):
         yield response
 
 
-def is_streaming_response(response) -> bool:
+def is_streaming_response(response: Any) -> bool:
     """
     Check if response is a streaming response.
 
@@ -71,7 +73,9 @@ def is_streaming_response(response) -> bool:
     return False
 
 
-async def handle_async_streaming_response(response, expected_format=None):
+async def handle_async_streaming_response(
+    response: Any, expected_format: Optional[str] = None
+) -> AsyncGenerator[Any, None]:
     """
     Handle async streaming responses.
 
@@ -94,7 +98,7 @@ async def handle_async_streaming_response(response, expected_format=None):
         yield response
 
 
-def extract_prompt_from_kwargs(kwargs: dict) -> str:
+def extract_prompt_from_kwargs(kwargs: Dict[str, Any]) -> str:
     """
     Extract prompt from various SDK parameter formats.
 
@@ -117,17 +121,17 @@ def extract_prompt_from_kwargs(kwargs: dict) -> str:
             elif isinstance(value, list) and value:
                 # Handle message format (OpenAI, Anthropic)
                 if isinstance(value[0], dict) and "content" in value[0]:
-                    return value[0]["content"]
+                    return cast(str, value[0]["content"])
                 elif isinstance(value[0], str):
                     return value[0]
             elif isinstance(value, dict) and "content" in value:
-                return value["content"]
+                return cast(str, value["content"])
 
     # Fallback: return empty string
     return ""
 
 
-def replace_prompt_in_kwargs(kwargs: dict, new_prompt: str) -> dict:
+def replace_prompt_in_kwargs(kwargs: Dict[str, Any], new_prompt: str) -> Dict[str, Any]:
     """
     Replace prompt in kwargs with processed prompt.
 
@@ -173,11 +177,11 @@ class StreamingGuard:
     Ensures streaming operations are safe and non-blocking.
     """
 
-    def __init__(self, max_chunk_size: int = None) -> None:
+    def __init__(self, max_chunk_size: Optional[int] = None) -> None:
         """Initialize streaming guard."""
         self.max_chunk_size = max_chunk_size
 
-    def guard_stream(self, response) -> Generator:
+    def guard_stream(self, response: Any) -> Generator[Any, None, None]:
         """
         Guard a streaming response.
 
@@ -200,7 +204,9 @@ class StreamingGuard:
             # Fail-safe: yield empty chunk
             yield ""
 
-    async def guard_async_stream(self, response):
+    async def guard_async_stream(
+        self, response: Any
+    ) -> AsyncGenerator[Any, None]:
         """
         Guard an async streaming response.
 
@@ -225,7 +231,7 @@ class StreamingGuard:
 
 
 # Convenience functions for streaming operations
-def safe_stream_passthrough(response):
+def safe_stream_passthrough(response: Any) -> Generator[Any, None, None]:
     """
     Safely pass through streaming response.
 
@@ -238,7 +244,9 @@ def safe_stream_passthrough(response):
     return handle_streaming_response(response)
 
 
-async def safe_async_stream_passthrough(response):
+async def safe_async_stream_passthrough(
+    response: Any,
+) -> AsyncGenerator[Any, None]:
     """
     Safely pass through async streaming response.
 

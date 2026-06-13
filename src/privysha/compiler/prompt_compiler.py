@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from ..ir.prompt_ir import (
     PromptIR,
     IntentType,
@@ -30,7 +30,7 @@ class PromptCompiler:
     model-ready prompts with appropriate formatting, context, and instructions.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize prompt compiler with templates and rules."""
         self.templates = self._init_templates()
         self.compilation_rules = self._init_compilation_rules()
@@ -235,7 +235,7 @@ Provide effective optimization strategies and implementations.""",
         else:
             return self._compile_standard(ir)
 
-    def _compile_standard(self, ir) -> str:
+    def _compile_standard(self, ir: Union[PromptIR, str]) -> str:
         """Standard compilation with balanced detail and conciseness."""
 
         # Handle both IR objects and strings
@@ -263,7 +263,7 @@ Provide effective optimization strategies and implementations.""",
 
         # Build constraints text
         constraints_text = self._build_constraints_text(
-            getattr(ir, "constraints", {}))
+            getattr(ir, "constraints", []))
 
         # Build context text
         context_text = self._build_context_text(ir)
@@ -279,7 +279,7 @@ Provide effective optimization strategies and implementations.""",
         # Apply post-processing
         return self._post_process_prompt(compiled, ir)
 
-    def _compile_minimal(self, ir) -> str:
+    def _compile_minimal(self, ir: Union[PromptIR, str]) -> str:
         """Minimal compilation for maximum token efficiency."""
 
         # Handle both IR objects and strings
@@ -312,7 +312,7 @@ Provide effective optimization strategies and implementations.""",
 
         return minimal_prompt
 
-    def _compile_comprehensive(self, ir) -> str:
+    def _compile_comprehensive(self, ir: Union[PromptIR, str]) -> str:
         """Comprehensive compilation with maximum detail and guidance."""
 
         # Handle both IR objects and strings

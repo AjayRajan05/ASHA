@@ -32,13 +32,24 @@ We are not competing - we are complementing and enhancing.
 """
 
 import json
-from typing import Dict, List, Any, Optional, Callable, Type
+from typing import (
+    Dict,
+    List,
+    Any,
+    Optional,
+    Callable,
+    Type,
+    TypeVar,
+    cast,
+)
 from dataclasses import dataclass
 from enum import Enum
 import time
 
 # Import PrivySHA components
-from ..utils.dropin import process
+from ..utils.dropin import process, _coerce_process_output
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 
 class CompositionMode(Enum):
@@ -70,10 +81,10 @@ class ToolChain:
     def __init__(self, config: Optional[CompositionConfig] = None):
         """Initialize tool chain."""
         self.config = config or CompositionConfig()
-        self.tools = []
-        self.results = []
+        self.tools: List[Dict[str, Any]] = []
+        self.results: List[Dict[str, Any]] = []
 
-    def add_tool(self, tool: Callable, name: str, **kwargs) -> "ToolChain":
+    def add_tool(self, tool: Callable[..., Any], name: str, **kwargs: Any) -> "ToolChain":
         """Add tool to chain."""
         self.tools.append({"tool": tool, "name": name, "kwargs": kwargs})
         return self
@@ -133,11 +144,17 @@ class ToolChain:
 
     def _preprocess(self, text: str) -> str:
         """Preprocess text with PrivySHA."""
-        return process(text, mode=self.config.policy_mode, return_metrics=False)
+        return _coerce_process_output(
+            process(text, mode=self.config.policy_mode, return_metrics=False),
+            text,
+        )
 
     def _postprocess(self, text: str) -> str:
         """Postprocess text with PrivySHA."""
-        return process(text, mode=self.config.policy_mode, return_metrics=False)
+        return _coerce_process_output(
+            process(text, mode=self.config.policy_mode, return_metrics=False),
+            text,
+        )
 
     def _fallback_processing(self, data: Any) -> Any:
         """Fallback processing if tool fails."""
@@ -164,12 +181,17 @@ class PrivySHAInstructorComposer:
         self.config = config or CompositionConfig()
 
     def create_with_privysha(
-        self, prompt: str, response_model: Type, client: Any, **kwargs
+        self,
+        prompt: str,
+        response_model: Type[Any],
+        client: Any,
+        **kwargs: Any,
     ) -> Any:
         """Create structured output with PrivySHA preprocessing."""
         # Preprocess prompt with PrivySHA
-        secure_prompt = process(
-            prompt, mode=self.config.policy_mode, return_metrics=False
+        secure_prompt = _coerce_process_output(
+            process(prompt, mode=self.config.policy_mode, return_metrics=False),
+            prompt,
         )
 
         # Create with Instructor
@@ -182,7 +204,7 @@ class PrivySHAInstructorComposer:
         return result
 
     def validate_with_privysha(
-        self, result: Any, schema: Type, client: Any
+        self, result: Any, schema: Type[Any], client: Any
     ) -> Dict[str, Any]:
         """Validate Instructor result with PrivySHA."""
         validation_result = {
@@ -201,8 +223,11 @@ class PrivySHAInstructorComposer:
                 result_text = str(result)
 
             # Process with PrivySHA
-            processed_text = process(
-                result_text, mode=self.config.policy_mode, return_metrics=False
+            processed_text = _coerce_process_output(
+                process(
+                    result_text, mode=self.config.policy_mode, return_metrics=False
+                ),
+                result_text,
             )
 
             validation_result["privysha_processed"] = True
@@ -232,12 +257,13 @@ class PrivySHAGuardrailsComposer:
         self.config = config or CompositionConfig()
 
     def validate_with_privysha(
-        self, prompt: str, guard: Any, **kwargs
+        self, prompt: str, guard: Any, **kwargs: Any
     ) -> Dict[str, Any]:
         """Validate prompt with Guardrails after PrivySHA processing."""
         # Preprocess with PrivySHA
-        secure_prompt = process(
-            prompt, mode=self.config.policy_mode, return_metrics=False
+        secure_prompt = _coerce_process_output(
+            process(prompt, mode=self.config.policy_mode, return_metrics=False),
+            prompt,
         )
 
         # Validate with Guardrails
@@ -322,13 +348,15 @@ class PrivySHALangChainComposer:
         # Create or use template
         if template:
             privysha_template = PrivySHAPromptTemplate(
-                input_variables=["input"], template=template, config=self.config
+                input_variables=["input"],
+                template=template,
+                config=cast(Any, self.config),
             )
         else:
             privysha_template = PrivySHAPromptTemplate(
                 input_variables=["input"],
                 template="Process: {input}",
-                config=self.config,
+                config=cast(Any, self.config),
             )
 
         # Create chain
@@ -366,28 +394,31 @@ class OpenAIComposer:
         """Initialize OpenAI composer."""
         self.config = config or CompositionConfig()
 
-    def create_privysha_client(self, **kwargs) -> Any:
+    def create_privysha_client(self, **kwargs: Any) -> Any:
         """Create OpenAI client with PrivySHA integration."""
         try:
             from ..integrations.framework_adapters import OpenAIWrapper
         except ImportError:
             raise ImportError("OpenAI not available")
 
-        return OpenAIWrapper(config=self.config, **kwargs)
+        return OpenAIWrapper(config=cast(Any, self.config), **kwargs)
 
-    def enhance_api_call(self, api_function: Callable, **api_kwargs) -> Callable:
+    def enhance_api_call(self, api_function: Callable[..., Any], **api_kwargs: Any) -> Callable[..., Any]:
         """Enhance OpenAI API function with PrivySHA."""
 
-        def enhanced_function(**kwargs):
+        def enhanced_function(**kwargs: Any) -> Any:
             # Process messages if present
             if "messages" in kwargs:
                 processed_messages = []
                 for message in kwargs["messages"]:
                     if isinstance(message, dict) and "content" in message:
-                        processed_content = process(
+                        processed_content = _coerce_process_output(
+                            process(
+                                message["content"],
+                                mode=self.config.policy_mode,
+                                return_metrics=False,
+                            ),
                             message["content"],
-                            mode=self.config.policy_mode,
-                            return_metrics=False,
                         )
                         processed_messages.append(
                             {**message, "content": processed_content}
@@ -420,7 +451,7 @@ class UniversalComposer:
             "openai": OpenAIComposer(config),
         }
 
-    def compose(self, tool: Any, tool_type: str = "universal", **kwargs) -> Any:
+    def compose(self, tool: Any, tool_type: str = "universal", **kwargs: Any) -> Any:
         """
         Compose PrivySHA with any tool.
 
@@ -433,20 +464,23 @@ class UniversalComposer:
             Enhanced tool or composition result
         """
         if tool_type in self.composers:
-            return self.composers[tool_type].compose(tool, **kwargs)
+            return cast(Any, self.composers[tool_type]).compose(tool, **kwargs)
         else:
             return self._universal_compose(tool, **kwargs)
 
-    def _universal_compose(self, tool: Any, **kwargs) -> Any:
+    def _universal_compose(self, tool: Any, **kwargs: Any) -> Callable[..., Any]:
         """Universal composition for any tool."""
 
-        def enhanced_tool(*args, **tool_kwargs):
+        def enhanced_tool(*args: Any, **tool_kwargs: Any) -> Any:
             # Process string arguments
             processed_args = []
             for arg in args:
                 if isinstance(arg, str):
-                    processed_arg = process(
-                        arg, mode=self.config.policy_mode, return_metrics=False
+                    processed_arg = _coerce_process_output(
+                        process(
+                            arg, mode=self.config.policy_mode, return_metrics=False
+                        ),
+                        arg,
                     )
                     processed_args.append(processed_arg)
                 else:
@@ -456,8 +490,13 @@ class UniversalComposer:
             processed_kwargs = {}
             for key, value in tool_kwargs.items():
                 if isinstance(value, str):
-                    processed_value = process(
-                        value, mode=self.config.policy_mode, return_metrics=False
+                    processed_value = _coerce_process_output(
+                        process(
+                            value,
+                            mode=self.config.policy_mode,
+                            return_metrics=False,
+                        ),
+                        value,
                     )
                     processed_kwargs[key] = processed_value
                 else:
@@ -518,7 +557,7 @@ def compose_with_langchain(
     return PrivySHALangChainComposer(config)
 
 
-def compose_with_openai(**kwargs) -> OpenAIComposer:
+def compose_with_openai(**kwargs: Any) -> OpenAIComposer:
     """Create OpenAI composer."""
     return OpenAIComposer(**kwargs)
 
@@ -532,23 +571,23 @@ def compose_universal(tool: Any, config: Optional[CompositionConfig] = None) -> 
 # Decorator for automatic composition
 def privysha_compose(
     tool_type: str = "universal", config: Optional[CompositionConfig] = None
-):
+) -> Callable[[_F], _F]:
     """Decorator to automatically compose any function with PrivySHA."""
 
-    def decorator(func):
+    def decorator(func: _F) -> _F:
         composer = UniversalComposer(config)
 
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             enhanced_func = composer.compose(func, tool_type)
             return enhanced_func(*args, **kwargs)
 
-        return wrapper
+        return cast(_F, wrapper)
 
     return decorator
 
 
 # Quick test function
-def test_composition_strategy():
+def test_composition_strategy() -> None:
     """Test composition strategy."""
     print("Testing Composition Strategy:")
     print("=" * 50)

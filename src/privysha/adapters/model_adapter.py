@@ -17,7 +17,7 @@ from .base import BaseAdapter
 
 class ModelAdapter(BaseAdapter):
 
-    def __init__(self, model="mock"):
+    def __init__(self, model: str = "mock") -> None:
         self.model = model
 
     def generate(self, prompt: str) -> str:

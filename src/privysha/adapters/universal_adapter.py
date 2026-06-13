@@ -15,7 +15,7 @@
 import os
 import time
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .base import BaseAdapter
 
 
@@ -28,11 +28,11 @@ class UniversalModelAdapter(BaseAdapter):
     def __init__(
         self,
         provider: str,
-        api_key: str = None,
-        model: str = None,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
         timeout: int = 10,
         retries: int = 3,
-    ):
+    ) -> None:
         """
         Initialize universal adapter with provider-specific configuration.
 
@@ -51,11 +51,12 @@ class UniversalModelAdapter(BaseAdapter):
 
         # Initialize provider-specific client
         self.client = self._initialize_client(api_key)
+        self._fallback_adapters: Optional[List[BaseAdapter]] = None
 
         # Validate configuration
         self._validate_config()
 
-    def _initialize_client(self, api_key: str = None):
+    def _initialize_client(self, api_key: Optional[str] = None) -> Any:
         """Initialize provider-specific client."""
         if self.provider == "openai":
             return self._init_openai_client(api_key)
@@ -72,7 +73,7 @@ class UniversalModelAdapter(BaseAdapter):
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
-    def _init_openai_client(self, api_key: str = None):
+    def _init_openai_client(self, api_key: Optional[str] = None) -> Any:
         """Initialize OpenAI client."""
         try:
             from openai import OpenAI
@@ -86,7 +87,7 @@ class UniversalModelAdapter(BaseAdapter):
                 "OpenAI library not installed. Install with: pip install openai"
             )
 
-    def _init_anthropic_client(self, api_key: str = None):
+    def _init_anthropic_client(self, api_key: Optional[str] = None) -> Any:
         """Initialize Anthropic client."""
         try:
             import anthropic
@@ -100,7 +101,7 @@ class UniversalModelAdapter(BaseAdapter):
                 "Anthropic library not installed. Install with: pip install anthropic"
             )
 
-    def _init_grok_client(self, api_key: str = None):
+    def _init_grok_client(self, api_key: Optional[str] = None) -> Any:
         """Initialize Grok (xAI) client using OpenAI-compatible interface."""
         try:
             from openai import OpenAI
@@ -114,7 +115,7 @@ class UniversalModelAdapter(BaseAdapter):
                 "OpenAI library not installed. Install with: pip install openai"
             )
 
-    def _init_gemini_client(self, api_key: str = None):
+    def _init_gemini_client(self, api_key: Optional[str] = None) -> Any:
         """Initialize Google Gemini client."""
         try:
             import google.generativeai as genai
@@ -130,7 +131,7 @@ class UniversalModelAdapter(BaseAdapter):
                 "Google Generative AI library not installed. Install with: pip install google-generativeai"
             )
 
-    def _init_hf_client(self, api_key: str = None):
+    def _init_hf_client(self, api_key: Optional[str] = None) -> Any:
         """Initialize HuggingFace client."""
         try:
             from transformers import pipeline
@@ -143,11 +144,11 @@ class UniversalModelAdapter(BaseAdapter):
                 "Transformers library not installed. Install with: pip install transformers"
             )
 
-    def _init_mock_client(self):
+    def _init_mock_client(self) -> Dict[str, str]:
         """Initialize mock client for testing."""
         return {"type": "mock", "client": "mock"}
 
-    def _validate_config(self):
+    def _validate_config(self) -> None:
         """Validate provider and model configuration."""
         if self.provider == "openai" and not self.model:
             self.model = "gpt-4o-mini"
@@ -186,6 +187,7 @@ class UniversalModelAdapter(BaseAdapter):
                     f"Attempt {attempt + 1} failed, retrying in {wait_time}s: {e}"
                 )
                 time.sleep(wait_time)
+        raise RuntimeError("All retry attempts failed")
 
     def _generate_with_provider(self, prompt: str) -> str:
         """Generate response using provider-specific implementation."""
@@ -211,7 +213,8 @@ class UniversalModelAdapter(BaseAdapter):
             messages=[{"role": "user", "content": prompt}],
             timeout=self.timeout,
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        return str(content) if content is not None else ""
 
     def _anthropic_generate(self, prompt: str) -> str:
         """Generate using Anthropic Claude."""
@@ -221,7 +224,7 @@ class UniversalModelAdapter(BaseAdapter):
             messages=[{"role": "user", "content": prompt}],
             timeout=self.timeout,
         )
-        return response.content[0].text
+        return str(response.content[0].text)
 
     def _grok_generate(self, prompt: str) -> str:
         """Generate using Grok (xAI) - OpenAI compatible."""
@@ -230,13 +233,14 @@ class UniversalModelAdapter(BaseAdapter):
             messages=[{"role": "user", "content": prompt}],
             timeout=self.timeout,
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        return str(content) if content is not None else ""
 
     def _gemini_generate(self, prompt: str) -> str:
         """Generate using Google Gemini."""
         model = self.client.GenerativeModel(self.model)
         response = model.generate_content(prompt)
-        return response.text
+        return str(response.text)
 
     def _hf_generate(self, prompt: str) -> str:
         """Generate using HuggingFace pipeline."""
@@ -246,7 +250,7 @@ class UniversalModelAdapter(BaseAdapter):
             generator = self.client["pipeline"](
                 "text-generation", model=self.model)
             result = generator(prompt, max_length=100, num_return_sequences=1)
-            return result[0]["generated_text"]
+            return str(result[0]["generated_text"])
         except Exception as e:
             raise RuntimeError(f"HuggingFace generation failed: {e}")
 
@@ -255,7 +259,7 @@ class UniversalModelAdapter(BaseAdapter):
         return f"Mock response to: {prompt[:50]}{'...' if len(prompt) > 50 else ''}"
 
     def generate_with_fallback(
-        self, prompt: str, fallback_models: List[BaseAdapter] = None
+        self, prompt: str, fallback_models: Optional[List[BaseAdapter]] = None
     ) -> str:
         """
         Generate with fallback to alternative models.

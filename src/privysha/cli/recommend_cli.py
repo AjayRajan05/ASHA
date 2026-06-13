@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sys
+from typing import Optional
 
 import click
 
@@ -36,16 +37,16 @@ from ..local_advisor.advisor import recommend_local_model
 @click.option("--probe", is_flag=True, help="Run optional Ollama micro-benchmark")
 @click.option("--json", "as_json", is_flag=True, help="Output JSON")
 def recommend_cmd(
-    prompt,
-    prompts,
-    mode,
-    top,
-    gpu,
-    vram,
-    cpu_only,
-    refresh,
-    probe,
-    as_json,
+    prompt: tuple[str, ...],
+    prompts: Optional[str],
+    mode: str,
+    top: int,
+    gpu: Optional[str],
+    vram: Optional[float],
+    cpu_only: bool,
+    refresh: bool,
+    probe: bool,
+    as_json: bool,
 ) -> None:
     """Recommend local LLM models for your workload and hardware (PrivyFit)."""
     prompt_list = list(prompt) if prompt else None

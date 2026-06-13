@@ -107,7 +107,7 @@ class IntegrityStage(BaseStage):
 
         # Step 5: Apply repairs if needed
         repaired_text = masked_text
-        repairs_applied = []
+        repairs_applied: List[str] = []
 
         if overall_integrity < config.get("integrity_thresholds", {}).get(
             "minimum_coherence", 0.7
@@ -396,10 +396,11 @@ class IntegrityStage(BaseStage):
 
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for integrity stage"""
-        if not context.entities:
+        entities: object = context.entities
+        if not entities:
             return True  # No entities is valid
 
-        if not isinstance(context.entities, list):
+        if not isinstance(entities, list):
             return False
 
         if not context.current_text:
@@ -408,7 +409,7 @@ class IntegrityStage(BaseStage):
         if not context.original_text:
             return False
 
-        for entity in context.entities:
+        for entity in entities:
             if not isinstance(entity, PIIEntity):
                 return False
 

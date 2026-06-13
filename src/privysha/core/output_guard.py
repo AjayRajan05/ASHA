@@ -21,7 +21,7 @@ Ensures safe, valid outputs and prevents downstream pipeline breaks.
 import json
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, Union, Optional, List
+from typing import Any, Dict, Union, Optional, List, cast
 from dataclasses import dataclass
 
 
@@ -48,7 +48,7 @@ def safe_repair_json(text: str) -> Union[Dict, List, str]:
     """
     try:
         # Try direct parsing first
-        return json.loads(text)
+        return cast(Union[Dict[Any, Any], List[Any], str], json.loads(text))
     except json.JSONDecodeError:
         pass
 
@@ -57,7 +57,9 @@ def safe_repair_json(text: str) -> Union[Dict, List, str]:
     json_match = re.search(r"\{.*\}", text, re.DOTALL)
     if json_match:
         try:
-            return json.loads(json_match.group())
+            return cast(
+                Union[Dict[Any, Any], List[Any], str], json.loads(json_match.group())
+            )
         except json.JSONDecodeError:
             pass
 
@@ -65,7 +67,9 @@ def safe_repair_json(text: str) -> Union[Dict, List, str]:
     array_match = re.search(r"\[.*\]", text, re.DOTALL)
     if array_match:
         try:
-            return json.loads(array_match.group())
+            return cast(
+                Union[Dict[Any, Any], List[Any], str], json.loads(array_match.group())
+            )
         except json.JSONDecodeError:
             pass
 
@@ -84,7 +88,7 @@ def safe_repair_json(text: str) -> Union[Dict, List, str]:
     fixed_text = re.sub(r"\'", '"', fixed_text)
 
     try:
-        return json.loads(fixed_text)
+        return cast(Union[Dict[Any, Any], List[Any], str], json.loads(fixed_text))
     except json.JSONDecodeError:
         pass
 
@@ -135,7 +139,9 @@ def safe_repair_xml(text: str) -> str:
     return text
 
 
-def safe_repair_code(text: str, language: str = None) -> str:
+def safe_repair_code(
+    text: str, language: Optional[str] = None
+) -> Union[str, Dict[Any, Any], List[Any]]:
     """
     Attempt to repair broken code output.
 
@@ -174,7 +180,9 @@ def safe_repair_code(text: str, language: str = None) -> str:
     return fixed_text
 
 
-def validate_output(output: Any, expected_format: str = None) -> ValidationResult:
+def validate_output(
+    output: Any, expected_format: Optional[str] = None
+) -> ValidationResult:
     """
     Validate and potentially fix output based on expected format.
 
@@ -337,7 +345,9 @@ class OutputGuard:
         """
         self.auto_detect = auto_detect
 
-    def guard_output(self, output: Any, expected_format: str = None) -> Any:
+    def guard_output(
+        self, output: Any, expected_format: Optional[str] = None
+    ) -> Any:
         """
         Guard output with validation and repair.
 
@@ -364,7 +374,9 @@ class OutputGuard:
             # Fail-safe: return original output
             return output
 
-    def guard_streaming_chunk(self, chunk: Any, expected_format: str = None) -> Any:
+    def guard_streaming_chunk(
+        self, chunk: Any, expected_format: Optional[str] = None
+    ) -> Any:
         """
         Guard individual streaming chunks.
 
@@ -388,7 +400,7 @@ class OutputGuard:
 
 
 # Convenience functions
-def safe_output(output: Any, expected_format: str = None) -> Any:
+def safe_output(output: Any, expected_format: Optional[str] = None) -> Any:
     """
     Safely validate and repair output.
 
@@ -416,4 +428,4 @@ def safe_json_output(output: Any) -> Union[Dict, List, str]:
     if isinstance(output, str):
         return safe_repair_json(output)
     else:
-        return output
+        return cast(Union[Dict[Any, Any], List[Any], str], output)

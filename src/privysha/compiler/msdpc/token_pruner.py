@@ -21,7 +21,7 @@ class PruningResult:
 class TokenPruner:
     """Algorithmic token pruning for prompt optimization."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize pruning rules and categories."""
         # Stopwords that can be safely removed
         self.stopwords = {

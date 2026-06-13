@@ -208,10 +208,11 @@ class NormalizationStage(BaseStage):
 
     def validate_input(self, context: PIIContext) -> bool:
         """Validate input for normalization stage"""
-        if not context.current_text:
+        current_text: object = context.current_text
+        if not current_text:
             return False
 
-        if not isinstance(context.current_text, str):
+        if not isinstance(current_text, str):
             return False
 
         return True

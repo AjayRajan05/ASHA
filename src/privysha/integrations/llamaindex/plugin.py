@@ -20,52 +20,120 @@ allowing PrivySHA to secure and optimize queries and prompts within
 LlamaIndex pipelines.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
-# Optional LlamaIndex imports with graceful fallback
-try:
+if TYPE_CHECKING:
     from llama_index.core import QueryEngine, VectorStoreIndex
     from llama_index.core.base.base_query_engine import BaseQueryEngine
     from llama_index.core.base.base_retriever import BaseRetriever
-    from llama_index.core.llms import LLM
-    from llama_index.core.llms import CustomLLM
+    from llama_index.core.llms import LLM, CustomLLM
     from llama_index.core.prompts import PromptTemplate
     from llama_index.core.schema import QueryBundle, Document
 
     LLAMAINDEX_AVAILABLE = True
-except ImportError:
-    LLAMAINDEX_AVAILABLE = False
+else:
+    try:
+        from llama_index.core import QueryEngine, VectorStoreIndex
+        from llama_index.core.base.base_query_engine import BaseQueryEngine
+        from llama_index.core.base.base_retriever import BaseRetriever
+        from llama_index.core.llms import LLM, CustomLLM
+        from llama_index.core.prompts import PromptTemplate
+        from llama_index.core.schema import QueryBundle, Document
 
-    # Create fallback classes for when LlamaIndex is not available
-    class QueryEngine:
-        pass
+        LLAMAINDEX_AVAILABLE = True
+    except ImportError:
+        LLAMAINDEX_AVAILABLE = False
 
-    class VectorStoreIndex:
-        pass
+        class QueryEngine:
+            pass
 
-    class BaseQueryEngine:
-        pass
+        class VectorStoreIndex:
+            @classmethod
+            def from_documents(cls, *args: Any, **kwargs: Any) -> "VectorStoreIndex":
+                return cls()
 
-    class BaseRetriever:
-        pass
+        class BaseQueryEngine:
+            def query(self, query_bundle: Any) -> Any:
+                return None
 
-    class LLM:
-        pass
+            async def aquery(self, query_bundle: Any) -> Any:
+                return None
 
-    class CustomLLM:
-        pass
+        class BaseRetriever:
+            def retrieve(self, query_bundle: Any) -> List[Any]:
+                return []
 
-    class PromptTemplate:
-        pass
+            async def aretrieve(self, query_bundle: Any) -> List[Any]:
+                return []
 
-    class QueryBundle:
-        pass
+        class LLM:
+            model_name: str = "llm"
 
-    class Document:
-        pass
+            def complete(self, prompt: str, **kwargs: Any) -> str:
+                return prompt
+
+        class CustomLLM:
+            pass
+
+        class PromptTemplate:
+            def __init__(self, template: str, **kwargs: Any) -> None:
+                self.template = template
+
+            def format(self, **kwargs: Any) -> str:
+                return self.template
+
+        class QueryBundle:
+            def __init__(
+                self,
+                query_str: str,
+                custom_embedding_strs: Any = None,
+                embedding_strs: Any = None,
+            ) -> None:
+                self.query_str = query_str
+                self.custom_embedding_strs = custom_embedding_strs
+                self.embedding_strs = embedding_strs
+
+        class Document:
+            def __init__(
+                self,
+                text: str,
+                metadata: Optional[Dict[str, Any]] = None,
+                id_: Optional[str] = None,
+            ) -> None:
+                self.text = text
+                self.metadata = metadata or {}
+                self.id_ = id_
 
 
-from ...utils.dropin import process
+from ...utils.dropin import process, _coerce_process_output
+
+
+def _optimize_prompt_text(
+    text: str,
+    *,
+    privacy: bool,
+    token_budget: int,
+    debug_metrics: bool,
+) -> tuple[str, Optional[Dict[str, Any]]]:
+    """Run process() and return optimized text plus optional metrics."""
+    if debug_metrics:
+        result = cast(
+            Dict[str, Any],
+            process(
+                text,
+                privacy=privacy,
+                token_budget=token_budget,
+                return_metrics=True,
+            ),
+        )
+        return str(result["optimized"]), result
+    return (
+        _coerce_process_output(
+            process(text, privacy=privacy, token_budget=token_budget),
+            text,
+        ),
+        None,
+    )
 
 
 class PrivySHAPromptTemplate(PromptTemplate):
@@ -82,8 +150,8 @@ class PrivySHAPromptTemplate(PromptTemplate):
         privacy: bool = True,
         token_budget: int = 1200,
         debug_metrics: bool = False,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize PrivySHA-enhanced prompt template.
 
@@ -103,9 +171,9 @@ class PrivySHAPromptTemplate(PromptTemplate):
         self.privacy = privacy
         self.token_budget = token_budget
         self.debug_metrics = debug_metrics
-        self._last_metrics = None
+        self._last_metrics: Optional[Dict[str, Any]] = None
 
-    def format(self, **kwargs) -> str:
+    def format(self, **kwargs: Any) -> str:
         """
         Format the template with input variables and apply PrivySHA optimization.
 
@@ -120,18 +188,25 @@ class PrivySHAPromptTemplate(PromptTemplate):
 
         # Apply PrivySHA optimization
         if self.debug_metrics:
-            result = process(
+            result = cast(
+                Dict[str, Any],
+                process(
+                    formatted_prompt,
+                    privacy=self.privacy,
+                    token_budget=self.token_budget,
+                    return_metrics=True,
+                ),
+            )
+            self._last_metrics = result
+            return str(result["optimized"])
+        return _coerce_process_output(
+            process(
                 formatted_prompt,
                 privacy=self.privacy,
                 token_budget=self.token_budget,
-                return_metrics=True,
-            )
-            self._last_metrics = result
-            return result["optimized"]
-        else:
-            return process(
-                formatted_prompt, privacy=self.privacy, token_budget=self.token_budget
-            )
+            ),
+            formatted_prompt,
+        )
 
     def get_last_metrics(self) -> Optional[Dict[str, Any]]:
         """Get metrics from the last prompt processing."""
@@ -156,8 +231,8 @@ class PrivySHALLM(CustomLLM):
         privacy: bool = True,
         token_budget: int = 1200,
         debug_metrics: bool = False,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize PrivySHA-enhanced LLM wrapper.
 
@@ -172,7 +247,7 @@ class PrivySHALLM(CustomLLM):
         self.privacy = privacy
         self.token_budget = token_budget
         self.debug_metrics = debug_metrics
-        self._last_metrics = None
+        self._last_metrics: Optional[Dict[str, Any]] = None
         self.model_name = f"privysha_{llm.model_name}"
 
     def _get_prompt_type(self, prompt: str) -> str:
@@ -200,21 +275,27 @@ class PrivySHALLM(CustomLLM):
         """
         # Apply PrivySHA optimization
         if self.debug_metrics:
-            result = process(
-                prompt,
-                privacy=self.privacy,
-                token_budget=self.token_budget,
-                return_metrics=True,
+            result = cast(
+                Dict[str, Any],
+                process(
+                    prompt,
+                    privacy=self.privacy,
+                    token_budget=self.token_budget,
+                    return_metrics=True,
+                ),
             )
             self._last_metrics = result
-            optimized_prompt = result["optimized"]
+            optimized_prompt = str(result["optimized"])
         else:
-            optimized_prompt = process(
-                prompt, privacy=self.privacy, token_budget=self.token_budget
+            optimized_prompt = _coerce_process_output(
+                process(
+                    prompt, privacy=self.privacy, token_budget=self.token_budget
+                ),
+                prompt,
             )
 
         # Forward to actual LLM
-        return self.llm.complete(optimized_prompt, **kwargs)
+        return str(self.llm.complete(optimized_prompt, **kwargs))
 
     def complete_request(self, prompt: str, **kwargs: Any) -> str:
         """Process complete request with PrivySHA optimization."""
@@ -241,7 +322,7 @@ class PrivySHAQueryEngine(BaseQueryEngine):
         debug_metrics: bool = False,
         optimize_queries: bool = True,
         optimize_retrieval: bool = True,
-    ):
+    ) -> None:
         """
         Initialize PrivySHA-enhanced query engine.
 
@@ -259,7 +340,7 @@ class PrivySHAQueryEngine(BaseQueryEngine):
         self.debug_metrics = debug_metrics
         self.optimize_queries = optimize_queries
         self.optimize_retrieval = optimize_retrieval
-        self._last_metrics = None
+        self._last_metrics: Optional[Dict[str, Any]] = None
 
     def query(self, query_bundle: QueryBundle) -> Any:
         """
@@ -275,19 +356,14 @@ class PrivySHAQueryEngine(BaseQueryEngine):
 
         # Apply PrivySHA optimization to query
         if self.optimize_queries:
-            if self.debug_metrics:
-                result = process(
-                    query_str,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
-                )
-                self._last_metrics = result
-                optimized_query = result["optimized"]
-            else:
-                optimized_query = process(
-                    query_str, privacy=self.privacy, token_budget=self.token_budget
-                )
+            optimized_query, metrics = _optimize_prompt_text(
+                query_str,
+                privacy=self.privacy,
+                token_budget=self.token_budget,
+                debug_metrics=self.debug_metrics,
+            )
+            if metrics is not None:
+                self._last_metrics = metrics
 
             # Create new query bundle with optimized query
             optimized_bundle = QueryBundle(
@@ -311,19 +387,14 @@ class PrivySHAQueryEngine(BaseQueryEngine):
 
         # Apply PrivySHA optimization to query
         if self.optimize_queries:
-            if self.debug_metrics:
-                result = process(
-                    query_str,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
-                )
-                self._last_metrics = result
-                optimized_query = result["optimized"]
-            else:
-                optimized_query = process(
-                    query_str, privacy=self.privacy, token_budget=self.token_budget
-                )
+            optimized_query, metrics = _optimize_prompt_text(
+                query_str,
+                privacy=self.privacy,
+                token_budget=self.token_budget,
+                debug_metrics=self.debug_metrics,
+            )
+            if metrics is not None:
+                self._last_metrics = metrics
 
             # Create new query bundle with optimized query
             optimized_bundle = QueryBundle(
@@ -352,7 +423,7 @@ class PrivySHARetriever(BaseRetriever):
         privacy: bool = True,
         token_budget: int = 1200,
         debug_metrics: bool = False,
-    ):
+    ) -> None:
         """
         Initialize PrivySHA-enhanced retriever.
 
@@ -366,7 +437,7 @@ class PrivySHARetriever(BaseRetriever):
         self.privacy = privacy
         self.token_budget = token_budget
         self.debug_metrics = debug_metrics
-        self._last_metrics = None
+        self._last_metrics: Optional[Dict[str, Any]] = None
 
     def retrieve(self, query_bundle: QueryBundle) -> List[Document]:
         """
@@ -380,20 +451,14 @@ class PrivySHARetriever(BaseRetriever):
         """
         query_str = query_bundle.query_str
 
-        # Apply PrivySHA optimization to retrieval query
-        if self.debug_metrics:
-            result = process(
-                query_str,
-                privacy=self.privacy,
-                token_budget=self.token_budget,
-                return_metrics=True,
-            )
-            self._last_metrics = result
-            optimized_query = result["optimized"]
-        else:
-            optimized_query = process(
-                query_str, privacy=self.privacy, token_budget=self.token_budget
-            )
+        optimized_query, metrics = _optimize_prompt_text(
+            query_str,
+            privacy=self.privacy,
+            token_budget=self.token_budget,
+            debug_metrics=self.debug_metrics,
+        )
+        if metrics is not None:
+            self._last_metrics = metrics
 
         # Create new query bundle with optimized query
         optimized_bundle = QueryBundle(
@@ -403,7 +468,7 @@ class PrivySHARetriever(BaseRetriever):
         )
 
         # Forward to actual retriever
-        return self._retriever.retrieve(optimized_bundle)
+        return cast(List[Document], self._retriever.retrieve(optimized_bundle))
 
     def get_last_metrics(self) -> Optional[Dict[str, Any]]:
         """Get metrics from the last retrieval processing."""
@@ -413,20 +478,14 @@ class PrivySHARetriever(BaseRetriever):
         """Async retrieval with PrivySHA optimization."""
         query_str = query_bundle.query_str
 
-        # Apply PrivySHA optimization to retrieval query
-        if self.debug_metrics:
-            result = process(
-                query_str,
-                privacy=self.privacy,
-                token_budget=self.token_budget,
-                return_metrics=True,
-            )
-            self._last_metrics = result
-            optimized_query = result["optimized"]
-        else:
-            optimized_query = process(
-                query_str, privacy=self.privacy, token_budget=self.token_budget
-            )
+        optimized_query, metrics = _optimize_prompt_text(
+            query_str,
+            privacy=self.privacy,
+            token_budget=self.token_budget,
+            debug_metrics=self.debug_metrics,
+        )
+        if metrics is not None:
+            self._last_metrics = metrics
 
         # Create new query bundle with optimized query
         optimized_bundle = QueryBundle(
@@ -436,7 +495,7 @@ class PrivySHARetriever(BaseRetriever):
         )
 
         # Forward to actual retriever
-        return await self._retriever.aretrieve(optimized_bundle)
+        return cast(List[Document], await self._retriever.aretrieve(optimized_bundle))
 
 
 # Convenience functions for easy integration
@@ -561,7 +620,7 @@ class PrivySHAPostProcessor:
         privacy: bool = True,
         token_budget: int = 1200,
         debug_metrics: bool = False,
-    ):
+    ) -> None:
         """
         Initialize PrivySHA post-processor.
 
@@ -579,9 +638,11 @@ class PrivySHAPostProcessor:
         self.privacy = privacy
         self.token_budget = token_budget
         self.debug_metrics = debug_metrics
-        self._last_metrics = None
+        self._last_metrics: Optional[Dict[str, Any]] = None
 
-    def postprocess_nodes(self, nodes, **kwargs) -> List[Document]:
+    def postprocess_nodes(
+        self, nodes: List[Any], **kwargs: Any
+    ) -> List[Any]:
         """
         Apply PrivySHA processing to document nodes.
 
@@ -592,7 +653,7 @@ class PrivySHAPostProcessor:
         Returns:
             List of processed document nodes
         """
-        processed_nodes = []
+        processed_nodes: List[Any] = []
 
         for node in nodes:
             if hasattr(node, "text") and node.text:
@@ -630,7 +691,7 @@ class PrivySHAPostProcessor:
 
         return processed_nodes
 
-    def postprocess_query(self, query_str: str, **kwargs) -> str:
+    def postprocess_query(self, query_str: str, **kwargs: Any) -> str:
         """
         Apply PrivySHA processing to query string.
 
@@ -650,10 +711,9 @@ class PrivySHAPostProcessor:
 
         if isinstance(result, str):
             return result
-        else:
-            if self.debug_metrics:
-                self._last_metrics = result.get("metrics", {})
-            return result.get("optimized", query_str)
+        if self.debug_metrics:
+            self._last_metrics = cast(Dict[str, Any], result.get("metrics", {}))
+        return str(result.get("optimized", query_str))
 
     def get_metrics(self) -> Dict[str, Any]:
         """
@@ -671,7 +731,7 @@ def create_privysha_index(
     privacy: bool = True,
     token_budget: int = 1200,
     debug_metrics: bool = False,
-    **index_kwargs,
+    **index_kwargs: Any,
 ) -> VectorStoreIndex:
     """
     Create a PrivySHA-enhanced VectorStoreIndex.
@@ -694,4 +754,4 @@ def create_privysha_index(
     index = VectorStoreIndex.from_documents(
         documents, llm=privysha_llm, **index_kwargs)
 
-    return index
+    return cast(VectorStoreIndex, index)

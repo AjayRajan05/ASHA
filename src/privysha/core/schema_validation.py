@@ -28,7 +28,7 @@ import json
 import re
 import time
 from typing import Dict, List, Any, Optional, Union, Type, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 # Try to import Pydantic
@@ -74,11 +74,12 @@ class SchemaConfig:
     enable_auto_repair: bool = True
     strict_mode: bool = False
     enforce_json: bool = True
-    repair_strategies: List[str] = None
+    repair_strategies: List[str] = field(
+        default_factory=lambda: ["basic", "advanced", "fallback"]
+    )
 
     def __post_init__(self) -> None:
-        if self.repair_strategies is None:
-            self.repair_strategies = ["basic", "advanced", "fallback"]
+        pass
 
 
 class JSONRepairEngine:
@@ -145,7 +146,7 @@ class JSONRepairEngine:
             Tuple of (repaired_json, repair_log, success)
         """
         original = json_str
-        repair_log = []
+        repair_log: List[str] = []
 
         for attempt in range(max_attempts):
             try:
@@ -269,8 +270,8 @@ class SchemaValidator:
         start_time = time.time()
         self.validation_stats["total_validations"] += 1
 
-        errors = []
-        warnings = []
+        errors: List[str] = []
+        warnings: List[str] = []
         repaired_content = None
         retry_count = 0
         status = ValidationStatus.INVALID
@@ -387,8 +388,8 @@ class SchemaValidator:
         start_time = time.time()
         self.validation_stats["total_validations"] += 1
 
-        errors = []
-        warnings = []
+        errors: List[str] = []
+        warnings: List[str] = []
         repaired_content = None
         retry_count = 0
         status = ValidationStatus.INVALID
@@ -481,7 +482,7 @@ class SchemaValidator:
 
     def _validate_against_schema(
         self, data: Any, schema: Dict[str, Any], errors: List[str], warnings: List[str]
-    ):
+    ) -> None:
         """Validate data against JSON schema."""
         try:
             # Use jsonschema if available
@@ -519,7 +520,7 @@ class SchemaValidator:
         return repaired_content, repair_log, success
 
     def _attempt_pydantic_repair(
-        self, content: str, model_class: Type, validation_errors: List[Dict]
+        self, content: str, model_class: Type, validation_errors: List[Any]
     ) -> Tuple[str, List[str], bool]:
         """Attempt to repair content for Pydantic validation."""
         repair_log = []
@@ -563,7 +564,7 @@ class SchemaValidator:
 
     def _add_missing_field(
         self, data: Dict[str, Any], field_path: str, repair_log: List[str]
-    ):
+    ) -> None:
         """Add missing field with default value."""
         keys = field_path.split(".")
         current = data
@@ -581,7 +582,7 @@ class SchemaValidator:
 
     def _fix_type_mismatch(
         self, data: Dict[str, Any], field_path: str, repair_log: List[str]
-    ):
+    ) -> None:
         """Fix type mismatch in field."""
         keys = field_path.split(".")
         current = data
@@ -676,8 +677,10 @@ class SchemaValidationMode:
             and issubclass(schema, BaseModel)
         ):
             return self.validator.validate_pydantic(content, schema)
-        else:
+        elif isinstance(schema, dict) or schema is None:
             return self.validator.validate_json(content, schema)
+        else:
+            return self.validator.validate_json(content, None)
 
     def get_mode_info(self) -> Dict[str, Any]:
         """Get schema validation mode information."""
@@ -722,8 +725,10 @@ def validate_schema(
         and issubclass(schema, BaseModel)
     ):
         return validator.validate_pydantic(content, schema)
-    else:
+    elif isinstance(schema, dict) or schema is None:
         return validator.validate_json(content, schema)
+    else:
+        return validator.validate_json(content, None)
 
 
 def repair_json(json_str: str, max_attempts: int = 5) -> Tuple[str, bool, List[str]]:

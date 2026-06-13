@@ -22,7 +22,7 @@ capabilities for transparent AI pipeline processing.
 import time
 import json
 import logging
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, TypedDict
 from enum import Enum
 from dataclasses import dataclass, asdict
 import difflib
@@ -59,6 +59,12 @@ class StageTrace:
     latency_ms: float
     error: Optional[Dict[str, Any]] = None
     metrics: Optional[Dict[str, Any]] = None
+
+
+class _CurrentStageData(TypedDict):
+    name: str
+    start_time: float
+    input: str
 
 
 @dataclass
@@ -116,7 +122,7 @@ class TraceContext:
         # Pipeline state
         self.stages: List[StageTrace] = []
         self.start_time = time.time()
-        self.current_stage = None
+        self.current_stage: Optional[_CurrentStageData] = None
 
         # Metrics
         self.metrics = {
@@ -147,6 +153,7 @@ class TraceContext:
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
 
+        handler: logging.Handler
         if self.log_output == "console":
             handler = logging.StreamHandler()
         elif self.log_output == "file" and self.log_file:
@@ -160,11 +167,11 @@ class TraceContext:
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
-    def _create_json_formatter(self):
+    def _create_json_formatter(self) -> logging.Formatter:
         """Create JSON formatter for structured logging."""
 
         class JSONFormatter(logging.Formatter):
-            def format(self, record):
+            def format(self, record: logging.LogRecord) -> str:
                 log_entry = {
                     "timestamp": self.formatTime(record),
                     "logger": record.name,
@@ -316,7 +323,7 @@ class TraceContext:
             LogLevel.ERROR, f"Error in {stage}: {message}", **error_data
         )
 
-    def _log_structured(self, level: LogLevel, message: str, **kwargs) -> None:
+    def _log_structured(self, level: LogLevel, message: str, **kwargs: Any) -> None:
         """Log structured data with the specified level."""
         if not self._should_log(level):
             return

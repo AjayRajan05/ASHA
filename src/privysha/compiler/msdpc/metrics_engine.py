@@ -22,7 +22,7 @@ class QualityMetrics:
 class MetricsEngine:
     """Deterministic scoring engine for prompt quality assessment."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize scoring criteria and weights."""
         self.weights = {"clarity": 0.35, "structure": 0.35, "efficiency": 0.30}
 
@@ -140,7 +140,7 @@ class MetricsEngine:
 
     def _calculate_structure_score(self, prompt: str) -> float:
         """Calculate structure score based on prompt organization."""
-        positive_score = 0
+        positive_score = 0.0
         negative_score = 0
 
         # Count positive structure indicators

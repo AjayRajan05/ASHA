@@ -19,7 +19,7 @@ This implementation uses the advanced 7-stage PIIPipeline internally
 while providing the same interface as the original HybridPIIDetector.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from .pii_pipeline.pii_pipeline import PIIPipeline
 
@@ -60,8 +60,8 @@ class HybridPIIDetector:
     def __init__(
         self,
         pii_mode: str = "rule",
-        model_name: str = None,
-        config: Dict[str, Any] = None,
+        model_name: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
         debug_enabled: bool = False,
     ) -> None:
         """

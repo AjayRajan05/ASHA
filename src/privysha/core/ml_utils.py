@@ -19,8 +19,8 @@ Handles ML dependency checking, lazy loading, and graceful fallbacks.
 """
 
 import warnings
-from typing import Dict, Any
-from dataclasses import dataclass
+from typing import Dict, Any, List
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -32,11 +32,7 @@ class MLDependencyStatus:
     torch_available: bool = False
     accelerate_available: bool = False
     all_available: bool = False
-    missing_packages: list = None
-
-    def __post_init__(self):
-        if self.missing_packages is None:
-            self.missing_packages = []
+    missing_packages: List[Any] = field(default_factory=list)
 
 
 def check_ml_dependencies() -> MLDependencyStatus:
@@ -177,7 +173,7 @@ class MLLoader:
             warnings.warn(f"Failed to load ML models: {e}")
             return False
 
-    def _load_ml_models(self):
+    def _load_ml_models(self) -> None:
         """Load ML models - to be implemented by specific classes."""
         # This will be overridden by specific implementations
 

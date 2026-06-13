@@ -18,6 +18,7 @@ Global SDK patching for viral PrivySHA adoption.
 This enables true one-line integration: `import privysha; privysha.auto_patch()`
 """
 
+from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 from functools import wraps
@@ -98,7 +99,9 @@ def _check_version_compatibility(provider: str, verbose: bool = False) -> bool:
 
 
 def auto_patch(
-    enable: bool = True, providers: List[str] = None, verbose: bool = False
+    enable: bool = True,
+    providers: Optional[List[str]] = None,
+    verbose: bool = False,
 ) -> Dict[str, Any]:
     """
     Global SDK patching for viral PrivySHA adoption.
@@ -125,8 +128,7 @@ def auto_patch(
     if enable and not _patch_warning_shown:
         import warnings
 
-        _patching_providers = providers or ["openai", "anthropic",
-                                             "google.generativeai", "huggingface"]
+        _patching_providers = providers
         warnings.warn(
             f"auto_patch() globally monkey-patches installed LLM SDKs "
             f"({', '.join(_patching_providers)}). This may cause unexpected behaviour "
@@ -294,7 +296,7 @@ def _patch_openai_v1(
     _store_original("openai:Completions.create", original_create)
 
     @wraps(original_create)
-    def patched_create(self, *args, **kwargs):
+    def patched_create(self: Any, *args: Any, **kwargs: Any) -> Any:
         if not _privysha_enabled:
             return original_create(self, *args, **kwargs)
 
@@ -345,80 +347,86 @@ def _patch_openai_legacy(
     if not original_chat_create and not original_completion_create:
         return {"success": False, "error": "OpenAI SDK structure not recognized"}
 
-    @wraps(original_chat_create)
-    def patched_chat_create(*args, **kwargs):
-        """Patched ChatCompletion.create with PrivySHA processing."""
-        if not _privysha_enabled:
-            return original_chat_create(*args, **kwargs)
+    patched_functions: List[str] = []
 
-        # Extract prompt from kwargs
-        prompt = _extract_prompt_openai(kwargs)
-        if not prompt:
-            return original_chat_create(*args, **kwargs)
+    if original_chat_create is not None:
 
-        try:
-            # Process with PrivySHA
-            result = privysha_process(prompt, privacy=True, debug=verbose)
-            processed_prompt = _coerce_processed(result, prompt)
+        @wraps(original_chat_create)
+        def patched_chat_create(*args: Any, **kwargs: Any) -> Any:
+            """Patched ChatCompletion.create with PrivySHA processing."""
+            if not _privysha_enabled:
+                return original_chat_create(*args, **kwargs)
 
-            # Replace prompt in kwargs
-            kwargs = _replace_prompt_openai(kwargs, processed_prompt)
+            # Extract prompt from kwargs
+            prompt = _extract_prompt_openai(kwargs)
+            if not prompt:
+                return original_chat_create(*args, **kwargs)
 
-            if verbose:
-                print(
-                    f"[PrivySHA] OpenAI prompt processed: {len(prompt)} → {len(processed_prompt)} chars"
-                )
+            try:
+                # Process with PrivySHA
+                result = privysha_process(prompt, privacy=True, debug=verbose)
+                processed_prompt = _coerce_processed(result, prompt)
 
-            return original_chat_create(*args, **kwargs)
+                # Replace prompt in kwargs
+                kwargs = _replace_prompt_openai(kwargs, processed_prompt)
 
-        except Exception as e:
-            if verbose:
-                print(f"[PrivySHA] OpenAI processing failed: {e}")
-            return original_chat_create(*args, **kwargs)
+                if verbose:
+                    print(
+                        f"[PrivySHA] OpenAI prompt processed: {len(prompt)} → {len(processed_prompt)} chars"
+                    )
 
-    @wraps(original_completion_create)
-    def patched_completion_create(*args, **kwargs):
-        """Patched Completion.create with PrivySHA processing."""
-        if not _privysha_enabled:
-            return original_completion_create(*args, **kwargs)
+                return original_chat_create(*args, **kwargs)
 
-        # Extract prompt from kwargs
-        prompt = _extract_prompt_openai(kwargs)
-        if not prompt:
-            return original_completion_create(*args, **kwargs)
+            except Exception as e:
+                if verbose:
+                    print(f"[PrivySHA] OpenAI processing failed: {e}")
+                return original_chat_create(*args, **kwargs)
 
-        try:
-            # Process with PrivySHA
-            result = privysha_process(prompt, privacy=True, debug=verbose)
-            processed_prompt = _coerce_processed(result, prompt)
+        _store_original("openai:ChatCompletion.create", original_chat_create)
+        openai.ChatCompletion.create = patched_chat_create
+        patched_functions.append("ChatCompletion.create")
 
-            # Replace prompt in kwargs
-            kwargs = _replace_prompt_openai(kwargs, processed_prompt)
+    if original_completion_create is not None:
 
-            if verbose:
-                print(
-                    f"[PrivySHA] OpenAI completion prompt processed: {len(prompt)} → {len(processed_prompt)} chars"
-                )
+        @wraps(original_completion_create)
+        def patched_completion_create(*args: Any, **kwargs: Any) -> Any:
+            """Patched Completion.create with PrivySHA processing."""
+            if not _privysha_enabled:
+                return original_completion_create(*args, **kwargs)
 
-            return original_completion_create(*args, **kwargs)
+            # Extract prompt from kwargs
+            prompt = _extract_prompt_openai(kwargs)
+            if not prompt:
+                return original_completion_create(*args, **kwargs)
 
-        except Exception as e:
-            if verbose:
-                print(f"[PrivySHA] OpenAI completion processing failed: {e}")
-            return original_completion_create(*args, **kwargs)
+            try:
+                # Process with PrivySHA
+                result = privysha_process(prompt, privacy=True, debug=verbose)
+                processed_prompt = _coerce_processed(result, prompt)
 
-    # Apply patches
-    _store_original("openai:ChatCompletion.create", original_chat_create)
-    openai.ChatCompletion.create = patched_chat_create
-    if original_completion_create:
+                # Replace prompt in kwargs
+                kwargs = _replace_prompt_openai(kwargs, processed_prompt)
+
+                if verbose:
+                    print(
+                        f"[PrivySHA] OpenAI completion prompt processed: {len(prompt)} → {len(processed_prompt)} chars"
+                    )
+
+                return original_completion_create(*args, **kwargs)
+
+            except Exception as e:
+                if verbose:
+                    print(f"[PrivySHA] OpenAI completion processing failed: {e}")
+                return original_completion_create(*args, **kwargs)
+
         _store_original("openai:Completion.create", original_completion_create)
         openai.Completion.create = patched_completion_create
+        patched_functions.append("Completion.create")
 
     return {
         "success": True,
         "provider": "openai",
-        "functions_patched": ["ChatCompletion.create"]
-        + (["Completion.create"] if original_completion_create else []),
+        "functions_patched": patched_functions,
         "api_version": "legacy",
         "original_functions_preserved": True,
     }
@@ -445,7 +453,7 @@ def _patch_anthropic(
     _store_original("anthropic:Messages.create", original_create)
 
     @wraps(original_create)
-    def patched_messages_create(self, *args, **kwargs):
+    def patched_messages_create(self: Any, *args: Any, **kwargs: Any) -> Any:
         if not _privysha_enabled:
             return original_create(self, *args, **kwargs)
 
@@ -520,7 +528,7 @@ def _patch_google_generativeai(
         }
 
     @wraps(original_generate_content)
-    def patched_generate_content(*args, **kwargs):
+    def patched_generate_content(*args: Any, **kwargs: Any) -> Any:
         """Patched generate_content with PrivySHA processing."""
         if not _privysha_enabled:
             return original_generate_content(*args, **kwargs)
@@ -583,7 +591,7 @@ def _patch_huggingface(
         }
 
     @wraps(original_call)
-    def patched_call(self, *args, **kwargs):
+    def patched_call(self: Any, *args: Any, **kwargs: Any) -> Any:
         """Patched Pipeline call with PrivySHA processing."""
         if not _privysha_enabled:
             return original_call(self, *args, **kwargs)
@@ -690,7 +698,7 @@ def _extract_prompt_huggingface(args: tuple, kwargs: Dict[str, Any]) -> Optional
     return kwargs.get("prompt")
 
 
-def _unpatch_all():
+def _unpatch_all() -> None:
     """Remove all PrivySHA patches."""
     try:
         from openai.resources.chat.completions import Completions
@@ -754,14 +762,14 @@ def get_patch_status() -> Dict[str, Any]:
     }
 
 
-def disable_auto_patch():
+def disable_auto_patch() -> None:
     """Disable PrivySHA auto-patching temporarily."""
     global _privysha_enabled
     _privysha_enabled = False
     print("[PrivySHA] Auto-patch disabled")
 
 
-def enable_auto_patch():
+def enable_auto_patch() -> None:
     """Re-enable PrivySHA auto-patching."""
     global _privysha_enabled
     _privysha_enabled = True

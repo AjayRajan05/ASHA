@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+from typing import List, Optional
+
 from .base import BaseAdapter
 from .universal_adapter import UniversalModelAdapter
 
@@ -22,7 +24,7 @@ class OpenAIAdapter(BaseAdapter):
     OpenAI Adapter - Backward compatible wrapper using UniversalModelAdapter.
     """
 
-    def __init__(self, model="gpt-4o-mini"):
+    def __init__(self, model: str = "gpt-4o-mini") -> None:
         """Initialize OpenAI adapter with specified model.
 
         Args:
@@ -59,7 +61,9 @@ class OpenAIAdapter(BaseAdapter):
         return self._adapter.generate(prompt)
 
     # Additional v2 methods exposed for compatibility
-    def generate_with_fallback(self, prompt: str, fallback_models=None) -> str:
+    def generate_with_fallback(
+        self, prompt: str, fallback_models: Optional[List[BaseAdapter]] = None
+    ) -> str:
         """Generate with fallback support.
 
         Args:

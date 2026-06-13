@@ -24,7 +24,7 @@ from .base import BaseAdapter
 
 class ClaudeAdapter(BaseAdapter):
 
-    def __init__(self, model=None):
+    def __init__(self, model: str | None = None) -> None:
         """Initialize Claude adapter with specified model.
 
         Args:
@@ -88,7 +88,7 @@ class ClaudeAdapter(BaseAdapter):
                 temperature=0.7,
             )
 
-            return response.content[0].text.strip()
+            return str(response.content[0].text).strip()
 
         except Exception as e:
             return f"Claude generation error: {str(e)}"

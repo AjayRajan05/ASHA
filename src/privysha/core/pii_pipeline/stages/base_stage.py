@@ -4,7 +4,7 @@ Base Stage for PII Pipeline - Foundation for all PII detection stages
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import time
 import uuid
@@ -30,11 +30,10 @@ class PIIEntity:
     pii_type: str
     confidence: float
     context: str = ""
-    metadata: Dict[str, Any] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.metadata is None:
-            self.metadata = {}
+        pass
 
 
 @dataclass
@@ -44,16 +43,13 @@ class StageResult:
     success: bool
     stage_name: str
     execution_time_ms: float
-    entities: List[PIIEntity] = None
+    entities: List[PIIEntity] = field(default_factory=list)
     processed_text: str = ""
-    metadata: Dict[str, Any] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
     error: Optional[str] = None
 
     def __post_init__(self) -> None:
-        if self.entities is None:
-            self.entities = []
-        if self.metadata is None:
-            self.metadata = {}
+        pass
 
 
 @dataclass
@@ -63,16 +59,13 @@ class PIIContext:
     session_id: str
     original_text: str
     current_text: str
-    entities: List[PIIEntity]
-    stage_results: Dict[str, StageResult]
     config: Dict[str, Any]
+    entities: List[PIIEntity] = field(default_factory=list)
+    stage_results: Dict[str, StageResult] = field(default_factory=dict)
     debug_enabled: bool = False
 
     def __post_init__(self) -> None:
-        if self.entities is None:
-            self.entities = []
-        if self.stage_results is None:
-            self.stage_results = {}
+        pass
 
     def get_stage_result(self, stage_name: str) -> Optional[StageResult]:
         """Get result from a specific stage"""
@@ -208,7 +201,7 @@ class BaseStage(ABC):
                 )
 
     def add_debug_info(
-        self, context: PIIContext, message: str, data: Dict[str, Any] = None
+        self, context: PIIContext, message: str, data: Optional[Dict[str, Any]] = None
     ) -> None:
         """Add debug information to context"""
         if context.debug_enabled:
@@ -231,7 +224,7 @@ class BaseStage(ABC):
 
 
 def create_pii_context(
-    text: str, config: Dict[str, Any] = None, debug_enabled: bool = False
+    text: str, config: Optional[Dict[str, Any]] = None, debug_enabled: bool = False
 ) -> PIIContext:
     """
     Create a new PII pipeline context

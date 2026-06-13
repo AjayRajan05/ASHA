@@ -4,6 +4,8 @@ Security Processing Stage - Stage 1 of the pipeline
 Handles PII detection, threat analysis, and content sanitization.
 """
 
+from typing import Any, Optional
+
 from ..components.stage_base import StageBase, StageResult, StageContext
 from ...security.service import run_security
 from ...security.security_layer import SecurityResult, SecurityLevel
@@ -17,12 +19,12 @@ class SecurityStage(StageBase):
     Delegates to security.service.run_security — the canonical security path.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize security stage."""
         super().__init__("security_processing")
-        self.enhanced_risk_analyzer = None
+        self.enhanced_risk_analyzer: Optional[Any] = None
 
-    def _initialize_components(self, context: StageContext):
+    def _initialize_components(self, context: StageContext) -> None:
         """Initialize optional risk analyzer."""
         try:
             from ...core.risk_analyzer import EnhancedRiskAnalyzer

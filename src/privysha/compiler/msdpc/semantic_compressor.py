@@ -21,7 +21,7 @@ class CompressionResult:
 class SemanticCompressor:
     """Extractive semantic compression for prompts."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize compression patterns and rules."""
         # Filler words and phrases to remove
         self.filler_words = {
