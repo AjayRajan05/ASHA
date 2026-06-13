@@ -1,567 +1,206 @@
-# 🔧 PrivySHA Troubleshooting Guide
+# Troubleshooting
 
-**Solutions to common issues when using PrivySHA**
+**PrivySHA v0.3.0** — common issues and fixes.
 
 ---
 
-## 🚨 Quick Fixes
+## Installation
 
-### **Installation Issues**
+### ImportError: No module named 'privysha'
 
-#### Issue: `ImportError: No module named 'privysha'`
 ```bash
-# Solution 1: Install in development mode
+pip install privysha
+# or from source:
 pip install -e .
-
-# Solution 2: Check Python path
-python -c "import sys; print(sys.path)"
-
-# Solution 3: Reinstall
-pip uninstall privysha
-pip install privysha
 ```
 
-#### Issue: `ModuleNotFoundError: No module named 'spacy'`
+### ML features not working
+
 ```bash
-# ML features require additional packages
 pip install privysha[ml]
-
-# Or install manually
-pip install spacy>=3.4.0
-python -m spacy download en_core_web_sm
 ```
 
-#### Issue: `DLL load failed` (Windows)
+Required for `pii_mode="hybrid"` or `pii_mode="ml_only"`.
+
+---
+
+## PII not detected / not masked
+
+**Wrong fix:** `security_level="low"` — this makes detection *less* aggressive.
+
+**Correct fixes:**
+
+```python
+# Stronger policy mode
+process(prompt, mode="strict")
+
+# Higher security level
+process(prompt, security_level="high")
+
+# ML-enhanced detection
+process(prompt, pii_mode="hybrid")  # requires privysha[ml]
+
+# Ensure privacy is enabled (default)
+process(prompt, privacy=True)
+```
+
+Check that `mode="off"` is not set — it bypasses all processing.
+
+---
+
+## Too much masking / false positives
+
+Teaching emails like `test@example.com` are skipped by default. For other false positives:
+
+```python
+process(prompt, mode="lite")
+process(prompt, security_level="low")
+```
+
+Use `trace=True, debug=True` to inspect what changed.
+
+---
+
+## Slow processing
+
+```python
+# Fastest settings
+process(prompt, mode="lite", pii_mode="rule")
+
+# Disable tracing overhead
+process(prompt)  # no trace=True, no debug=True
+```
+
+ML modes (`hybrid`, `ml_only`) are significantly slower than `rule`.
+
+---
+
+## process() returns unexpected text
+
+1. Check `mode` — `off` returns the original prompt unchanged
+2. Check `preserve_intent=True` — skips optimization when no PII/threats found
+3. Run with debug:
+
+```python
+result = process(prompt, debug=True, return_metrics=True)
+print(result.get("fallback_reason"))
+print(result.get("diff"))
+```
+
+---
+
+## Agent errors
+
+### OPENAI_API_KEY not found
+
+Set environment variable or pass `api_key=`:
+
 ```bash
-# Solution: Install Microsoft Visual C++ Build Tools
-# Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-
-# Then reinstall
-pip uninstall privysha
-pip install privysha
+export OPENAI_API_KEY=your_key
 ```
+
+Install the provider extra: `pip install privysha[openai]`
+
+### Connection refused (Ollama)
+
+Start the Ollama server:
+
+```bash
+ollama serve
+ollama pull llama3
+```
+
+### Model not found
+
+Check available models for the provider. Use `model="mock"` for testing without external services.
 
 ---
 
-## 🔒 PII Detection Issues
+## wrap_llm issues
 
-### **Issue: PII Not Being Detected**
+Ensure the client type is supported (OpenAI, Anthropic, or generic via `UniversalWrapper`).
 
-#### Symptoms
-```python
-from privysha import process
-result = process("Contact john@example.com")
-print(result)  # Still shows email
-```
-
-#### Solutions
-
-**1. Check PII Mode**
-```python
-# Ensure ML mode is available
-result = process(prompt, pii_mode="hybrid")  # Better accuracy
-
-# Check if ML is installed
-try:
-    import spacy
-    print("ML available")
-except ImportError:
-    print("Install: pip install privysha[ml]")
-```
-
-**2. Adjust Security Level**
-```python
-# Lower security level for more sensitive detection
-result = process(prompt, security_level="low")
-```
-
-**3. Check Context Keywords**
-```python
-# PII detection uses context - add relevant keywords
-prompt = "Contact email john@example.com for business inquiry"
-# More likely to detect than "john@example.com" alone
-```
-
-### **Issue: Too Much PII Being Masked**
-
-#### Solutions
-
-**1. Use Lower Security Level**
-```python
-result = process(prompt, security_level="low")
-```
-
-**2. Disable Privacy (Use with Caution)**
-```python
-result = process(prompt, privacy=False)
-```
-
-**3. Custom Context**
-```python
-# Add legitimate context to reduce false positives
-prompt = "My work email is john@example.com - please contact me"
-```
-
----
-
-## ⚡ Performance Issues
-
-### **Issue: Slow Processing (>1 second)**
-
-#### Solutions
-
-**1. Use Lite Mode**
-```python
-result = process(prompt, mode="lite")
-```
-
-**2. Disable Expensive Features**
-```python
-result = process(
-    prompt,
-    pii_mode="rule",      # Fastest PII detection
-    security_level="low",    # Minimal security checks
-    debug=False             # No debug overhead
-)
-```
-
-**3. Reduce Token Budget**
-```python
-result = process(prompt, token_budget=500)  # Less optimization work
-```
-
-**4. Use Async Processing**
-```python
-from privysha import process_async
-
-result = await process_async(prompt)
-```
-
-### **Issue: High Memory Usage**
-
-#### Solutions
-
-**1. Disable Observability**
-```python
-result = process(prompt, trace=False, debug=False)
-```
-
-**2. Process in Batches**
-```python
-from privysha import process
-
-prompts = ["prompt1", "prompt2", "prompt3"]
-results = [process(p) for p in prompts]
-```
-
-**3. Use Pipeline Directly**
-```python
-from privysha import Pipeline
-
-pipeline = Pipeline(privacy=True, debug_enabled=False)
-result = pipeline.process(content)
-```
-
----
-
-## 🔌 LLM Integration Issues
-
-### **Issue: OpenAI Integration Failing**
-
-#### Symptoms
-```python
-from privysha import Agent
-agent = Agent(model="gpt-4o-mini")
-response = agent.run("test")
-# Error: Authentication failed
-```
-
-#### Solutions
-
-**1. Check API Key**
-```python
-import os
-from privysha import Agent
-
-# Set environment variable
-os.environ["OPENAI_API_KEY"] = "your-api-key"
-
-# Or pass directly (less secure)
-agent = Agent(model="gpt-4o-mini", api_key="your-api-key")
-```
-
-**2. Check Model Availability**
-```python
-# Use available models
-agent = Agent(model="gpt-3.5-turbo")  # More widely available
-```
-
-**3. Add Timeout**
-```python
-agent = Agent(
-    model="gpt-4o-mini",
-    timeout=30,  # 30 second timeout
-    retries=2
-)
-```
-
-### **Issue: Wrapper Not Working**
-
-#### Symptoms
 ```python
 from privysha import wrap_llm
-import openai
-
-client = openai.OpenAI(api_key="key")
-wrapped = wrap_llm(client)
-
-response = wrapped.chat.completions.create(...)  # No security applied
-```
-
-#### Solutions
-
-**1. Check Method Name**
-```python
-# Ensure you're using a generation method
-response = wrapped.generate(...)  # Not messages.create(...)
-```
-
-**2. Use Universal Wrapper**
-```python
-from privysha import UniversalWrapper
-
-wrapper = UniversalWrapper(client)
-wrapped_client = wrapper.wrap_client(client)
-```
-
-**3. Debug Wrapper**
-```python
-# Enable debug to see what's happening
-wrapped = wrap_llm(client, mode="balanced", debug=True)
-response = wrapped.chat.completions.create(...)
-print(f"Processed: {wrapped.last_prompt}")
+secure = wrap_llm(client, mode="balanced", privacy=True)
 ```
 
 ---
 
-## 🐛 Debugging Issues
+## CLI issues
 
-### **Issue: Trace Not Working**
+Commands use **subcommands**, not all flags on the default command:
 
-#### Symptoms
-```python
-result = process(prompt, trace=True)
-print(result.get("trace"))  # None or empty
+```bash
+privysha "prompt"              # process a prompt
+privysha quick-test            # NOT privysha --quick-test
+privysha examples              # NOT privysha --examples
+privysha benchmark --save
+privysha recommend --prompt "Analyze data"
 ```
 
-#### Solutions
+---
 
-**1. Check Log Level**
-```python
-# Use DEBUG level for maximum information
-result = process(prompt, trace=True, log_level="DEBUG")
+## Benchmark failures
+
+```bash
+pip install -e .
+python benchmarks/run_benchmarks.py --save
 ```
 
-**2. Enable File Logging**
+Compare against baseline:
+
+```bash
+python benchmarks/run_benchmarks.py --compare benchmarks/baseline/results.json
+```
+
+---
+
+## Debug workflow
+
+When something goes wrong:
+
 ```python
 result = process(
     prompt,
     trace=True,
-    log_output="file",
-    log_file="debug.log"
-)
-# Check debug.log file for details
-```
-
-**3. Check Pipeline Stages**
-```python
-from privysha import Pipeline
-
-pipeline = Pipeline(debug_enabled=True)
-result = pipeline.process(prompt, trace=True)
-
-# Check each stage in result["trace"]["stages"]
-```
-
-### **Issue: Metrics Not Available**
-
-#### Solutions
-
-**1. Enable Return Metrics**
-```python
-result = process(prompt, return_metrics=True)
-print(result["metrics"])
-```
-
-**2. Check Pipeline Metrics**
-```python
-result = process(prompt, trace=True)
-print(result["trace"]["metrics"])
-```
-
----
-
-## 🌐 Network Issues
-
-### **Issue: Connection Timeouts**
-
-#### Solutions
-
-**1. Increase Timeout**
-```python
-agent = Agent(timeout=60)  # 60 second timeout
-```
-
-**2. Use Fallback Models**
-```python
-agent = Agent(
-    model="gpt-3.5-turbo",  # Faster model
-    fallback_providers=[{"provider": "openai", "model": "gpt-3.5-turbo"}]
-)
-```
-
-**3. Configure Retries**
-```python
-agent = Agent(retries=5, backoff_factor=2)
-```
-
-### **Issue: Rate Limiting**
-
-#### Solutions
-
-**1. Implement Exponential Backoff**
-```python
-import time
-from privysha import Agent
-
-agent = Agent(retries=3)
-for attempt in range(3):
-    try:
-        response = agent.run(prompt)
-        break
-    except Exception as e:
-        if "rate limit" in str(e).lower():
-            time.sleep(2 ** attempt)  # 2, 4, 8 seconds
-        else:
-            raise
-```
-
-**2. Use Multiple API Keys**
-```python
-# Round-robin between multiple keys
-api_keys = ["key1", "key2", "key3"]
-agent = Agent(api_key=api_keys[attempt % len(api_keys)])
-```
-
----
-
-## 🏗️ Architecture Issues
-
-### **Issue: Circular Import Errors**
-
-#### Symptoms
-```
-ImportError: cannot import name 'PIIDetector' from partially initialized module
-```
-
-#### Solutions
-
-**1. Use Lazy Loading**
-```python
-# This is now fixed in PrivySHA v0.2.0+
-# PII detector loads only when needed
-```
-
-**2. Clear Python Cache**
-```bash
-# Clear Python bytecode cache
-find . -name "*.pyc" -delete
-find . -name "__pycache__" -type d -exec rm -rf
-```
-
-**3. Reinstall in Development Mode**
-```bash
-pip uninstall privysha
-pip install -e .
-```
-
----
-
-## 📱 Environment-Specific Issues
-
-### **Windows Issues**
-
-#### Issue: Path Length Errors
-```bash
-# Use shorter paths or enable long paths
-# Windows has 260 character path limit
-```
-
-#### Issue: Permission Errors
-```bash
-# Run as administrator or install in user directory
-pip install --user privysha
-```
-
-### **macOS Issues**
-
-#### Issue: Python Version Conflicts
-```bash
-# Use Python 3.10+ with pyenv
-pyenv install 3.10.14
-pyenv local 3.10.14
-pip install privysha
-```
-
-### **Linux Issues**
-
-#### Issue: System Python Conflicts
-```bash
-# Use virtual environment
-python3 -m venv venv
-source venv/bin/activate
-pip install privysha
-```
-
----
-
-## 🔍 Debug Mode
-
-### **Enable Comprehensive Debugging**
-```python
-from privysha import process
-
-# Maximum debugging information
-result = process(
-    prompt,
-    trace=True,           # Full pipeline trace
-    debug=True,           # Diff view
-    log_level="DEBUG",     # All log messages
-    return_metrics=True,    # Detailed metrics
-    log_output="file",     # Save to file
-    log_file="debug.log"    # Log file location
+    debug=True,
+    return_metrics=True,
 )
 
-# Print comprehensive debug info
-print("=== PIPELINE TRACE ===")
-for stage in result["trace"]["stages"]:
-    print(f"Stage: {stage['name']}")
-    print(f"  Input: {stage['input'][:50]}...")
-    print(f"  Output: {stage['output'][:50]}...")
-    print(f"  Latency: {stage['latency_ms']}ms")
-    if stage.get("changes"):
-        print(f"  Changes: {len(stage['changes'])}")
-
-print("\n=== METRICS ===")
-print(result["metrics"])
+print("Optimized:", result["optimized"])
+print("Fallback:", result.get("fallback_reason"))
+print("Error:", result.get("original_error"))
+print("Diff:", result.get("diff"))
+print("PII:", result.get("metrics", {}).get("pii_detected"))
 ```
 
 ---
 
-## 📞 Getting Help
+## Environment variables
 
-### **Check Version**
-```python
-from privysha import __version__
-print(f"PrivySHA version: {__version__}")
-```
+| Variable | Purpose |
+|----------|---------|
+| `OPENAI_API_KEY` | OpenAI adapter |
+| `ANTHROPIC_API_KEY` | Anthropic adapter |
+| `GOOGLE_API_KEY` | Gemini adapter |
+| `GROK_API_KEY` | Grok adapter |
+| `PRIVYSHA_CACHE_DIR` | Cache directory (local advisor) |
 
-### **System Information**
-```python
-import sys, platform, os
-from privysha import __version__
-
-print(f"Python: {sys.version}")
-print(f"Platform: {platform.platform()}")
-print(f"PrivySHA: {__version__}")
-```
-
-### **Create Bug Report**
-```python
-# Include this information in bug reports
-import sys, platform
-from privysha import __version__
-
-bug_info = f"""
-Python: {sys.version}
-Platform: {platform.platform()}
-PrivySHA: {__version__}
-Error: [Your error message]
-Steps to reproduce:
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
-
-Expected behavior: [What should happen]
-Actual behavior: [What actually happened]
-"""
-
-# Post to: https://github.com/AjayRajan05/privySHA/issues
-```
+Note: `PRIVYSHA_MODE` is **not** read by the library. Set `mode` per function call.
 
 ---
 
-## 🎯 Performance Optimization
+## Still stuck?
 
-### **Benchmark Your Setup**
-```python
-import time
-from privysha import process
-
-start_time = time.time()
-result = process("Your test prompt here")
-end_time = time.time()
-
-print(f"Processing time: {(end_time - start_time) * 1000:.2f}ms")
-print(f"Tokens saved: {result.get('metrics', {}).get('tokens_saved', 0)}")
-```
-
-### **Optimize for Your Use Case**
-```python
-# For high-throughput processing
-from privysha import process_async
-
-async def process_batch(prompts):
-    tasks = [process_async(p) for p in prompts]
-    return await asyncio.gather(*tasks)
-
-# For memory-constrained environments  
-from privysha import process
-
-result = process(
-    prompt,
-    mode="lite",           # Minimal processing
-    security_level="low",   # Basic security
-    trace=False,            # No overhead
-    pii_mode="rule"         # Fastest PII
-)
-```
+1. Run `privysha quick-test` to verify installation
+2. Run `python examples/developer_preview_demo.py`
+3. Open a [GitHub issue](https://github.com/AjayRajan05/privySHA/issues) with your `debug=True` output
 
 ---
 
-## 🚀 Still Having Issues?
+## Related docs
 
-1. **Check Documentation**: [Full Docs](https://github.com/AjayRajan05/privySHA)
-2. **Search Issues**: [Known Issues](https://github.com/AjayRajan05/privySHA/issues)
-3. **Ask Community**: [Discussions](https://github.com/AjayRajan05/privySHA/discussions)
-4. **Create Minimal Example**: Test with simplest possible case
-
----
-
-## 📈 Pro Tips
-
-### **For Production**
-- Use `mode="balanced"` for best performance/security tradeoff
-- Enable `trace=True` for debugging, disable in production
-- Set appropriate `token_budget` for cost control
-- Use async processing for high-throughput applications
-
-### **For Development**
-- Use `debug=True` during development
-- Start with `pii_mode="rule"` for fastest iteration
-- Use `log_level="DEBUG"` for detailed troubleshooting
-- Test with different `security_level` settings
-
----
-
-**🎉 Most issues are resolved with proper configuration and understanding of the processing pipeline!**
+- [FAQ](faq.md)
+- [Debugging](debugging.md)
+- [Performance Tuning](performance-tuning.md)

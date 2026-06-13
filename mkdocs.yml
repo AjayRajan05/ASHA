@@ -60,6 +60,8 @@ nav:
   - Versioning: versioning.md
   - Benchmarks: benchmarks.md
   - Local Model Advisor: local-advisor.md
+  - Routing: routing.md
+  - Model Gateway: model-gateway.md
   - Publishing: publishing.md
   - Roadmap: roadmap.md
   - Contributing: contributing.md

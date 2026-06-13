@@ -1,17 +1,17 @@
 # Getting Started with PrivySHA
 
-**Drop-in security + optimization layer for LLM apps**
+**v0.3.0 developer preview** — see [developer-preview.md](developer-preview.md) for scope.
 
-This guide will help you get PrivySHA installed and running with your first optimized prompt.
+This guide installs PrivySHA and runs your first optimized, privacy-safe prompt.
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
 - Python 3.10 or higher
-- pip package manager
+- pip
 
 ### Install from PyPI
 
@@ -19,51 +19,48 @@ This guide will help you get PrivySHA installed and running with your first opti
 pip install privysha
 ```
 
-### Optional Dependencies
-
-Install extras for specific providers and integrations:
+### Optional extras
 
 ```bash
-# LLM providers
-pip install privysha[openai]
-pip install privysha[anthropic]
-pip install privysha[gemini]
-
-# ML-enhanced PII detection
-pip install privysha[ml]
-
-# Framework integrations (FastAPI, LangChain, etc.)
-pip install privysha[integrations]
-
-# Everything
-pip install privysha[all]
+pip install privysha[openai]       # OpenAI adapter
+pip install privysha[anthropic]    # Anthropic adapter
+pip install privysha[gemini]       # Google Gemini adapter
+pip install privysha[ml]           # ML-enhanced PII (spaCy + transformers)
+pip install privysha[integrations] # FastAPI, LangChain, Instructor, etc.
+pip install privysha[local-advisor] # PrivyFit catalog fetch
+pip install privysha[all]          # All optional dependencies
 ```
 
 See [integrations.md](integrations.md) for the full extras table.
 
-### Verify Installation
+### Verify
 
 ```python
 from privysha import process
-print("PrivySHA installed successfully!")
+print(process("Hello world"))
 ```
 
 ---
 
-## 🎯 Your First Prompt
+## Your first prompt
 
-### Quick Start (3 lines)
+### Drop-in processing (recommended)
 
 ```python
 from privysha import process
 
-result = process("My email is john@gmail.com. Analyze this dataset.")
-
-print(result["text"])
-print(result["meta"])
+result = process(
+    "My email is john@gmail.com. Analyze this dataset.",
+    return_metrics=True,
+)
+print(result["optimized"])
+print(f"Token reduction: {result['token_reduction']}%")
+print(f"PII masked: {result.get('pii_masked', False)}")
 ```
 
-### Wrap Existing Client (Zero Refactor)
+By default, `process()` returns a **string**. Pass `return_metrics=True` for a dict.
+
+### Wrap an existing LLM client
 
 ```python
 from privysha import wrap_llm
@@ -72,281 +69,115 @@ import openai
 client = openai.OpenAI()
 secure_client = wrap_llm(client)
 
-# Same interface, automatically secured
 response = secure_client.chat.completions.create(
-    messages=[{"role": "user", "content": "My email is john@gmail.com"}]
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "My email is john@gmail.com"}],
 )
 ```
 
-### With Metrics
+Requires `pip install privysha[openai]` and `OPENAI_API_KEY`.
+
+---
+
+## Processing modes
 
 ```python
-from privysha import process
+process(prompt, mode="balanced")  # default — security + optimization
+process(prompt, mode="strict")    # maximum PII masking
+process(prompt, mode="lite")      # minimal processing, lower latency
+process(prompt, mode="off")       # passthrough (no modification)
+```
 
-result = process("prompt", return_metrics=True)
-print(f"Token reduction: {result['token_reduction']}%")
-print(f"PII detected: {len(result['security_result']['masked_entities'])}")
+Modes are implemented via `PolicyConfig` presets. See [core-concepts.md](core-concepts.md).
+
+---
+
+## PII detection modes
+
+```python
+process(prompt, pii_mode="rule")    # default — lightweight, no downloads
+process(prompt, pii_mode="hybrid")  # rules + ML (requires privysha[ml])
+process(prompt, pii_mode="ml_only") # experimental ML-only
 ```
 
 ---
 
-## 🛠️ CLI Tool
+## CLI tool
 
-### Quick Demo
+The CLI uses subcommands — not all flags on the default command.
 
 ```bash
+# Process a prompt
 privysha "My email is john@gmail.com. Analyze this dataset."
-```
 
-### Quick Test Suite
-
-```bash
-privysha --quick-test
-```
-
-### See Examples
-
-```bash
-privysha --examples
-```
-
-### Debug Mode
-
-```bash
+# With debug metrics
 privysha "prompt" --debug
+
+# Built-in test suite
+privysha quick-test
+
+# Example prompts
+privysha examples
+
+# Benchmarks
+privysha benchmark --save
+
+# Local model recommendations (PrivyFit)
+privysha recommend --prompt "Analyze dataset" --gpu "RTX 4090"
 ```
 
 ---
 
-## ⚙️ Processing Modes
+## Agent (pipeline + LLM)
+
+For end-to-end prompt processing and LLM generation:
 
 ```python
-# Balanced (default) - Smart security + optimization
-result = process(prompt, mode="balanced")
+from privysha import Agent
 
-# Strict - Maximum security (mask all PII)
-result = process(prompt, mode="strict")
+# No API key needed for mock adapter
+agent = Agent(model="mock", privacy=True)
+response = agent.run("Analyze this dataset with john@example.com")
+print(response)
 
-# Lite - Minimal processing (low latency)
-result = process(prompt, mode="lite")
-
-# Off - No modification
-result = process(prompt, mode="off")
+# With tracing
+result = agent.run("prompt", trace=True)
+print(result["prompts"]["optimized"])
+print(result["response"])
 ```
+
+Supported `Agent` constructor parameters:
+
+| Parameter | Description |
+|-----------|-------------|
+| `model` | Model name (default: `gpt-4o-mini`) |
+| `privacy` | Enable privacy features (default: `True`) |
+| `token_budget` | Token budget for optimization (default: `1200`) |
+| `provider` | Provider override (auto-detected if omitted) |
+| `fallback_providers` | List of fallback provider configs |
+| `routing_config` | Smart routing configuration dict |
+| `local_model` | Set to `"auto"` for PrivyFit model selection |
+| `sample_prompts` | Prompt corpus for PrivyFit when `local_model="auto"` |
+
+`Agent.run(prompt, trace=False, task_type="chat")` returns a **string** unless `trace=True`.
 
 ---
 
-## 🔑 API Keys (Optional)
+## API keys (optional)
 
-PrivySHA works without API keys for basic processing. For LLM integration:
+Basic `process()` / `sanitize()` work without API keys. For LLM adapters:
 
 ```bash
-# OpenAI
 export OPENAI_API_KEY=your_key
-
-# Gemini
-export GOOGLE_API_KEY=your_key
-
-# Anthropic
 export ANTHROPIC_API_KEY=your_key
+export GOOGLE_API_KEY=your_key
 ```
 
 ---
 
-## � Common Use Cases
+## Next steps
 
-```python
-from privysha import Agent
-
-agent = Agent(model="gpt-4o-mini")
-response = agent.run("Your prompt here")
-```
-
-### Advanced (v2 Features)
-
-Full control with fallbacks and routing:
-
-```python
-from privysha import Agent
-
-agent = Agent(
-    model="gpt-4o-mini",
-    privacy=True,
-    fallback_providers=[
-        {"provider": "anthropic", "model": "claude-3-haiku"},
-        {"provider": "grok", "model": "grok-beta"}
-    ],
-    optimization_level="aggressive"
-)
-
-result = agent.run("Complex prompt", trace=True)
-```
-
----
-
-## 📊 Understanding the Output
-
-### Simple Response
-
-```python
-response = agent.run("Simple prompt")
-print(response)
-# Just the text response
-```
-
-### Advanced Result
-
-```python
-result = agent.run("Complex prompt", trace=True)
-
-print("Response:", result["response"])
-print("Tokens used:", result["token_usage"])
-print("Optimization:", result["optimization_metrics"])
-print("Security:", result["security_result"])
-print("Model used:", result["model_info"])
-```
-
-### Example Output
-
-```python
-{
-    "response": "The dataset shows 3 anomalies...",
-    "token_usage": {
-        "input_tokens": 38,
-        "output_tokens": 45,
-        "total_tokens": 83
-    },
-    "optimization_metrics": {
-        "original_tokens": 120,
-        "optimized_tokens": 38,
-        "reduction_percentage": 68.3
-    },
-    "security_result": {
-        "pii_detected": 2,
-        "pii_masked": 2,
-        "injection_attempts": 0
-    },
-    "model_info": {
-        "provider": "openai",
-        "model": "gpt-4o-mini",
-        "fallback_used": False
-    }
-}
-```
-
----
-
-## 🛠️ Common Configurations
-
-### Data Analysis
-
-```python
-from privysha import Agent
-
-analyst = Agent(
-    model="gpt-4o-mini",
-    privacy=True,
-    optimization_level="balanced"
-)
-
-result = analyst.run(
-    "Analyze the sales data and identify trends",
-    trace=True
-)
-```
-
-### Chatbot
-
-```python
-from privysha import Agent
-
-chatbot = Agent(
-    model="gpt-4o-mini",
-    privacy=True,
-    fallback_providers=[
-        {"provider": "anthropic", "model": "claude-3-haiku"}
-    ]
-)
-
-response = chatbot.run("User message about their data")
-```
-
-### Content Moderation
-
-```python
-from privysha import Agent
-
-moderator = Agent(
-    model="gpt-4o-mini",
-    privacy=True,
-    security_level="high"
-)
-
-result = moderator.run(
-    "Check this content for policy violations",
-    trace=True
-)
-```
-
----
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### API Key Not Found
-```
-Error: OPENAI_API_KEY not found
-```
-**Solution**: Set environment variables or use .env file
-
-#### Model Not Available
-```
-Error: Model 'gpt-4' not found
-```
-**Solution**: Check available models for each provider
-
-#### Import Error
-```
-Error: No module named 'privysha'
-```
-**Solution**: `pip install privysha`
-
-### Debug Mode
-
-Always use `trace=True` for debugging:
-
-```python
-result = agent.run("prompt", trace=True)
-agent.print_debug_trace()
-```
-
-This shows the full pipeline:
-```
-RAW → SANITIZED → IR → OPTIMIZED → COMPILED → RESPONSE
-```
-
----
-
-## 🎯 Next Steps
-
-Now that you're set up:
-
-1. **[Learn Core Concepts](core-concepts.md)** - Understand Prompt IR and Pipeline
-2. **[Explore Pipeline](pipeline.md)** - Deep dive into processing stages
-3. **[Check Examples](examples.md)** - Real-world use cases
-4. **[API Reference](api-reference.md)** - Complete documentation
-
----
-
-## 💡 Pro Tips
-
-- **Always use `trace=True` during development**
-- **Enable `privacy=True` for user data**
-- **Set up fallback providers for production**
-- **Monitor optimization metrics for cost savings**
-- **Use debug traces for troubleshooting**
-
----
-
-*Ready to dive deeper? Check out [Core Concepts](core-concepts.md) next!*
+1. [Core Concepts](core-concepts.md) — understand modes and pipeline
+2. [API Reference](api-reference.md) — full function signatures
+3. [Security](security.md) — PII masking and fail-closed mode
+4. [Local Model Advisor](local-advisor.md) — PrivyFit recommendations

@@ -1,5 +1,7 @@
 # PyPI Publishing Setup
 
+> Current release track: **v0.3.0 developer preview** (Alpha classifier). See [versioning.md](versioning.md).
+
 PrivySHA uses [trusted publishing](https://docs.pypi.org/trusted-publishers/) via GitHub Actions.
 
 ## TestPyPI (recommended first)

@@ -3,6 +3,7 @@ __pycache__/
 *.pyo
 *.pyd
 venv/
+.venv-ci/
 .env
 dist/
 build/
@@ -16,4 +17,3 @@ flake8_report*.txt
 test_output.txt
 benchmarks/output/
 site/
-whichllm-main/

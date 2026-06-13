@@ -1,153 +1,121 @@
 # PrivySHA Documentation
 
-**Drop-in security + optimization layer for LLM apps**
+**Drop-in security + optimization layer for LLM apps** (v0.3.0 developer preview)
 
-PrivySHA automatically masks PII, reduces tokens, and blocks prompt injection attacks - all with zero code changes.
-
----
-
-## 🚀 Quick Start
-
-**New to PrivySHA?** Start here:
-
-- **[Getting Started](getting-started.md)** - Installation and first example
-- **[API Reference](api-reference.md)** - Core functions: process, wrap_llm, optimize, sanitize
-- **[Examples](examples.md)** - Real-world use cases
-- **[Integrations](integrations.md)** - FastAPI, LangChain, Instructor, Guardrails
+PrivySHA masks PII, reduces tokens, and blocks prompt injection — with minimal code changes. See [Developer Preview](developer-preview.md) for scope and limitations.
 
 ---
 
-## 🧱 Core Documentation
+## Quick start
 
-### Essential Guides
-- **[Getting Started](getting-started.md)** - Installation, setup, first prompt
-- **[API Reference](api-reference.md)** - Complete API documentation
-- **[Examples](examples.md)** - Real-world use cases and patterns
-- **[Integrations](integrations.md)** - Framework composition guides
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](getting-started.md) | Install and first example |
+| [Quickstart](quickstart.md) | 5-minute walkthrough |
+| [API Reference](api-reference.md) | `process`, `wrap_llm`, `optimize`, `sanitize`, `Agent` |
+| [Examples](examples.md) | Real-world patterns |
+| [Local Model Advisor](local-advisor.md) | PrivyFit — recommend local LLMs |
 
-### Key Features
-- **[Security](security.md)** - PII masking and injection protection
-- **[Compliance](compliance.md)** - GDPR, CCPA, HIPAA considerations
-- **[Optimization](optimization.md)** - Token reduction and cost savings
-- **[Processing Modes](core-concepts.md)** - balanced, strict, lite, off modes
-- **[CLI Tool](getting-started.md#cli-tool)** - Quick testing and debugging
+---
+
+## Core documentation
+
+### Essential
+
+- [Core Concepts](core-concepts.md) — modes, PII detection, pipeline overview
+- [Security](security.md) — PII masking, injection protection, fail-open vs fail-closed
+- [Optimization](optimization.md) — token reduction and cost savings
+- [Integrations](integrations.md) — FastAPI, LangChain, Instructor, Guardrails
 
 ### Advanced
-- **[Architecture](architecture.md)** - System design and components
-- **[Debugging](debugging.md)** - Full pipeline tracing
-- **[FAQ](faq.md)** - Common questions
+
+- [Architecture](architecture.md) — package layout and design
+- [Pipeline](pipeline.md) — 7-stage processing flow
+- [Prompt IR](prompt-ir.md) — intermediate representation
+- [Routing](routing.md) — model selection strategies
+- [Debugging](debugging.md) — `TraceContext` and pipeline traces
+
+### Operations
+
+- [Benchmarks](benchmarks.md) — reproducible performance numbers
+- [Performance Tuning](performance-tuning.md) — speed vs security trade-offs
+- [Troubleshooting](troubleshooting.md) — common issues
+- [FAQ](faq.md) — frequently asked questions
 
 ### Project
-- **[Contributing](contributing.md)** - How to contribute
-- **[Migration](migration.md)** - Upgrade from Presidio, regex, spaCy, etc.
-- **[Troubleshooting](troubleshooting.md)** - Common issues and fixes
-- **[Benchmarks](benchmarks.md)** - Reproducible performance numbers
+
+- [Versioning](versioning.md) — release policy and timeline
+- [Migration](migration.md) — upgrade from Presidio, regex, spaCy, etc.
+- [Compliance](compliance.md) — GDPR, CCPA considerations (tool-only)
+- [Contributing](contributing.md) — development guide
+- [Publishing](publishing.md) — PyPI trusted publishing
+- [Roadmap](roadmap.md) — planned features
 
 ---
 
-## 🎯 Why PrivySHA?
+## Why PrivySHA?
 
-### Traditional LLM Usage
+### Without PrivySHA
+
 ```
-User → Prompt → LLM → Response
+User Prompt → LLM → Response
 ```
 
-**Problems:**
-- ❌ Unstructured prompts
-- ❌ High token cost
-- ❌ No privacy guarantees
-- ❌ No control over model selection
-- ❌ No debugging visibility
+Problems: unstructured prompts, PII leakage, high token cost, no debugging visibility.
 
 ### With PrivySHA
+
 ```
-User → Sanitization → Prompt IR → Optimization → Best Model → Response
+User Prompt → Security → IR → Optimization → LLM → Response
 ```
 
-**Benefits:**
-- ✅ Structured, reproducible prompts
-- ✅ 5–15% typical token reduction (see [benchmarks.md](benchmarks.md))
-- ✅ Built-in privacy protection
-- ✅ Intelligent model routing
-- ✅ Full debugging traces
+Benefits: PII masking, 5–15% typical token reduction (see [benchmarks](benchmarks.md)), pipeline traces, optional local model routing via PrivyFit.
 
 ---
 
-## 📊 Key Metrics
-
-| Feature | Traditional | PrivySHA | Improvement |
-|---------|------------|-----------|------------|
-| **Token Usage** | 120 tokens | 102–114 tokens | **5–15% reduction** |
-| **Privacy** | None | Built-in PII masking | **Full protection** |
-| **Debugging** | Limited | Full pipeline traces | **Complete visibility** |
-| **Model Selection** | Manual | Intelligent routing | **Automatic optimization** |
-
----
-
-## 🛠️ Installation
+## Installation
 
 ```bash
 pip install privysha
 ```
 
-### Quick Example
+Requires Python 3.10+. From source:
 
-```python
-from privysha import Agent
+```bash
+pip install -e .
+python examples/developer_preview_demo.py
+```
 
-agent = Agent(model="gpt-4o-mini", privacy=True)
+Build docs locally:
 
-response = agent.run(
-    "Hey bro can you analyze this dataset for anomalies?"
-)
-
-print(response)
+```bash
+pip install -e ".[docs]"
+mkdocs serve
 ```
 
 ---
 
-## 🧠 Philosophy
+## Primary API
 
-PrivySHA treats prompts as:
+```python
+from privysha import process
 
-> **Programs, not strings**
+# Returns optimized string by default
+result = process("My email is alex@company.com — analyze this dataset.")
+print(result)
 
-This enables:
-- **Reproducibility** - Same input → same output
-- **Optimization** - Systematic improvements
-- **Composability** - Building blocks for complex systems
-- **Debugging** - Step-by-step visibility
+# With metrics
+result = process("...", return_metrics=True)
+print(result["optimized"])
+print(result["token_reduction"])
+```
 
----
-
-## 🏗️ What Makes PrivySHA Different?
-
-| Feature | PrivySHA | LangChain | Guardrails |
-|---------|----------|-----------|------------|
-| **Prompt Compiler** | ✅ | ❌ | ❌ |
-| **Prompt IR** | ✅ | ❌ | ❌ |
-| **Cost Optimization** | ✅ | ❌ | ❌ |
-| **Multi-model routing** | ✅ | ⚠️ | ❌ |
-| **Security + Transformation** | ✅ | ⚠️ | ✅ |
-| **Observability** | ✅ | ⚠️ | ⚠️ |
+See [API Reference](api-reference.md) for `wrap_llm`, `optimize`, `sanitize`, `Agent`, and `recommend_local_model`.
 
 ---
 
-## 🚀 Next Steps
-
-1. **[Install PrivySHA](getting-started.md#installation)**
-2. **[Set up API keys](getting-started.md#api-keys-optional)**
-3. **[Run your first prompt](getting-started.md#your-first-prompt)**
-4. **[Explore advanced features](core-concepts.md)**
-
----
-
-## 🤝 Community
+## Community
 
 - **GitHub**: [AjayRajan05/privySHA](https://github.com/AjayRajan05/privySHA)
 - **Issues**: [Report bugs](https://github.com/AjayRajan05/privySHA/issues)
-- **Contributing**: [How to contribute](contributing.md)
-
----
-
-*Ready to transform your LLM prompts? Let's get started!*
+- **License**: Apache 2.0

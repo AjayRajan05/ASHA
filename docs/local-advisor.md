@@ -1,5 +1,7 @@
 # PrivyFit — Local Model Advisor
 
+> **Status: Preview in v0.3.0** — APIs may change before 1.0.0. See [developer-preview.md](developer-preview.md).
+
 PrivyFit recommends **local LLM models for your application on your hardware**. Unlike generic hardware-only tools, PrivyFit analyzes your **compiled prompt workload**, **privacy requirements**, and **IR-derived intent** before ranking models.
 
 ## Quick start

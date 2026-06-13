@@ -14,7 +14,7 @@
 | P95 latency | 76.4 ms |
 | P99 latency | 76.4 ms |
 
-Full JSON: `benchmark_20260524_180855.json`
+Full JSON: `results.json`
 
 Re-run locally:
 

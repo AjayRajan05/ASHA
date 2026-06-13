@@ -7,8 +7,8 @@ PrivySHA is in **early development**. Treat this release as a developer preview:
 | Area | Status |
 |------|--------|
 | Drop-in APIs (`process`, `wrap_llm`, `optimize`, `sanitize`) | Working — primary focus |
-| PII masking & prompt optimization | Working — modes: `balanced`, `strict`, `lite` |
-| Provider adapters (OpenAI, Anthropic, Gemini, Ollama, …) | Working — optional extras |
+| PII masking & prompt optimization | Working — modes: `balanced`, `strict`, `lite`, `off` |
+| Provider adapters (OpenAI, Anthropic, Gemini, Ollama, Grok, HuggingFace, Mock) | Working — optional extras |
 | PrivyFit local model advisor | **Preview** — `recommend_local_model()`, `privysha recommend` |
 | Pipeline / routing / Agent | **Preview** — APIs may change |
 | Benchmarks & CI | Reproducible baseline in `benchmarks/` |
@@ -35,8 +35,24 @@ Or:
 ```python
 from privysha import process
 
-print(process("My email is user@example.com — summarize this report."))
+result = process(
+    "My email is user@example.com — summarize this report.",
+    return_metrics=True,
+)
+print(result["optimized"])
 ```
+
+## Release history (correct order)
+
+| Version | Date | Notes |
+|---------|------|-------|
+| 0.1.0 | 2026-03-13 | Initial release |
+| 0.2.0 | 2026-05-23 | Modular pipeline, drop-in API stabilized |
+| 1.0.0 | 2026-05-24 | Brief stable release (later reverted to preview track) |
+| 1.0.1 | 2026-05-24 | Patch on stable track |
+| **0.3.0** | **2026-06-05** | **Current — developer preview re-release with PrivyFit** |
+
+The project returned to **0.x** to gather community feedback before committing to a stable 1.0 API.
 
 ## Semantic versioning
 
@@ -49,7 +65,7 @@ We are actively looking for **bug reports, UX feedback, and feature requests** a
 
 **Please tell us:**
 
-1. Is `pip install -e .` and the [developer preview demo](../examples/developer_preview_demo.py) intuitive?
+1. Is `pip install -e .` and the [developer preview demo](https://github.com/AjayRajan05/privySHA/blob/main/examples/developer_preview_demo.py) intuitive?
 2. Does `process()` / `wrap_llm()` fit your app without heavy refactoring?
 3. For PrivyFit: did recommendations match your workload and hardware expectations?
 4. What PII types or providers are missing for your use case?
@@ -88,4 +104,4 @@ Docs: [Developer preview](developer-preview.md) · [Local advisor](local-advisor
 
 ## License
 
-Apache 2.0 — see [LICENSE](../LICENSE). You may use, modify, and contribute under those terms.
+Apache 2.0 — see [LICENSE](https://github.com/AjayRajan05/privySHA/blob/main/LICENSE). You may use, modify, and contribute under those terms.

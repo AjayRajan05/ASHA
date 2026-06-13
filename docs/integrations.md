@@ -1,5 +1,7 @@
 # Framework Integrations
 
+> **v0.3.0 developer preview** — integration APIs may evolve before 1.0.0.
+
 PrivySHA is designed as a **preprocessing layer** — it runs before your LLM, guardrails, or structured-output library. It does not replace Guardrails, Instructor, or LangChain; it composes with them.
 
 ---
