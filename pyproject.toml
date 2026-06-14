@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "privysha"
 version = "0.3.0"
-description = "Drop-in security + optimization layer for LLM apps (developer preview)"
+description = "PrivySHA (privacy focused secure hashing library) — drop-in security + optimization layer for LLM apps (developer preview)"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [

@@ -3,7 +3,8 @@
 > **Status: Developer Preview (v0.3.0)** — Early development. APIs and features may change before 1.0.0. See [Developer Preview](docs/developer-preview.md) for scope, limitations, and how to give feedback.
 
 <p align="center">
-<strong>Privacy-First Prompt Compilation Framework for AI Systems</strong>
+<strong>PrivySHA — privacy focused secure hashing library</strong><br/>
+<em>Privacy-first prompt compilation for AI systems</em>
 </p>
 
 <p align="center">

@@ -3,7 +3,10 @@ __pycache__/
 *.pyo
 *.pyd
 venv/
+.venv/
 .venv-ci/
+.venv-ci-clean/
+.cursor/
 .env
 dist/
 build/
