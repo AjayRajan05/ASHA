@@ -6,6 +6,7 @@ venv/
 .venv/
 .venv-ci/
 .venv-ci-clean/
+.venv-pub/
 .cursor/
 .env
 dist/
