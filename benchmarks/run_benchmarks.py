@@ -97,6 +97,12 @@ def main() -> int:
         )
         print(f"\nResults saved to: {results_file}")
         print(f"Summary saved to: {md_path}")
+        latest_path = Path(args.output_dir) / "results.json"
+        latest_path.write_text(
+            Path(results_file).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        print(f"Latest results: {latest_path}")
         if args.update_baseline:
             baseline_dir = ROOT / "benchmarks" / "baseline"
             baseline_dir.mkdir(parents=True, exist_ok=True)

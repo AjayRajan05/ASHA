@@ -65,27 +65,23 @@ jobs:
       env:
         PRIVYSHA_DISABLE_ML: "1"
 
-    - name: Benchmark quality gates
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      run: |
-        python benchmarks/run_benchmarks.py
-      timeout-minutes: 5
-      env:
-        PRIVYSHA_DISABLE_ML: "1"
-
     - name: Semantic equivalence quality gate
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
         python - <<'EOF'
         import json, sys
-        with open("benchmarks/baseline/results.json") as f:
+        sys.path.insert(0, "src")
+        from privysha.core.benchmark import check_semantic_equivalence
+        with open("benchmarks/output/results.json") as f:
             data = json.load(f)
         results = data.get("results", [])
-        sem_eq_pass = sum(1 for r in results if r.get("metrics", {}).get("semantic_equivalence") is True)
+        sem_eq_pass = sum(
+            1 for r in results
+            if check_semantic_equivalence(r["input_prompt"], r["output_prompt"])
+        )
         total = len(results)
         rate = sem_eq_pass / total if total else 0
         print(f"Semantic equivalence: {sem_eq_pass}/{total} ({rate:.0%})")
-        # Gate: at least 30% must be semantically equivalent (current state ~30%)
         if rate < 0.30:
             print(f"FAIL: semantic_equivalence rate {rate:.0%} < 30% gate", file=sys.stderr)
             sys.exit(1)
@@ -98,14 +94,13 @@ jobs:
       run: |
         python - <<'EOF'
         import json, sys
-        with open("benchmarks/baseline/results.json") as f:
+        with open("benchmarks/output/results.json") as f:
             data = json.load(f)
         results = data.get("results", [])
         repair_pass = sum(1 for r in results if r.get("metrics", {}).get("prompt_repair") is True)
         total = len(results)
         rate = repair_pass / total if total else 0
         print(f"Prompt repair: {repair_pass}/{total} ({rate:.0%})")
-        # Gate: 100% of prompts must pass structural repair check
         if rate < 1.0:
             print(f"FAIL: prompt_repair rate {rate:.0%} < 100% gate", file=sys.stderr)
             sys.exit(1)
