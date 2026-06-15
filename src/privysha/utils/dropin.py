@@ -29,7 +29,6 @@ from typing import Optional
 import difflib
 
 from ..core.policy_config import PolicyConfig
-from ..core.safety import safety_mode_from_policy_mode
 from ..runtime.processor import PromptProcessor
 from ..runtime.resolve import resolve_process_call, resolve_sanitize_policy
 from ..types.results import OptimizeResult, ProcessResult, SanitizeResult

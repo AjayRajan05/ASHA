@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterable, List, Sequence, cast
+from typing import Iterable, List, Sequence
 
 from ...core.engines import compile_prompt, optimize_tokens
 from ...core._ir.ir_builder import IRBuilder

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import concurrent.futures as cf
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..core._ir.ir_builder import IRBuilder
 from ..core.compiler.prompt_compiler import PromptCompiler
@@ -27,7 +27,7 @@ def sanitize_text(
     timeout_seconds: Optional[float] = None,
 ) -> SanitizeResult:
     """Security-only sanitization (PII masking, threat detection)."""
-    from ..core.safety import SafetyMode, is_fail_closed, resolve_safety_mode, should_raise_on_failure
+    from ..core.safety import is_fail_closed, resolve_safety_mode, should_raise_on_failure
     from ..exceptions import PrivySHAProcessingError
     from ..utils.dropin_privacy import SECURITY_FAIL_CLOSED_PLACEHOLDER
     from ..utils.result_builders import build_sanitize_result
