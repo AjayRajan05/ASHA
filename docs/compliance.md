@@ -1,131 +1,58 @@
-# Compliance Considerations
+# Compliance
 
-**PrivySHA v0.3.0 developer preview** — privacy tooling, not a certified compliance product.
-
----
-
-## Disclaimer
-
-PrivySHA helps reduce PII exposure in LLM prompts through automated detection and masking. It does **not**:
-
-- Provide legal compliance certification (GDPR, CCPA, HIPAA, etc.)
-- Replace a Data Protection Impact Assessment (DPIA)
-- Guarantee 100% PII detection in all cases
-- Handle data at rest, data retention, or access control
-
-Use PrivySHA as one layer in a broader privacy and security program.
+**PrivySHA v0.4.1** — privacy tooling, not a certified compliance product.
 
 ---
 
 ## What PrivySHA provides
 
-| Capability | How |
-|------------|-----|
-| PII detection | Rule-based (default) or ML-enhanced (`pii_mode="hybrid"`) |
-| PII masking | Replaces detected values with hashed tokens |
-| Injection detection | Identifies common prompt injection patterns |
-| Audit trail | `trace=True`, `return_metrics=True` for processing records |
-| Fail-closed mode | `security_fail_closed=True` blocks on total failure |
-| Reversible masking | Opt-in `reversible=True` + `unmask()` |
+- PII detection and masking before LLM calls
+- Configurable fail-closed mode (`mode="strict"`)
+- Audit-friendly typed results (`ProcessResult.security`, traces)
+- Local preprocessing without sending raw PII to cloud models (when self-hosted)
 
 ---
 
-## GDPR considerations
+## What PrivySHA does not provide
 
-PrivySHA can help with GDPR Article 25 (data protection by design) by masking personal data before it reaches third-party LLM providers.
+- Legal compliance certification (GDPR, HIPAA, SOC 2, etc.)
+- Data processing agreements or audit reports
+- Guaranteed detection of all PII in all locales
+- Replacement for organizational privacy policies
 
-**Recommended settings for EU personal data:**
+---
+
+## Recommended practices
+
+1. **Pin the version** — `privysha==0.4.1`
+2. **Use `mode="strict"`** for regulated paths where failure must block
+3. **Prefer `wrap_llm()`** over `auto_patch()` for scoped control
+4. **Log `result.degraded`** in balanced mode — indicates fallback was used
+5. **Review mask formats** — `[EMAIL_HASH]_*` tokens, not reversible by default
+6. **Combine with org controls** — access policies, retention, DPA with LLM vendor
+
+---
+
+## Reversible masking
+
+Only enable when you have a documented need to restore values in LLM output:
 
 ```python
-from privysha import process
-
-result = process(
-    user_prompt,
-    mode="strict",
-    pii_mode="hybrid",           # higher accuracy
-    security_fail_closed=True,   # block on failure
-    return_metrics=True,
-    trace=True,                  # audit trail
-)
+from privysha.core.policy_config import PolicyConfig
+sanitize(prompt, policy=PolicyConfig(reversible=True))
 ```
 
-**You are still responsible for:**
-
-- Lawful basis for processing
-- Data Processing Agreements with LLM providers
-- Right to erasure (reversible masking stores mappings — use with care)
-- Cross-border data transfer assessments
-
----
-
-## CCPA considerations
-
-PrivySHA masks personal information before LLM transmission, reducing inadvertent disclosure.
-
-Log `return_metrics=True` output for processing records, but ensure logs themselves do not contain unmasked PII.
-
----
-
-## HIPAA considerations
-
-PrivySHA is **not HIPAA-certified**. For healthcare workloads:
-
-- Use `mode="strict"` and `security_fail_closed=True`
-- Do not use `reversible=True` unless you have a secure vault for masking maps
-- Conduct your own risk assessment
-- Consider on-premise models via PrivyFit + Ollama
-
----
-
-## Audit logging
-
-```python
-result = process(
-    prompt,
-    mode="strict",
-    return_metrics=True,
-    trace=True,
-)
-
-audit_record = {
-    "pii_detected": result["metrics"]["pii_detected"],
-    "pii_masked": result.get("pii_masked"),
-    "risk_level": result["metrics"]["risk_level"],
-    "threats_blocked": result["metrics"]["threats_blocked"],
-    "processing_time_ms": result["metrics"]["processing_time_ms"],
-}
-# Store audit_record — do NOT store original unmasked prompt in logs
-```
-
----
-
-## Fail-open vs fail-closed
-
-| Mode | Behavior | Use case |
-|------|----------|----------|
-| Fail-open (default) | Returns best-effort result on failure | General apps |
-| Fail-closed | Returns blocked placeholder on failure | Regulated workloads |
-
-```python
-process(prompt, security_fail_closed=True)
-```
+Store `masking_map` securely — it can reverse pseudonymization.
 
 ---
 
 ## Data residency
 
-PrivySHA processes data in-process on your infrastructure. It does not send data to external services unless:
-
-- You use `pii_mode="hybrid"` or `"ml_only"` (local ML models)
-- You use PrivyFit with `refresh_catalog=True` (HuggingFace API)
-- Your LLM adapter sends the processed prompt to a provider API
-
-For strict data residency, use local models (Ollama) with `RoutingStrategy.LOCAL_PRIVACY`.
+`process()` and `sanitize()` run locally. LLM calls via `Agent` or `wrap_llm` send **processed** prompts to the provider you configure.
 
 ---
 
-## Related docs
+## Related
 
-- [Security](security.md)
-- [Developer Preview](developer-preview.md)
-- [Local Model Advisor](local-advisor.md)
+- [security.md](security.md)
+- [developer-preview.md](developer-preview.md)

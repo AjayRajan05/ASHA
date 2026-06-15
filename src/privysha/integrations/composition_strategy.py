@@ -20,10 +20,6 @@ Makes PrivySHA work WITH other tools instead of competing:
 secure_prompt = process(prompt)
 result = instructor_client.create(...)
 
-# With Guardrails
-secure_prompt = process(prompt)
-guard.validate(...)
-
 # With LangChain
 secure_chain = PrivySHATemplate(llm)
 chain.run(prompt)
@@ -145,14 +141,14 @@ class ToolChain:
     def _preprocess(self, text: str) -> str:
         """Preprocess text with PrivySHA."""
         return _coerce_process_output(
-            process(text, mode=self.config.policy_mode, return_metrics=False),
+            process(text, mode=self.config.policy_mode),
             text,
         )
 
     def _postprocess(self, text: str) -> str:
         """Postprocess text with PrivySHA."""
         return _coerce_process_output(
-            process(text, mode=self.config.policy_mode, return_metrics=False),
+            process(text, mode=self.config.policy_mode),
             text,
         )
 
@@ -190,7 +186,7 @@ class PrivySHAInstructorComposer:
         """Create structured output with PrivySHA preprocessing."""
         # Preprocess prompt with PrivySHA
         secure_prompt = _coerce_process_output(
-            process(prompt, mode=self.config.policy_mode, return_metrics=False),
+            process(prompt, mode=self.config.policy_mode),
             prompt,
         )
 
@@ -225,8 +221,7 @@ class PrivySHAInstructorComposer:
             # Process with PrivySHA
             processed_text = _coerce_process_output(
                 process(
-                    result_text, mode=self.config.policy_mode, return_metrics=False
-                ),
+                    result_text, mode=self.config.policy_mode                ),
                 result_text,
             )
 
@@ -238,76 +233,6 @@ class PrivySHAInstructorComposer:
             validation_result["is_valid"] = False
 
         return validation_result
-
-
-class PrivySHAGuardrailsComposer:
-    """
-    Compose PrivySHA with Guardrails for enhanced validation.
-
-    Example:
-        composer = PrivySHAGuardrailsComposer()
-        result = composer.validate_with_privysha(
-            prompt="User data with john@email.com",
-            guard=guard_obj
-        )
-    """
-
-    def __init__(self, config: Optional[CompositionConfig] = None):
-        """Initialize Guardrails composer."""
-        self.config = config or CompositionConfig()
-
-    def validate_with_privysha(
-        self, prompt: str, guard: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
-        """Validate prompt with Guardrails after PrivySHA processing."""
-        # Preprocess with PrivySHA
-        secure_prompt = _coerce_process_output(
-            process(prompt, mode=self.config.policy_mode, return_metrics=False),
-            prompt,
-        )
-
-        # Validate with Guardrails
-        try:
-            guard_result = guard.validate(secure_prompt, **kwargs)
-
-            return {
-                "original_prompt": prompt,
-                "secure_prompt": secure_prompt,
-                "guard_result": guard_result,
-                "validation_passed": getattr(guard_result, "validation_passed", True),
-            }
-
-        except Exception as e:
-            return {
-                "original_prompt": prompt,
-                "secure_prompt": secure_prompt,
-                "error": str(e),
-                "validation_passed": False,
-            }
-
-    def enhance_guardrails(
-        self,
-        guard_config: Dict[str, Any],
-        privysha_config: Optional[CompositionConfig] = None,
-    ) -> Dict[str, Any]:
-        """Enhance Guardrails configuration with PrivySHA features."""
-        enhanced_config = guard_config.copy()
-
-        # Add PrivySHA preprocessing step
-        if "rails" not in enhanced_config:
-            enhanced_config["rails"] = []
-
-        # Add PrivySHA rail
-        privysha_rail = {
-            "name": "privysha_preprocessing",
-            "type": "preprocessor",
-            "description": "PrivySHA PII masking and optimization",
-            "config": (privysha_config or self.config).__dict__,
-        }
-
-        enhanced_config["rails"].insert(0, privysha_rail)
-
-        return enhanced_config
 
 
 class PrivySHALangChainComposer:
@@ -416,7 +341,6 @@ class OpenAIComposer:
                             process(
                                 message["content"],
                                 mode=self.config.policy_mode,
-                                return_metrics=False,
                             ),
                             message["content"],
                         )
@@ -446,7 +370,6 @@ class UniversalComposer:
         self.config = config or CompositionConfig()
         self.composers = {
             "instructor": PrivySHAInstructorComposer(config),
-            "guardrails": PrivySHAGuardrailsComposer(config),
             "langchain": PrivySHALangChainComposer(config),
             "openai": OpenAIComposer(config),
         }
@@ -478,8 +401,7 @@ class UniversalComposer:
                 if isinstance(arg, str):
                     processed_arg = _coerce_process_output(
                         process(
-                            arg, mode=self.config.policy_mode, return_metrics=False
-                        ),
+                            arg, mode=self.config.policy_mode                        ),
                         arg,
                     )
                     processed_args.append(processed_arg)
@@ -494,7 +416,6 @@ class UniversalComposer:
                         process(
                             value,
                             mode=self.config.policy_mode,
-                            return_metrics=False,
                         ),
                         value,
                     )
@@ -541,13 +462,6 @@ def compose_with_instructor(
 ) -> PrivySHAInstructorComposer:
     """Create Instructor composer."""
     return PrivySHAInstructorComposer(config)
-
-
-def compose_with_guardrails(
-    guard: Any, config: Optional[CompositionConfig] = None
-) -> PrivySHAGuardrailsComposer:
-    """Create Guardrails composer."""
-    return PrivySHAGuardrailsComposer(config)
 
 
 def compose_with_langchain(

@@ -3,15 +3,15 @@ import os
 import pytest
 from unittest.mock import patch
 
-from privysha.adapters.factory import AdapterFactory
-from privysha.adapters.openai_adapter import OpenAIAdapter
-from privysha.adapters.ollama_adapter import OllamaAdapter
-from privysha.adapters.mock_adapter import MockAdapter
-from privysha.adapters.claude_adapter import ClaudeAdapter
+from privysha.runtime.adapters.factory import AdapterFactory
+from privysha.runtime.adapters.openai_adapter import OpenAIAdapter
+from privysha.runtime.adapters.ollama_adapter import OllamaAdapter
+from privysha.runtime.adapters.mock_adapter import MockAdapter
+from privysha.runtime.adapters.claude_adapter import ClaudeAdapter
 
 
 class TestAdapterFactory:
-    """Tests for AdapterFactory.create() routing (v0.2 API)."""
+    """Tests for AdapterFactory.create() routing."""
 
     def test_create_mock(self):
         adapter = AdapterFactory.create("mock")

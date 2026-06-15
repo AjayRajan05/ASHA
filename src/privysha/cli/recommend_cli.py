@@ -22,7 +22,7 @@ from typing import Optional
 
 import click
 
-from ..local_advisor.advisor import recommend_local_model
+from ..runtime.local_advisor.advisor import recommend_local_model
 
 
 @click.command("recommend")

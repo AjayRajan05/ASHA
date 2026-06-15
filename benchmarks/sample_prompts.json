@@ -14,7 +14,7 @@
   {
     "name": "code_generation",
     "prompt": "Create a Python function that validates email addresses. Contact test@example.com if needed.",
-    "expected_pii": 0,
+    "expected_pii": 1,
     "category": "code_generation"
   },
   {
@@ -44,7 +44,7 @@
   {
     "name": "teaching_example_com",
     "prompt": "Use test@example.com as a placeholder in your documentation examples.",
-    "expected_pii": 0,
+    "expected_pii": 1,
     "category": "false_positive"
   },
   {

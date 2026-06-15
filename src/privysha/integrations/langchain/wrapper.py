@@ -94,24 +94,12 @@ def _optimize_prompt_text(
     debug_metrics: bool,
 ) -> tuple[str, Optional[Dict[str, Any]]]:
     """Run process() and return optimized text plus optional metrics."""
+    mode = "balanced" if privacy else "off"
+    result = process(text, mode=mode, token_budget=token_budget)
+    optimized = _coerce_process_output(result, text)
     if debug_metrics:
-        result = cast(
-            Dict[str, Any],
-            process(
-                text,
-                privacy=privacy,
-                token_budget=token_budget,
-                return_metrics=True,
-            ),
-        )
-        return str(result["optimized"]), result
-    return (
-        _coerce_process_output(
-            process(text, privacy=privacy, token_budget=token_budget),
-            text,
-        ),
-        None,
-    )
+        return optimized, result.to_dict()
+    return optimized, None
 
 
 class PrivySHAPromptTemplate(BasePromptTemplate):

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-FastAPI Integration Example
+FastAPI integration (v0.4.1).
 
-This example shows how to add PrivySHA to an existing FastAPI application
-with just 2 lines of code - no refactoring required.
+Add PrivySHA to an existing FastAPI app with one middleware call.
+``privacy=True`` maps to internal mode ``balanced``.
 """
 
 from fastapi import FastAPI, HTTPException

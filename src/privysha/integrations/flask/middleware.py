@@ -286,15 +286,12 @@ class PrivySHAMiddleware:
         for field_path, prompt in prompts_found:
             try:
                 # Process prompt through PrivySHA
-                result = cast(
-                    Dict[str, Any],
-                    process(
-                        prompt,
-                        privacy=self.privacy,
-                        token_budget=self.token_budget,
-                        return_metrics=True,
-                    ),
-                )
+                mode = "balanced" if self.privacy else "off"
+                result = process(
+                    prompt,
+                    mode=mode,
+                    token_budget=self.token_budget,
+                ).to_dict()
 
                 # Update the field in the processed data
                 self._update_field(
@@ -514,18 +511,17 @@ def privysha_endpoint(
                     json.dumps(data),
                     privacy=privacy,
                     token_budget=token_budget,
-                    return_metrics=debug_metrics,
                 )
+                result_dict = result.to_dict() if hasattr(result, "to_dict") else result
 
                 if debug_metrics:
                     # Store metrics in Flask context
-                    g.privysha_endpoint_metrics = result
+                    g.privysha_endpoint_metrics = result_dict
 
                 # Update request data
-                processed_data = (
-                    cast(Dict[str, Any], json.loads(str(result["optimized"])))
-                    if isinstance(result, dict)
-                    else cast(Dict[str, Any], result)
+                processed_data = cast(
+                    Dict[str, Any],
+                    json.loads(str(result_dict["optimized"])),
                 )
 
             except Exception as e:

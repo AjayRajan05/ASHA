@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing!
 
-> **Project stage:** Developer preview (v0.3.0). We welcome bug reports, documentation fixes, and focused PRs. For large features, please open an issue first — APIs are still evolving toward 1.0.0.
+> **Project stage:** Developer preview (v0.4.1). We welcome bug reports, documentation fixes, and focused PRs.
 
 ## What we need most right now
 
@@ -37,7 +37,7 @@ pytest
 
 - Python **3.10+**
 - Follow existing code style (Black, flake8)
-- Add tests for new behavior in `tests_v2/`
+- Add tests for new behavior in `tests/`
 - Keep changes focused — one concern per PR
 
 ## Pull Request Checklist

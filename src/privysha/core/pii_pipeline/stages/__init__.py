@@ -1,5 +1,7 @@
 """
-PII Pipeline Stages - Individual processing stages
+PII detection phases (not the removed main pipeline stage framework).
+
+Individual processing phases for the hybrid PII subsystem.
 """
 
 from .normalization_stage import NormalizationStage

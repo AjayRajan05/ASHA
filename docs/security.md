@@ -1,40 +1,31 @@
 # Security
 
-**PrivySHA v0.3.0** — PII detection, masking, and prompt injection protection.
+**PrivySHA v0.4.1** — PII detection, masking, and prompt injection checks.
 
----
-
-## Overview
-
-PrivySHA detects and masks sensitive information before prompts reach LLM providers. Security runs as the first pipeline stage and is also available standalone via `sanitize()`.
+Security runs as the first engine in `process()` and is the sole engine in `sanitize()`.
 
 ---
 
 ## Detected PII types
 
-Rule-based detection (`security/pii_detector.py`, patterns in `security/patterns.py`):
+Rule-based detection (`core/security/pii_detector.py`, patterns in `core/security/patterns.py`):
 
 | Type | Examples |
 |------|----------|
 | Email | `user@example.com` |
-| Phone | `555-123-4567`, `(555) 123-4567` |
+| Phone | `555-123-4567` |
 | SSN | `123-45-6789` |
 | Credit card | `4111-1111-1111-1111` |
-| Address | Street addresses with context keywords |
-| Name | Names near context keywords (heuristic) |
-| API key / secret | `sk-...`, bearer tokens |
-| JWT | `eyJ...` tokens |
+| API key / secret | `sk-...` |
+| JWT | `eyJ...` |
 | IP address | `192.168.1.1` |
-| Date of birth | Near "birth", "dob" keywords |
-| ZIP code | US postal codes |
+| Address / name | Heuristic with context keywords |
 
-Teaching placeholders like `test@example.com` are skipped via `is_example_email()` in `security/patterns.py`.
+Teaching placeholders like `test@example.com` are skipped.
 
 ---
 
 ## Mask format
-
-Detected values are replaced with hashed tokens:
 
 ```
 john@example.com  →  [EMAIL_HASH]_a1b2c3
@@ -42,157 +33,97 @@ john@example.com  →  [EMAIL_HASH]_a1b2c3
 sk-abc123...      →  [REDACTED]
 ```
 
-Exact suffixes are deterministic hashes of the original value.
+---
+
+## PII detection mode
+
+Set via `PolicyConfig`, not a top-level kwarg:
+
+```python
+from privysha import process
+from privysha.core.policy_config import PolicyConfig
+
+process("Contact john@example.com", policy=PolicyConfig(pii_mode="rule"))
+process("...", policy=PolicyConfig(pii_mode="hybrid"))   # needs privysha[ml]
+```
+
+| `pii_mode` | Description | Install |
+|------------|-------------|---------|
+| `rule` | Regex + heuristic (default) | Core only |
+| `hybrid` | Rules + ML pipeline | `privysha[ml]` |
+| `ml_only` | Experimental ML-only | `privysha[ml]` |
+
+Missing ML deps fall back to `rule` with a warning.
 
 ---
 
-## PII detection modes
-
-| Mode | Description | Install |
-|------|-------------|---------|
-| `rule` | Regex + heuristic (default) | Core only |
-| `hybrid` | Rules + ML models | `pip install privysha[ml]` |
-| `ml_only` | ML-only (experimental) | `pip install privysha[ml]` |
+## Safety modes
 
 ```python
 from privysha import process, sanitize
 
-process("Contact john@example.com", pii_mode="rule")
-sanitize("Contact john@example.com", pii_mode="hybrid")
+process(prompt, mode="balanced")  # fail-open fallback
+process(prompt, mode="strict")      # raises PrivySHAProcessingError
+sanitize(prompt, mode="strict")
 ```
 
-If ML dependencies are missing, modes fall back to `rule`.
+| Mode | On total security failure |
+|------|---------------------------|
+| `balanced` / `lite` | Degraded result, `degraded=True` |
+| `strict` | Raises |
+| `off` | Passthrough |
 
 ---
 
-## Policy modes and security
-
-| Mode | Security behavior |
-|------|-------------------|
-| `strict` | Maximum PII masking, enhanced checks |
-| `balanced` | Standard detection (default) |
-| `lite` | Basic checks only |
-| `off` | No security processing (passthrough) |
+## sanitize() only
 
 ```python
-process(prompt, mode="strict")
-process(prompt, mode="off")  # no masking at all
+from privysha import sanitize
+
+result = sanitize("john@corp.com — summarize")
+print(result.safe)
+print(result.security.pii_detected)
 ```
-
----
-
-## Security levels
-
-Separate from policy mode — controls detection aggressiveness:
-
-```python
-process(prompt, security_level="low")     # basic
-process(prompt, security_level="medium")  # default
-process(prompt, security_level="high")    # enhanced
-```
-
----
-
-## Prompt injection detection
-
-The security layer detects common injection patterns:
-
-- "Ignore previous instructions"
-- Role-play jailbreak attempts
-- System prompt override patterns
-
-Threats are scored and logged in `security_result.detected_threats`.
-
-Control via pipeline stage config:
-
-```python
-pipeline.configure_stage("security", {
-    "enable_injection_detection": True,
-    "enable_pii_detection": True,
-})
-```
-
----
-
-## Fail-open vs fail-closed
-
-**Default (fail-open):** If the security pipeline fails entirely, `process()` returns a best-effort scrubbed result or the original prompt — it does not raise.
-
-**Fail-closed (opt-in):** For regulated workloads:
-
-```python
-process(prompt, security_fail_closed=True)
-sanitize(prompt, security_fail_closed=True)
-```
-
-Returns a blocked placeholder instead of raw PII on total failure.
-
-Use `debug=True` to inspect `fallback_reason` and `original_error`.
 
 ---
 
 ## Reversible masking
 
-Opt-in — stores a `masking_map` for post-LLM restoration:
-
 ```python
-from privysha import sanitize, unmask
+from privysha import sanitize
+from privysha.core.policy_config import PolicyConfig
+from privysha.utils.unmask import unmask
 
 result = sanitize(
     "Email alice@corp.com",
-    return_details=True,
-    reversible=True,
+    policy=PolicyConfig(reversible=True),
 )
-safe = result["sanitized"]
-restored = unmask(llm_output, result["masking_map"])
+restored = unmask(llm_output, result.security.masking_map)
 ```
-
-Uses `MaskingVault` in `security/masking_vault.py`.
 
 ---
 
-## SecurityLayer (advanced)
-
-Direct access for custom integrations:
+## wrap_llm security
 
 ```python
-from privysha import SecurityLayer, SecurityLevel
+from privysha.integrations import wrap_llm
 
-layer = SecurityLayer(security_level=SecurityLevel.MEDIUM)
-result = layer.scan("Contact john@email.com")
-print(result["masked_text"])
-print(result["pii_detected"])
+client = wrap_llm(openai_client, mode="balanced")
 ```
 
----
-
-## sanitize() vs process()
-
-| Function | Security | Optimization |
-|----------|----------|--------------|
-| `sanitize()` | Yes | No |
-| `process()` | Yes | Yes |
-| `optimize()` | No | Yes |
-
-```python
-from privysha import sanitize
-
-safe = sanitize("My SSN is 123-45-6789")
-# or with details:
-result = sanitize("prompt", return_details=True)
-print(result["pii_detected"])
-```
+- Uses caller's `mode` for preprocessing
+- Infrastructure/wrap failures raise when `mode != "off"` (never silently send raw prompts)
 
 ---
 
-## Compliance note
+## Threat detection
 
-PrivySHA provides **tooling** for privacy-aware prompt processing. It is not a certified compliance product. See [compliance.md](compliance.md) for GDPR/CCPA considerations.
+Injection patterns and threat scoring run inside `core/security/service.py`. Results appear in `result.security.threats` and `result.security.threat_level`.
 
 ---
 
-## Related docs
+## Related
 
-- [Core Concepts](core-concepts.md) — modes and PII modes
-- [Compliance](compliance.md) — regulatory considerations
-- [Pipeline](pipeline.md) — security stage in context
+- [compliance.md](compliance.md) — GDPR/CCPA tooling notes
+- [core-concepts.md](core-concepts.md) — modes and PolicyConfig
+- [faq.md](faq.md)

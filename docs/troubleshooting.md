@@ -1,6 +1,6 @@
 # Troubleshooting
 
-**PrivySHA v0.3.0** — common issues and fixes.
+**PrivySHA v0.4.1**
 
 ---
 
@@ -10,197 +10,115 @@
 
 ```bash
 pip install privysha
-# or from source:
+# or
 pip install -e .
 ```
 
-### ML features not working
+### ImportError: cannot import wrap_llm from privysha
+
+Root no longer exports `wrap_llm`:
+
+```python
+from privysha.integrations import wrap_llm
+```
+
+### TypeError: unexpected keyword argument
+
+Deprecated kwargs were removed. Use `mode` and `PolicyConfig`:
+
+```python
+from privysha.core.policy_config import PolicyConfig
+process(prompt, policy=PolicyConfig(pii_mode="hybrid"))
+```
+
+---
+
+## PII not masked
+
+```python
+from privysha import process
+from privysha.core.policy_config import PolicyConfig
+
+process(prompt, mode="strict")
+process(prompt, policy=PolicyConfig(pii_mode="hybrid"))  # needs privysha[ml]
+```
+
+Check `mode="off"` is not set. Check output via `result.output`, not raw input.
+
+---
+
+## ML / hybrid PII fails
 
 ```bash
 pip install privysha[ml]
 ```
 
-Required for `pii_mode="hybrid"` or `pii_mode="ml_only"`.
+Without ML deps, `pii_mode="hybrid"` falls back to `rule`.
 
 ---
 
-## PII not detected / not masked
+## process() returns unexpected type
 
-**Wrong fix:** `security_level="low"` — this makes detection *less* aggressive.
-
-**Correct fixes:**
+v0.4+ always returns **`ProcessResult`**:
 
 ```python
-# Stronger policy mode
-process(prompt, mode="strict")
-
-# Higher security level
-process(prompt, security_level="high")
-
-# ML-enhanced detection
-process(prompt, pii_mode="hybrid")  # requires privysha[ml]
-
-# Ensure privacy is enabled (default)
-process(prompt, privacy=True)
+result = process("prompt")
+print(result.output)   # not result["optimized"]
+str(result)            # works
 ```
-
-Check that `mode="off"` is not set — it bypasses all processing.
 
 ---
 
-## Too much masking / false positives
+## wrap_llm errors
 
-Teaching emails like `test@example.com` are skipped by default. For other false positives:
+- Use `mode="off"` only when you intentionally want no preprocessing
+- `mode="strict"` raises on processing failure
+- Prefer `wrap_llm()` over `auto_patch()` in shared environments
+
+---
+
+## Agent connection errors
 
 ```python
-process(prompt, mode="lite")
-process(prompt, security_level="low")
+agent = Agent(model="mock")  # no API key needed for tests
 ```
 
-Use `trace=True, debug=True` to inspect what changed.
+For real providers, set `OPENAI_API_KEY` etc. and `pip install privysha[openai]`.
 
 ---
 
 ## Slow processing
 
 ```python
-# Fastest settings
-process(prompt, mode="lite", pii_mode="rule")
-
-# Disable tracing overhead
-process(prompt)  # no trace=True, no debug=True
+process(prompt, mode="lite")
+process(prompt, mode="off")
 ```
 
-ML modes (`hybrid`, `ml_only`) are significantly slower than `rule`.
+Avoid `trace=True` and `debug=True` in production hot paths.
 
 ---
 
-## process() returns unexpected text
+## AttributeError: Pipeline / Processor
 
-1. Check `mode` — `off` returns the original prompt unchanged
-2. Check `preserve_intent=True` — skips optimization when no PII/threats found
-3. Run with debug:
+Removed in v0.4.1:
 
 ```python
-result = process(prompt, debug=True, return_metrics=True)
-print(result.get("fallback_reason"))
-print(result.get("diff"))
+from privysha import process
+from privysha.runtime import PromptProcessor
 ```
 
 ---
 
-## Agent errors
-
-### OPENAI_API_KEY not found
-
-Set environment variable or pass `api_key=`:
+## Tests
 
 ```bash
-export OPENAI_API_KEY=your_key
-```
-
-Install the provider extra: `pip install privysha[openai]`
-
-### Connection refused (Ollama)
-
-Start the Ollama server:
-
-```bash
-ollama serve
-ollama pull llama3
-```
-
-### Model not found
-
-Check available models for the provider. Use `model="mock"` for testing without external services.
-
----
-
-## wrap_llm issues
-
-Ensure the client type is supported (OpenAI, Anthropic, or generic via `UniversalWrapper`).
-
-```python
-from privysha import wrap_llm
-secure = wrap_llm(client, mode="balanced", privacy=True)
+pytest tests -q
 ```
 
 ---
 
-## CLI issues
+## Related
 
-Commands use **subcommands**, not all flags on the default command:
-
-```bash
-privysha "prompt"              # process a prompt
-privysha quick-test            # NOT privysha --quick-test
-privysha examples              # NOT privysha --examples
-privysha benchmark --save
-privysha recommend --prompt "Analyze data"
-```
-
----
-
-## Benchmark failures
-
-```bash
-pip install -e .
-python benchmarks/run_benchmarks.py --save
-```
-
-Compare against baseline:
-
-```bash
-python benchmarks/run_benchmarks.py --compare benchmarks/baseline/results.json
-```
-
----
-
-## Debug workflow
-
-When something goes wrong:
-
-```python
-result = process(
-    prompt,
-    trace=True,
-    debug=True,
-    return_metrics=True,
-)
-
-print("Optimized:", result["optimized"])
-print("Fallback:", result.get("fallback_reason"))
-print("Error:", result.get("original_error"))
-print("Diff:", result.get("diff"))
-print("PII:", result.get("metrics", {}).get("pii_detected"))
-```
-
----
-
-## Environment variables
-
-| Variable | Purpose |
-|----------|---------|
-| `OPENAI_API_KEY` | OpenAI adapter |
-| `ANTHROPIC_API_KEY` | Anthropic adapter |
-| `GOOGLE_API_KEY` | Gemini adapter |
-| `GROK_API_KEY` | Grok adapter |
-| `PRIVYSHA_CACHE_DIR` | Cache directory (local advisor) |
-
-Note: `PRIVYSHA_MODE` is **not** read by the library. Set `mode` per function call.
-
----
-
-## Still stuck?
-
-1. Run `privysha quick-test` to verify installation
-2. Run `python examples/developer_preview_demo.py`
-3. Open a [GitHub issue](https://github.com/AjayRajan05/privySHA/issues) with your `debug=True` output
-
----
-
-## Related docs
-
-- [FAQ](faq.md)
-- [Debugging](debugging.md)
-- [Performance Tuning](performance-tuning.md)
+- [faq.md](faq.md)
+- [migration-v0.4.md](migration-v0.4.md)
+- [deprecations.md](deprecations.md)

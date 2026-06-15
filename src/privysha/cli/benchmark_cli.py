@@ -250,20 +250,16 @@ def run_single_test(prompt: str, mode: str = "balanced", verbose: bool = False) 
             print(f"Testing prompt: {prompt[:50]}...")
 
         # Process prompt
-        result = process(prompt, mode=mode, return_metrics=True, debug=verbose)
+        result = process(prompt, mode=mode, debug=verbose)
 
-        if isinstance(result, dict):
-            metrics = result.get("metrics", {})
-            print(f"✅ Processed successfully")
-            print(f"  Tokens saved: {metrics.get('tokens_saved', 0)}")
-            print(f"  Cost reduction: {metrics.get('cost_reduction', '0%')}")
-            print(f"  PII detected: {metrics.get('pii_detected', [])}")
-            print(f"  Risk level: {metrics.get('risk_level', 'unknown')}")
-            print(
-                f"  Processing time: {metrics.get('processing_time_ms', 0)}ms")
-            print(f"  Optimized: {result.get('optimized', prompt[:50])}...")
-        else:
-            print(f"✅ Processed: {result}")
+        metrics = result.metrics.to_dict() if result.metrics else {}
+        print("Processed prompt successfully")
+        print(f"  Tokens saved: {metrics.get('tokens_saved', 0)}")
+        print(f"  Cost reduction: {metrics.get('cost_reduction', '0%')}")
+        print(f"  PII detected: {metrics.get('pii_detected', [])}")
+        print(f"  Risk level: {metrics.get('risk_level', 'unknown')}")
+        print(f"  Processing time: {metrics.get('processing_time_ms', 0)}ms")
+        print(f"  Optimized: {result.output[:50]}...")
 
         return 0
 

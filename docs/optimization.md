@@ -1,177 +1,87 @@
 # Optimization
 
-**PrivySHA v0.3.0** — token reduction via the MSDPC optimizer.
+**PrivySHA v0.4.1** — token reduction via MSDPC.
 
 ---
 
-## Overview
+## optimize()
 
-PrivySHA compresses prompts to reduce token usage and API cost. Optimization runs as a pipeline stage (after security and IR compilation) and is also available standalone via `optimize()`.
-
----
-
-## Quick usage
+Token compression only — no PII masking, no compile stage:
 
 ```python
-from privysha import process, optimize
+from privysha import optimize
 
-# Full pipeline (security + optimization)
-result = process("Hey bro can you please analyze this dataset for me?", return_metrics=True)
-print(result["optimized"])
-print(f"Reduction: {result['token_reduction']}%")
-
-# Optimization only (no security)
-compressed = optimize("Very long verbose prompt that needs compression")
+result = optimize("Hey bro can you please analyze this dataset thoroughly")
+print(result.output)
+print(result.metrics.token_reduction_pct)
 ```
 
 ---
 
-## Expected savings
+## process() with optimization
 
-Token reduction depends on prompt verbosity:
-
-| Prompt type | Typical reduction |
-|-------------|-------------------|
-| Conversational / verbose | 5–15% |
-| Benchmark test suite (10 cases) | ~44% average |
-| Already concise prompts | 0–5% (may be unchanged) |
-
-Run benchmarks locally for your workload:
-
-```bash
-python benchmarks/run_benchmarks.py --save
-```
-
-See [benchmarks.md](benchmarks.md) for methodology and baseline numbers.
-
-Do not expect guaranteed 30–50% or 70% reductions — results vary by prompt.
-
----
-
-## Policy modes
-
-Modes control optimization aggressiveness via `PolicyConfig`:
-
-| Mode | Optimization |
-|------|--------------|
-| `strict` | Aggressive compression |
-| `balanced` | Moderate (default) |
-| `lite` | Minimal changes |
-| `off` | No optimization |
+Full path includes security + compile + optimize:
 
 ```python
-process(prompt, mode="strict")   # maximum compression
-process(prompt, mode="lite")     # speed over savings
-process(prompt, mode="off")      # no changes
+from privysha import process
+
+result = process("long verbose prompt...", token_budget=1200)
+print(result.metrics.tokens_saved)
 ```
 
 ---
 
-## Token budget
+## Skip optimization when safe
 
 ```python
-process(prompt, token_budget=500)
-optimize(prompt, token_budget=500)
+from privysha.core.policy_config import PolicyConfig
+
+process(
+    prompt,
+    policy=PolicyConfig(preserve_intent=True),
+)
 ```
 
-Default: `1200`. Lower budgets produce more aggressive compression.
+When no PII or threats are found, the original prompt may be returned unchanged.
 
 ---
 
-## Preserve intent
+## Modes and latency
 
-When semantic fidelity matters more than token savings:
+| Mode | Optimization level |
+|------|-------------------|
+| `balanced` | Standard MSDPC |
+| `strict` | Aggressive + fail-closed |
+| `lite` | Reduced policy features |
+| `off` | Skipped |
 
-```python
-process(prompt, preserve_intent=True)
-```
-
-If no PII and no threats are detected, the original prompt is returned unchanged — preventing the optimizer from rewriting clean prompts.
-
----
-
-## MSDPC engine
-
-The Multi-Stage Dynamic Prompt Compiler (`compiler/msdpc/`) applies:
-
-- Filler word removal
-- Constraint consolidation
-- Object simplification
-- Template-based compression
-
-Advanced access:
-
-```python
-from privysha import PromptOptimizer
-
-optimizer = PromptOptimizer(level="balanced")
-result = optimizer.optimize(ir)
-print(result["reduction_percentage"])
-```
-
----
-
-## Semantic optimizer
-
-Optional semantic optimization via `core/semantic_optimizer.py`:
-
-```python
-from privysha import optimize_semantically
-
-result = optimize_semantically("Analyze this comprehensive dataset thoroughly")
-```
-
-Separate from the main pipeline optimizer — experimental.
+For minimum latency: `mode="off"` or `optimize()` alone on already-clean prompts.
 
 ---
 
 ## Metrics
 
-With `return_metrics=True`:
-
 ```python
-result = optimize("long prompt here", return_metrics=True)
-print(result["token_reduction"])       # percentage
-print(result["metrics"]["tokens_saved"])
-print(result["metrics"]["compression_ratio"])
+result = process(prompt)
+m = result.metrics
+print(m.token_reduction_pct)
+print(m.tokens_saved)
+print(m.processing_time_ms)
 ```
-
-Cost estimates in metrics use Gemini-1.5-flash pricing as a reference point.
 
 ---
 
 ## optimize() vs process()
 
-| Function | Security | Optimization |
-|----------|----------|--------------|
-| `optimize()` | No | Yes |
-| `process()` | Yes | Yes |
-| `sanitize()` | Yes | No |
-
-Use `optimize()` when you only need compression without PII handling.
+| Function | Security | Compile | Optimize |
+|----------|----------|---------|----------|
+| `optimize()` | No | No | Yes |
+| `sanitize()` | Yes | No | No |
+| `process()` | Yes | Yes | Yes |
 
 ---
 
-## Performance tips
+## Related
 
-For fastest processing:
-
-```python
-process(prompt, mode="lite", pii_mode="rule")
-```
-
-For maximum savings:
-
-```python
-process(prompt, mode="strict", token_budget=500)
-```
-
-See [performance-tuning.md](performance-tuning.md).
-
----
-
-## Related docs
-
-- [Benchmarks](benchmarks.md) — reproducible numbers
-- [Pipeline](pipeline.md) — optimization stage
-- [Core Concepts](core-concepts.md) — modes and preserve_intent
+- [performance-tuning.md](performance-tuning.md)
+- [benchmarks.md](benchmarks.md)

@@ -37,7 +37,6 @@ from datetime import datetime
 # Import PrivySHA components
 
 from .policy_config import PolicyConfig
-from .diff_engine import DiffEngine
 
 
 def _count_tokens(text: str) -> int:
@@ -113,7 +112,6 @@ class BenchmarkHarness:
             output_dir) if output_dir else Path.cwd() / "benchmarks"
         self.output_dir.mkdir(exist_ok=True)
         self.results: List[BenchmarkResult] = []
-        self.diff_engine = DiffEngine()
 
         # Test dataset
         self.test_cases = self._init_test_cases()
@@ -233,7 +231,11 @@ class BenchmarkHarness:
         if test_function is None:
             from ..utils.dropin import process
 
-            test_function = process
+            test_function = lambda p, **kw: process(
+                p,
+                mode=kw.get("mode", "balanced"),
+                debug=kw.get("debug", False),
+            )
 
         print(f"Starting PrivySHA Benchmark Suite")
         print(f"Version: {self.version_info['privysha_version']}")
@@ -288,18 +290,31 @@ class BenchmarkHarness:
 
             # Run the test function
             if config:
-                # Use policy config if provided
-                result = test_function(
-                    prompt, privacy=config.pii_masking, debug=True, return_metrics=True
+                mode = (
+                    config.mode.value
+                    if hasattr(config.mode, "value")
+                    else str(config.mode)
                 )
+                result = test_function(prompt, mode=mode, debug=True)
             else:
-                # Use default settings
-                result = test_function(prompt, debug=True, return_metrics=True)
+                result = test_function(prompt, debug=True)
 
             processing_time = (time.time() - start_time) * 1000
 
-            # Extract metrics
-            if isinstance(result, dict):
+            from ..types.results import ProcessResult, OptimizeResult, SanitizeResult
+
+            if isinstance(result, (ProcessResult, OptimizeResult, SanitizeResult)):
+                output_prompt = result.output
+                metrics = result.metrics.to_dict() if result.metrics else {}
+                input_tokens = _count_tokens(prompt)
+                output_tokens = _count_tokens(output_prompt)
+                token_reduction = max(0, input_tokens - output_tokens)
+                token_reduction_percentage = (
+                    (token_reduction / input_tokens * 100) if input_tokens else 0.0
+                )
+                pii_detected = len(metrics.get("pii_detected", []))
+                threats_blocked = metrics.get("threats_blocked", 0)
+            elif isinstance(result, dict):
                 prompts = result.get("prompts", {})
                 output_prompt = (
                     prompts.get("optimized")

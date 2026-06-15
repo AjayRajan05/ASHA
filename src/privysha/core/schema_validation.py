@@ -15,7 +15,7 @@
 """
 Schema Validation Mode - Phase 3 Competitive Feature
 
-Competes with Guardrails AI + Instructor:
+Competes with structured-output libraries such as Instructor:
 - Auto-retry on validation failures
 - Error correction and repair
 - JSON enforcement

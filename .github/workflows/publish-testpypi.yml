@@ -36,7 +36,7 @@ jobs:
 
       - name: Run tests before publish
         if: inputs.skip_tests != 'true'
-        run: python -m pytest tests_v2/ tests/ -q --tb=no -m "not slow" --cov=privysha --cov-fail-under=40
+        run: python -m pytest tests/ -q --tb=no -m "not slow" --cov=privysha --cov-fail-under=40
         env:
           PRIVYSHA_DISABLE_ML: "1"
 

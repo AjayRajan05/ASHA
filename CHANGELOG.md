@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.1] - 2026-06-15
+
+### Architecture completion (breaking within 0.4.x)
+
+- **Root API frozen** — only `process`, `sanitize`, `optimize`, `Agent`, `__version__`; all lazy root exports removed.
+- **`Pipeline`, `AsyncPipeline`, `Processor` removed** — use `PromptProcessor` and `process()`.
+- **`runtime/resolve.py`** — hot-path argument resolution (no `compat/` on `process()` calls).
+- **`PolicyConfig` fields** — `pii_mode`, `reversible`, `preserve_intent`, `security_level` via `policy=` only.
+- **`security_fail_closed` removed** — use `mode="strict"` / `mode="balanced"`.
+- **Integration safety unified** — `wrap_llm(mode=...)`; `auto_patch(mode="strict")` configurable.
+- **`routing_decision`** — only in `compat/legacy_results` dicts, not runtime hot path.
+- **Architecture tests** — `types/` and `utils/` must not import `compat/`.
+
+---
+
 ## [0.3.0] - 2026-06-05
 
 ### Developer Preview

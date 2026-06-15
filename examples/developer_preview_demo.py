@@ -7,7 +7,8 @@ Run from repo root:
     python examples/developer_preview_demo.py
 """
 
-from privysha import process, recommend_local_model
+from privysha import process
+from privysha.runtime.local_advisor.advisor import recommend_local_model
 
 
 def main() -> None:
@@ -17,11 +18,13 @@ def main() -> None:
     )
 
     print("=== 1. Drop-in prompt processing ===")
-    result = process(prompt, return_metrics=True, mode="balanced")
+    result = process(prompt, mode="balanced")
     print("Original :", prompt)
-    print("Optimized:", result["optimized"])
-    print("PII masked:", result.get("pii_masked", False))
-    print("Token reduction:", f"{result.get('token_reduction', 0)}%")
+    print("Optimized:", result.output)
+    if result.security:
+        print("PII types :", result.security.pii_detected)
+    if result.metrics:
+        print("Token reduction:", f"{result.metrics.token_reduction_pct}%")
 
     print("\n=== 2. PrivyFit local model hint (offline catalog OK) ===")
     report = recommend_local_model(

@@ -1,0 +1,136 @@
+# Migration Guide — v0.4.x
+
+Upgrade from PrivySHA **0.3.x** (or early 0.4.0) to **0.4.1**.
+
+---
+
+## 1. Return types are dataclasses
+
+```python
+# Before (0.3)
+text = process("a@b.com — analyze")  # sometimes str
+result = process("...", return_metrics=True)
+print(result["optimized"])
+
+# After (0.4.1)
+result = process("a@b.com — analyze")
+print(result.output)
+print(result.metrics.token_reduction_pct)
+print(result.security.pii_detected)
+str(result)  # still works — equals result.output
+```
+
+| Old dict key | New attribute |
+|--------------|---------------|
+| `optimized` | `result.output` |
+| `original` | `result.original` |
+| `security_result` | `result.security` |
+| `metrics` | `result.metrics` |
+| `token_reduction` | `result.metrics.token_reduction_pct` |
+
+Legacy dict: `result.to_dict()` or:
+
+```python
+from privysha.compat.legacy_results import to_legacy_pipeline_dict
+legacy = to_legacy_pipeline_dict(process("...", include_legacy_detail=True))
+```
+
+---
+
+## 2. Import paths
+
+```python
+# Before
+from privysha import wrap_llm, Pipeline, Processor, ProcessResult
+
+# After
+from privysha import process, sanitize, optimize, Agent
+from privysha.integrations import wrap_llm, auto_patch
+from privysha.runtime import PromptProcessor
+from privysha.types import ProcessResult
+```
+
+Removed symbols raise **`AttributeError`** at root.
+
+---
+
+## 3. Kwargs → mode + PolicyConfig
+
+```python
+# Before
+process(x, privacy=False)
+process(x, preserve_intent=True)
+process(x, pii_mode="hybrid")
+process(x, security_fail_closed=True)
+
+# After
+process(x, mode="off")
+process(x, policy=PolicyConfig(preserve_intent=True))
+process(x, policy=PolicyConfig(pii_mode="hybrid"))
+process(x, mode="strict")
+```
+
+Unknown kwargs raise **`TypeError`**.
+
+---
+
+## 4. optimize() is tokens-only
+
+```python
+optimize(prompt)  # no PII, no compile — OptimizeResult only
+process(prompt)   # full path
+sanitize(prompt)  # security only
+```
+
+---
+
+## 5. wrap_llm() — mode only
+
+```python
+# Before
+wrap_llm(client, privacy=False)
+
+# After
+wrap_llm(client, mode="off")
+```
+
+---
+
+## 6. Pipeline / Processor removed
+
+```python
+# Before
+from privysha import Pipeline
+Pipeline().process("prompt")
+
+# After
+from privysha import process
+process("prompt")
+
+# Advanced
+from privysha.runtime import PromptProcessor
+PromptProcessor().run("prompt", mode="balanced")
+```
+
+---
+
+## 7. Safety semantics
+
+| Mode | process/sanitize | wrap_llm (mode != "off") |
+|------|------------------|--------------------------|
+| `strict` | Raises on total failure | Processing strict; infra errors raise |
+| `balanced` | Degraded fallback | Processing balanced; infra errors raise |
+| `off` | Passthrough | No preprocessing |
+
+---
+
+## Recommended upgrade steps
+
+1. Pin `privysha==0.4.1`
+2. Replace `result["optimized"]` → `result.output`
+3. Move `from privysha import wrap_llm` → `from privysha.integrations import wrap_llm`
+4. Replace deprecated kwargs with `mode` / `PolicyConfig`
+5. Remove `Pipeline` / `Processor` usage
+6. Run tests; check `result.degraded` in balanced mode
+
+See [deprecations.md](deprecations.md) for the full removal list.

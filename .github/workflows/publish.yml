@@ -28,7 +28,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run tests before publish
-        run: python -m pytest tests_v2/ tests/ -q --tb=no -m "not slow" --cov=privysha --cov-fail-under=40
+        run: python -m pytest tests/ -q --tb=no -m "not slow" --cov=privysha --cov-fail-under=40
         env:
           PRIVYSHA_DISABLE_ML: "1"
 

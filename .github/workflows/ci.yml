@@ -47,12 +47,16 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: mypy src/privysha --ignore-missing-imports
 
+    - name: Architecture boundary tests
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      run: pytest tests/architecture tests/imports tests/public_api -q
+
     - name: Run unit tests
       run: pytest --cov=privysha --cov-report=xml --cov-report=term --cov-fail-under=50 -m "not slow"
 
     - name: Run slow tests
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      run: pytest tests_v2/test_performance.py -m slow -v
+      run: pytest tests/test_performance.py -m slow -v
 
     - name: Run benchmark smoke test
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

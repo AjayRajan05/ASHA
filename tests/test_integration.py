@@ -9,6 +9,8 @@ import os
 
 import pytest
 
+from privysha.types import ProcessResult
+
 pytestmark = pytest.mark.integration
 
 _GEMINI_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
@@ -26,15 +28,14 @@ def test_dropin_process_live(gemini_key):
 
     result = process(
         "Summarize machine learning in one sentence. Email: test@example.com",
-        return_metrics=True,
+        mode="balanced",
     )
-    assert isinstance(result, dict)
-    assert "optimized" in result
-    assert "test@example.com" not in result["optimized"]
+    assert isinstance(result, ProcessResult)
+    assert "test@example.com" not in result.output
 
 
 def test_gemini_adapter_generate(gemini_key):
-    from privysha.adapters.gemini_adapter import GeminiAdapter
+    from privysha.runtime.adapters.gemini_adapter import GeminiAdapter
 
     adapter = GeminiAdapter(model="gemini-1.5-flash")
     response = adapter.generate("Reply with the word OK only.")

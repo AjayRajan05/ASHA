@@ -1,6 +1,6 @@
 # FAQ
 
-**PrivySHA v0.3.0 developer preview** — frequently asked questions.
+**PrivySHA v0.4.1**
 
 ---
 
@@ -8,162 +8,127 @@
 
 ### What is PrivySHA?
 
-A drop-in security and optimization layer for LLM applications. It masks PII, reduces tokens, and blocks prompt injection before prompts reach LLM providers.
+A drop-in layer that masks PII, checks prompt injection patterns, and compresses tokens before prompts reach LLM providers.
 
-### Is PrivySHA production-ready?
+### Is it production-ready?
 
-**No.** Version 0.3.0 is a developer preview. APIs may change before 1.0.0. Use for experiments and feedback. See [developer-preview.md](developer-preview.md).
+**For pinned pilots: yes, with monitoring.** Architecture is complete in 0.4.1. **For stable semver: not until 1.0.0.** Use `privysha==0.4.1` and read [developer-preview.md](developer-preview.md).
 
-### What Python version is required?
+### Python version?
 
-Python **3.10+** (3.10, 3.11, 3.12 supported).
-
-### How do I install it?
-
-```bash
-pip install privysha
-```
-
-Or from source: `pip install -e .`
+**3.10+** (3.10, 3.11, 3.12 in CI).
 
 ---
 
 ## API
 
-### What are the main functions?
+### What can I import from the root?
 
-| Function | Purpose |
-|----------|---------|
-| `process()` | Full pipeline (security + optimization) |
-| `wrap_llm()` | Wrap existing LLM client |
-| `optimize()` | Token optimization only |
-| `sanitize()` | Security / PII only |
-| `Agent` | Pipeline + LLM generation |
-| `recommend_local_model()` | PrivyFit local model advisor |
+```python
+from privysha import process, sanitize, optimize, Agent
+```
 
-### Is there a global configure() function?
+Nothing else — no `wrap_llm`, `Pipeline`, or `Processor` at root.
 
-**No.** Pass parameters per call (`mode`, `pii_mode`, etc.) or use `PolicyConfig` / `Agent` kwargs.
+### Where is wrap_llm?
+
+```python
+from privysha.integrations import wrap_llm
+```
 
 ### What does process() return?
 
-A **string** by default. Pass `return_metrics=True` for a dict with `optimized`, `token_reduction`, `security_result`, etc.
+A **`ProcessResult`** dataclass. `str(result)` returns `result.output`.
 
-### Does process() raise on errors?
+### Does process() raise?
 
-**No** (fail-open by default). It returns a security-scrubbed fallback. Use `security_fail_closed=True` for regulated workloads. Use `debug=True` for `fallback_reason`.
+- **`mode="balanced"`** (default): fail-open — degraded fallback, `result.degraded=True`
+- **`mode="strict"`**: raises `PrivySHAProcessingError` on total failure
+
+### How do I get metrics?
+
+```python
+result = process("prompt")
+print(result.metrics.token_reduction_pct)
+print(result.security.pii_detected)
+```
+
+No `return_metrics=True` — use typed fields.
+
+### How do I set pii_mode or reversible?
+
+```python
+from privysha.core.policy_config import PolicyConfig
+process(prompt, policy=PolicyConfig(pii_mode="hybrid", reversible=True))
+```
+
+Top-level `pii_mode=` on `process()` raises `TypeError`.
 
 ---
 
 ## Modes
 
-### What are the processing modes?
-
 | Mode | Description |
 |------|-------------|
 | `balanced` | Default — security + optimization |
-| `strict` | Maximum PII masking |
-| `lite` | Minimal processing |
-| `off` | Passthrough — no changes |
-
-### What are PII modes?
-
-| Mode | Description |
-|------|-------------|
-| `rule` | Regex + heuristic (default, no downloads) |
-| `hybrid` | Rules + ML (requires `privysha[ml]`) |
-| `ml_only` | ML-only (experimental) |
+| `strict` | Fail-closed |
+| `lite` | Minimal policy features |
+| `off` | Passthrough |
 
 ---
 
 ## Performance
 
-### How much token reduction should I expect?
+### Token reduction?
 
-**5–15%** on typical verbose prompts. The benchmark test suite averages **~44%** but results vary widely. Already-concise prompts may see little or no reduction.
+Typically **5–15%** on verbose prompts. Already-short prompts may see little change. See [benchmarks.md](benchmarks.md).
 
-### How fast is processing?
+### Speed?
 
-Benchmark P95 pipeline latency is **~76 ms** per test case. End-to-end latency depends on prompt length, ML mode, and hardware. There is no sub-50ms guarantee.
-
-### How do I make it faster?
-
-```python
-process(prompt, mode="lite", pii_mode="rule")
-```
-
-Disable tracing in production: avoid `trace=True` and `debug=True`.
+Roughly **20–80 ms** for rule-based PII on typical prompts. Use `mode="lite"` or `mode="off"` for lower latency.
 
 ---
 
 ## Security
 
-### What PII types are detected?
+### What PII is detected?
 
-Emails, phones, SSNs, credit cards, addresses, names (heuristic), API keys, JWTs, IP addresses, and more. See [security.md](security.md).
+Emails, phones, SSNs, credit cards, API keys, JWTs, IPs, and more. See [security.md](security.md).
 
-### What mask format is used?
+### GDPR compliant?
 
-`[EMAIL_HASH]_<suffix>`, `[PHONE_HASH]_<suffix>`, `[REDACTED]` for secrets.
-
-### Is PrivySHA GDPR compliant?
-
-PrivySHA provides **tooling** for privacy-aware processing. It is not a certified compliance product. See [compliance.md](compliance.md).
+PrivySHA is **privacy tooling**, not a certified compliance product. See [compliance.md](compliance.md).
 
 ---
 
 ## Agent
 
-### What parameters does Agent accept?
+### Key parameters?
 
-`model`, `privacy`, `token_budget`, `provider`, `fallback_providers`, `routing_config`, `timeout`, `retries`, `api_key`, `local_model`, `sample_prompts`.
+`model`, `privacy`, `token_budget`, `provider`, `routing_config`, `local_model`, `sample_prompts`.
 
-It does **not** accept `mode`, `optimization_level`, `routing_strategy`, or `security_level` directly.
+### What does run() return?
 
-### What does Agent.run() return?
-
-A **string** (the LLM response) by default. With `trace=True`, returns the full pipeline dict plus `response`.
+**String** by default. **`AgentResult`** when `trace=True`.
 
 ---
 
-## PrivyFit
+## Removed in v0.4.1
 
-### What is PrivyFit?
+| Removed | Use instead |
+|---------|-------------|
+| `Pipeline`, `Processor` | `process()` or `PromptProcessor` |
+| Root `wrap_llm` | `privysha.integrations.wrap_llm` |
+| `security_fail_closed=` | `mode="strict"` |
+| `return_metrics=True` | `result.metrics` |
+| `ModelRouter` | `Agent(routing_config=...)` |
 
-A local model advisor that recommends LLMs based on your compiled prompt workload and hardware. See [local-advisor.md](local-advisor.md).
-
-### Does it require a GPU?
-
-No. It works with CPU-only ranking and an offline catalog. GPU detection requires `pip install privysha[local-advisor-gpu]`.
-
----
-
-## Integrations
-
-### Which frameworks are supported?
-
-FastAPI, Flask, Django, LangChain, Instructor, Guardrails, LlamaIndex, OpenTelemetry. See [integrations.md](integrations.md).
-
-### Do I need API keys for basic processing?
-
-No. `process()` and `sanitize()` work without API keys. LLM adapters require provider credentials.
+Full list: [deprecations.md](deprecations.md).
 
 ---
 
-## Contributing
-
-### How do I report bugs?
-
-[GitHub Issues](https://github.com/AjayRajan05/privySHA/issues)
-
-### How do I contribute?
-
-See [contributing.md](contributing.md).
-
----
-
-## Related docs
+## Related
 
 - [Getting Started](getting-started.md)
 - [Troubleshooting](troubleshooting.md)
-- [Developer Preview](developer-preview.md)
+- [Migration v0.4](migration-v0.4.md)

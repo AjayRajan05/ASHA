@@ -1,183 +1,169 @@
-# Getting Started with PrivySHA
+# Getting Started
 
-**v0.3.0 developer preview** — see [developer-preview.md](developer-preview.md) for scope.
-
-This guide installs PrivySHA and runs your first optimized, privacy-safe prompt.
+**PrivySHA v0.4.1** — install, run your first prompt, wrap a client.
 
 ---
 
-## Installation
-
-### Prerequisites
-
-- Python 3.10 or higher
-- pip
-
-### Install from PyPI
+## Install
 
 ```bash
 pip install privysha
 ```
 
+Requires **Python 3.10+**.
+
 ### Optional extras
 
 ```bash
-pip install privysha[openai]       # OpenAI adapter
-pip install privysha[anthropic]    # Anthropic adapter
-pip install privysha[gemini]       # Google Gemini adapter
-pip install privysha[ml]           # ML-enhanced PII (spaCy + transformers)
-pip install privysha[integrations] # FastAPI, LangChain, Instructor, etc.
-pip install privysha[local-advisor] # PrivyFit catalog fetch
-pip install privysha[all]          # All optional dependencies
+pip install privysha[openai]         # OpenAI adapter + wrap_llm
+pip install privysha[anthropic]      # Anthropic
+pip install privysha[gemini]         # Google Gemini
+pip install privysha[ml]             # Hybrid PII (spaCy + transformers)
+pip install privysha[integrations]   # Framework middleware
+pip install privysha[local-advisor]  # PrivyFit catalog
+pip install privysha[all]            # Everything
 ```
-
-See [integrations.md](integrations.md) for the full extras table.
 
 ### Verify
 
 ```python
 from privysha import process
-print(process("Hello world"))
+
+result = process("Hello world")
+print(result.output)
 ```
 
 ---
 
 ## Your first prompt
 
-### Drop-in processing (recommended)
-
 ```python
 from privysha import process
 
-result = process(
-    "My email is john@gmail.com. Analyze this dataset.",
-    return_metrics=True,
-)
-print(result["optimized"])
-print(f"Token reduction: {result['token_reduction']}%")
-print(f"PII masked: {result.get('pii_masked', False)}")
+result = process("My email is john@gmail.com. Analyze this dataset.")
+print(result)                              # optimized string
+print(result.security.pii_detected)        # ['email', ...]
+print(result.metrics.token_reduction_pct)  # e.g. 12.0
 ```
 
-By default, `process()` returns a **string**. Pass `return_metrics=True` for a dict.
+`process()` always returns a **`ProcessResult`** dataclass. `str(result)` equals `result.output`.
 
-### Wrap an existing LLM client
+---
+
+## Wrap an LLM client
 
 ```python
-from privysha import wrap_llm
+from privysha.integrations import wrap_llm
 import openai
 
-client = openai.OpenAI()
-secure_client = wrap_llm(client)
+client = wrap_llm(openai.OpenAI(), mode="balanced")
 
-response = secure_client.chat.completions.create(
+response = client.chat.completions.create(
     model="gpt-4o-mini",
-    messages=[{"role": "user", "content": "My email is john@gmail.com"}],
+    messages=[{"role": "user", "content": "Email john@corp.com about Q1 data"}],
 )
 ```
 
 Requires `pip install privysha[openai]` and `OPENAI_API_KEY`.
 
+Use `mode="off"` to disable preprocessing. Use `mode="strict"` for fail-closed behavior.
+
 ---
 
 ## Processing modes
 
-```python
-process(prompt, mode="balanced")  # default — security + optimization
-process(prompt, mode="strict")    # maximum PII masking
-process(prompt, mode="lite")      # minimal processing, lower latency
-process(prompt, mode="off")       # passthrough (no modification)
-```
-
-Modes are implemented via `PolicyConfig` presets. See [core-concepts.md](core-concepts.md).
-
----
-
-## PII detection modes
+| Mode | Behavior |
+|------|----------|
+| `balanced` | Default — security + optimization, fail-open on errors |
+| `strict` | Fail-closed — raises `PrivySHAProcessingError` on total failure |
+| `lite` | Minimal policy features, same fail-open semantics as balanced |
+| `off` | Passthrough — prompt unchanged |
 
 ```python
-process(prompt, pii_mode="rule")    # default — lightweight, no downloads
-process(prompt, pii_mode="hybrid")  # rules + ML (requires privysha[ml])
-process(prompt, pii_mode="ml_only") # experimental ML-only
+process(prompt, mode="strict")
+process(prompt, mode="off")
 ```
 
 ---
 
-## CLI tool
+## Advanced policy
 
-The CLI uses subcommands — not all flags on the default command.
+PII mode, reversible masking, and other knobs use `PolicyConfig`:
+
+```python
+from privysha.core.policy_config import PolicyConfig
+
+process(
+    prompt,
+    policy=PolicyConfig(pii_mode="hybrid", reversible=True),
+)
+```
+
+`pii_mode="hybrid"` requires `pip install privysha[ml]`.
+
+---
+
+## Separate functions
+
+```python
+from privysha import sanitize, optimize
+
+sanitize("john@x.com")   # security only → SanitizeResult
+optimize("long prompt")  # tokens only → OptimizeResult
+```
+
+---
+
+## Agent
+
+Preprocess and call an LLM in one step:
+
+```python
+from privysha import Agent
+
+agent = Agent(model="mock", privacy=True)
+print(agent.run("Analyze sales with john@example.com"))
+```
+
+`privacy=True` maps to `mode="strict"` internally. `privacy=False` disables preprocessing.
+
+With tracing:
+
+```python
+result = agent.run("prompt", trace=True)  # AgentResult
+print(result.output)
+print(result.response)
+```
+
+---
+
+## CLI
 
 ```bash
-# Process a prompt
-privysha "My email is john@gmail.com. Analyze this dataset."
-
-# With debug metrics
-privysha "prompt" --debug
-
-# Built-in test suite
+privysha "My email is john@gmail.com — analyze data"
+privysha "prompt" --debug --mode strict
 privysha quick-test
-
-# Example prompts
-privysha examples
-
-# Benchmarks
 privysha benchmark --save
-
-# Local model recommendations (PrivyFit)
 privysha recommend --prompt "Analyze dataset" --gpu "RTX 4090"
 ```
 
 ---
 
-## Agent (pipeline + LLM)
+## API keys
 
-For end-to-end prompt processing and LLM generation:
-
-```python
-from privysha import Agent
-
-# No API key needed for mock adapter
-agent = Agent(model="mock", privacy=True)
-response = agent.run("Analyze this dataset with john@example.com")
-print(response)
-
-# With tracing
-result = agent.run("prompt", trace=True)
-print(result["prompts"]["optimized"])
-print(result["response"])
-```
-
-Supported `Agent` constructor parameters:
-
-| Parameter | Description |
-|-----------|-------------|
-| `model` | Model name (default: `gpt-4o-mini`) |
-| `privacy` | Enable privacy features (default: `True`) |
-| `token_budget` | Token budget for optimization (default: `1200`) |
-| `provider` | Provider override (auto-detected if omitted) |
-| `fallback_providers` | List of fallback provider configs |
-| `routing_config` | Smart routing configuration dict |
-| `local_model` | Set to `"auto"` for PrivyFit model selection |
-| `sample_prompts` | Prompt corpus for PrivyFit when `local_model="auto"` |
-
-`Agent.run(prompt, trace=False, task_type="chat")` returns a **string** unless `trace=True`.
-
----
-
-## API keys (optional)
-
-Basic `process()` / `sanitize()` work without API keys. For LLM adapters:
+`process()` and `sanitize()` work **without** API keys. LLM adapters need provider credentials:
 
 ```bash
-export OPENAI_API_KEY=your_key
-export ANTHROPIC_API_KEY=your_key
-export GOOGLE_API_KEY=your_key
+export OPENAI_API_KEY=...
+export ANTHROPIC_API_KEY=...
+export GOOGLE_API_KEY=...
 ```
 
 ---
 
 ## Next steps
 
-1. [Core Concepts](core-concepts.md) — understand modes and pipeline
-2. [API Reference](api-reference.md) — full function signatures
-3. [Security](security.md) — PII masking and fail-closed mode
-4. [Local Model Advisor](local-advisor.md) — PrivyFit recommendations
+1. [Core Concepts](core-concepts.md) — results, modes, policy
+2. [API Reference](api-reference.md) — full signatures
+3. [Security](security.md) — PII and fail-closed behavior
+4. [Migration v0.4](migration-v0.4.md) — if upgrading from 0.3.x

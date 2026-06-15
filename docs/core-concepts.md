@@ -1,204 +1,164 @@
 # Core Concepts
 
-**v0.3.0 developer preview**
+**PrivySHA v0.4.1**
 
-PrivySHA is a prompt compiler layer between your application and LLM providers. It transforms raw user input into structured, privacy-safe, token-efficient prompts.
+PrivySHA preprocesses prompts: detect PII, check threats, compile structure, compress tokens. You call one function; the engines run inside `PromptProcessor`.
 
 ---
 
-## Primary API surface
+## Public API
 
-| Function | Purpose |
-|----------|---------|
-| `process()` | Full pipeline — security + optimization |
-| `wrap_llm()` | Wrap an existing LLM client |
-| `optimize()` | Token optimization only |
-| `sanitize()` | Security / PII masking only |
-| `Agent` | Pipeline + LLM adapter |
-| `recommend_local_model()` | PrivyFit local model advisor (preview) |
+### Root package (only these)
 
-Async variants: `process_async`, `optimize_async`, `sanitize_async`.
+```python
+from privysha import process, sanitize, optimize, Agent
+```
 
-Utility: `unmask()` for reversible masking (opt-in).
+### Common subpackage imports
 
-There is **no** global `configure()` function. Pass parameters per call or use `PolicyConfig` / `Agent` kwargs.
+```python
+from privysha.integrations import wrap_llm
+from privysha.types import ProcessResult, SanitizeResult, OptimizeResult
+from privysha.core.policy_config import PolicyConfig
+from privysha.runtime import PromptProcessor
+from privysha.utils.dropin import process_async
+from privysha.utils.unmask import unmask
+from privysha.runtime.local_advisor.advisor import recommend_local_model
+```
+
+There is **no** global `configure()`. Pass `mode` and `policy` per call.
+
+---
+
+## Processing flow
+
+```
+process(prompt)
+  → resolve mode + PolicyConfig
+  → PromptProcessor.run()
+      → run_security()      # PII, injection, masking
+      → compile_prompt()    # internal IR → structured text
+      → optimize_tokens()   # MSDPC compression
+  → ProcessResult
+```
+
+`sanitize()` runs security only. `optimize()` runs token compression only.
 
 ---
 
 ## Policy modes
 
-Modes control how aggressively PrivySHA applies security and optimization. Implemented via `PolicyConfig` presets in `core/policy_config.py`.
-
-| Mode | Security | Optimization | Use case |
-|------|----------|--------------|----------|
-| `balanced` | Standard PII + injection checks | Moderate token reduction | Default for most apps |
-| `strict` | Maximum PII masking | Aggressive optimization | High-privacy workloads |
-| `lite` | Basic checks only | Minimal changes | Low-latency paths |
-| `off` | Disabled (passthrough) | Disabled | Testing, A/B baselines |
+| Mode | Security | Optimization | On total failure |
+|------|----------|--------------|------------------|
+| `balanced` | Standard | Yes | Fail-open + fallback |
+| `strict` | Maximum | Yes | Raises `PrivySHAProcessingError` |
+| `lite` | Minimal features | Reduced | Fail-open (same as balanced) |
+| `off` | Skipped | Skipped | Passthrough |
 
 ```python
-from privysha import process
-
 process("prompt", mode="balanced")  # default
 process("prompt", mode="strict")
-process("prompt", mode="lite")
 process("prompt", mode="off")
 ```
 
-`mode="off"` bypasses pipeline stages via the policy gate — the prompt is returned unchanged (no PII scrub).
-
 ---
 
-## PII detection modes
+## PolicyConfig
 
-Separate from policy mode — controls **how** PII is detected:
-
-| `pii_mode` | Description | Requires |
-|------------|-------------|----------|
-| `rule` | Regex + heuristic detection (default) | Core package only |
-| `hybrid` | Rules + ML models | `pip install privysha[ml]` |
-| `ml_only` | ML-only (experimental) | `pip install privysha[ml]` |
-
-If ML dependencies are missing, `hybrid` / `ml_only` fall back to `rule` with a warning.
-
----
-
-## Security levels
-
-`security_level` on `process()` maps to `SecurityLevel` internally:
-
-| Level | Behavior |
-|-------|----------|
-| `low` | Basic PII detection |
-| `medium` | Standard (default) |
-| `high` | Enhanced detection and masking |
-
-CLI `--mode` maps to security level: `balanced→medium`, `strict→high`, `lite→low`.
-
----
-
-## Fail-safe design
-
-By default, `process()` **does not raise** on pipeline errors. It returns a security-scrubbed fallback (fail-open).
-
-For regulated workloads:
+Advanced knobs are **not** top-level kwargs on `process()`:
 
 ```python
-process(prompt, security_fail_closed=True)
+from privysha.core.policy_config import PolicyConfig
+
+process(
+    prompt,
+    policy=PolicyConfig(
+        pii_mode="rule",       # rule | hybrid | ml_only
+        reversible=False,
+        preserve_intent=False,
+        security_level="medium",
+    ),
+)
 ```
 
-With `debug=True`, failed pipelines include `fallback_reason` and `original_error` in the response dict.
+| Field | Purpose |
+|-------|---------|
+| `pii_mode` | Detection strategy (`hybrid` needs `privysha[ml]`) |
+| `reversible` | Store masking map for `unmask()` |
+| `preserve_intent` | Skip optimization when no PII/threats |
+| `security_level` | `low` / `medium` / `high` |
+
+---
+
+## Result types
+
+### ProcessResult
+
+```python
+result = process("prompt")
+result.output          # processed text
+result.original        # input text
+result.degraded        # True if fallback path used
+result.security        # SecurityInfo (PII, threats)
+result.metrics         # tokens, timing
+result.trace           # when trace=True
+result.diff            # when debug=True
+str(result)            # same as result.output
+```
+
+### SanitizeResult / OptimizeResult
+
+Same pattern — `.output`, `.security` (sanitize), `.metrics` (optimize).
+
+Legacy dict: `result.to_dict()` or `privysha.compat.legacy_results.to_legacy_pipeline_dict(result)`.
+
+---
+
+## Fail-open vs fail-closed
+
+| API | Default | Strict |
+|-----|---------|--------|
+| `process()` / `sanitize()` | Fail-open fallback | `mode="strict"` raises |
+| `wrap_llm()` | Uses caller `mode` | Transport errors raise when `mode != "off"` |
+| `auto_patch()` | Default `mode="strict"` | Configurable |
 
 ---
 
 ## Reversible masking
 
-Opt-in only — use when you need to restore masked values in LLM output:
-
 ```python
-from privysha import sanitize, unmask
+from privysha import sanitize
+from privysha.core.policy_config import PolicyConfig
+from privysha.utils.unmask import unmask
 
-result = sanitize("Email alice@corp.com", return_details=True, reversible=True)
-safe_prompt = result["sanitized"]
-llm_output = "Reply to alice@corp.com"
-restored = unmask(llm_output, result["masking_map"])
+result = sanitize(
+    "Email alice@corp.com",
+    policy=PolicyConfig(reversible=True),
+)
+safe = result.output
+restored = unmask("Reply to alice@corp.com", result.security.masking_map)
 ```
 
 ---
 
-## Pipeline overview
+## Agent vs drop-in
 
-Prompts flow through seven stages (see [pipeline.md](pipeline.md)):
+| Goal | Use |
+|------|-----|
+| Preprocess only | `process()`, `sanitize()`, `optimize()` |
+| Wrap existing SDK | `wrap_llm(client)` |
+| Preprocess + LLM call | `Agent(model=...)` |
+| Task-based model pick | `Agent(routing_config={"chat": "gpt-4o-mini", ...})` |
+| Local model advice | `recommend_local_model()` |
 
-```
-Input → Security → IR Generation → Routing → Compilation → Optimization → Generation → Result
-```
-
-For drop-in usage, you interact with `process()` — the pipeline runs internally.
-
----
-
-## Prompt IR
-
-PrivySHA builds a structured **Prompt IR** (intermediate representation) from natural language:
-
-- Intent (analyze, create, summarize, …)
-- Entities and constraints
-- Privacy metadata
-
-IR drives optimization and routing. See [prompt-ir.md](prompt-ir.md).
+`Agent(privacy=True)` enables preprocessing with strict internal mode. `privacy=False` disables it.
 
 ---
 
-## Model routing
+## Internal vs public
 
-The `ModelRouter` selects providers based on task IR, cost, performance, and availability. Strategies include `LOCAL_PRIVACY` for PrivyFit-driven local model selection. See [routing.md](routing.md).
+**Public:** `process`, engines behavior via modes, typed results.
 
----
+**Internal (do not import in app code):** `core/_ir/`, `core/pii_pipeline/` stages, compiler internals.
 
-## Token optimization
-
-The MSDPC optimizer compresses prompts within a `token_budget`. Typical savings:
-
-- **5–15%** on verbose conversational prompts (common case)
-- **Higher** on the benchmark test suite (~44% average — see [benchmarks.md](benchmarks.md))
-
-Set `preserve_intent=True` on `process()` to skip optimization when no PII or threats are detected — useful when semantic fidelity matters more than token savings.
-
----
-
-## Return shapes
-
-### `process()` default
-
-Returns a **string** (the optimized prompt).
-
-### `process(..., return_metrics=True)`
-
-```python
-{
-    "optimized": "...",
-    "original": "...",
-    "token_reduction": 12,          # percentage
-    "pii_masked": True,
-    "security_result": {...},
-    "metrics": {
-        "tokens_saved": 5,
-        "cost_reduction": "8%",
-        "processing_time_ms": 45,
-        "pii_detected": ["email"],
-        "risk_level": "low",
-    },
-}
-```
-
-### `process(..., trace=True, debug=True)`
-
-Also includes `trace`, `diff`, and optionally `fallback_reason`.
-
----
-
-## Agent vs drop-in functions
-
-| Use case | API |
-|----------|-----|
-| Preprocess prompts only | `process()`, `sanitize()`, `optimize()` |
-| Wrap existing SDK client | `wrap_llm()` |
-| Full pipeline + LLM call | `Agent` |
-| Local model recommendation | `recommend_local_model()` |
-
-`Agent` accepts: `model`, `privacy`, `token_budget`, `provider`, `fallback_providers`, `routing_config`, `timeout`, `retries`, `api_key`, `local_model`, `sample_prompts`.
-
-It does **not** accept `optimization_level`, `routing_strategy`, `security_level`, or `mode` directly — use `process()` for those.
-
----
-
-## Progressive enhancement
-
-Start with the simplest path and add features as needed:
-
-1. `process(prompt)` — zero config
-2. `process(prompt, mode="strict", return_metrics=True)` — tuned policy
-3. `wrap_llm(client)` — transparent SDK integration
-4. `Agent(model="mock")` — full pipeline + generation
-5. `recommend_local_model(...)` — local deployment planning
+IR is built inside `compile_prompt()` — never passed as a public argument.

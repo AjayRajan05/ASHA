@@ -2,22 +2,50 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
+
+# Virtual environments
 venv/
 .venv/
+.venv-*/
+.venv-prod/
+.venv-testpypi/
 .venv-ci/
 .venv-ci-clean/
 .venv-pub/
-.cursor/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets
 .env
+.env.*
+
+# Build / packaging
 dist/
 build/
-*.egg-info
+*.egg-info/
+*.egg
+
+# Test / coverage artifacts
 .pytest_cache/
+.mypy_cache/
 .coverage
 coverage.xml
+coverage_report.json
 htmlcov/
-logs/
 flake8_report*.txt
 test_output.txt
-benchmarks/output/
+
+# Docs build
 site/
+
+# Benchmark outputs (baseline is committed)
+benchmarks/output/
+
+# Logs
+logs/
+*.log

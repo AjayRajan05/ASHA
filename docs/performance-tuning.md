@@ -1,166 +1,114 @@
 # Performance Tuning
 
-**PrivySHA v0.3.0** — balancing speed, security, and token savings.
+**PrivySHA v0.4.1**
 
 ---
 
-## Speed vs security vs savings
+## Trade-offs
 
 | Priority | Settings |
 |----------|----------|
-| **Speed** | `mode="lite"`, `pii_mode="rule"`, no `trace`/`debug` |
-| **Security** | `mode="strict"`, `security_level="high"`, `pii_mode="hybrid"` |
+| **Speed** | `mode="lite"` or `mode="off"`, `pii_mode="rule"` |
+| **Security** | `mode="strict"`, `PolicyConfig(pii_mode="hybrid")` |
 | **Token savings** | `mode="strict"`, lower `token_budget` |
-| **Semantic fidelity** | `preserve_intent=True` |
+| **Semantic fidelity** | `PolicyConfig(preserve_intent=True)` |
 
 ---
 
-## Fastest configuration
+## Fastest path
 
 ```python
 from privysha import process
 
-result = process(
-    prompt,
-    mode="lite",
-    pii_mode="rule",
-    privacy=True,
-)
+result = process(prompt, mode="lite")
+# or
+result = process(prompt, mode="off")
 ```
 
-Avoid in production hot paths:
-
-- `trace=True` — adds stage tracing overhead
-- `debug=True` — adds diff generation
-- `debug_mode=True` — full debugger session
-- `pii_mode="hybrid"` or `"ml_only"` — requires ML model loading
+Avoid in hot paths: `trace=True`, `debug=True`, `pii_mode="hybrid"` (ML load).
 
 ---
 
 ## Maximum security
 
 ```python
+from privysha import process
+from privysha.core.policy_config import PolicyConfig
+
 result = process(
     prompt,
     mode="strict",
-    security_level="high",
-    pii_mode="hybrid",       # requires privysha[ml]
-    security_fail_closed=True,
+    policy=PolicyConfig(pii_mode="hybrid", security_level="high"),
 )
 ```
 
 ---
 
-## Maximum token savings
-
-```python
-result = process(
-    prompt,
-    mode="strict",
-    token_budget=500,
-)
-```
-
-Note: aggressive optimization may alter prompt semantics. Use `preserve_intent=True` if fidelity matters.
-
----
-
-## Async for throughput
+## Async batching
 
 ```python
 import asyncio
-from privysha import process_async
+from privysha.utils.dropin import process_async
 
-async def process_batch(prompts):
-    tasks = [process_async(p, mode="lite") for p in prompts]
-    return await asyncio.gather(*tasks)
-
-results = asyncio.run(process_batch(prompts))
+async def batch(prompts):
+    return await asyncio.gather(
+        *[process_async(p, mode="lite") for p in prompts]
+    )
 ```
 
 ---
 
-## Tuning parameters on process()
+## Tunable parameters
 
-All tuning is per-call on `process()` — there is no global configure function.
+All per-call on `process()` — no global config.
 
 | Parameter | Effect |
 |-----------|--------|
-| `mode` | Policy preset (balanced/strict/lite/off) |
-| `pii_mode` | Detection method (rule/hybrid/ml_only) |
-| `security_level` | Detection aggressiveness (low/medium/high) |
+| `mode` | Policy preset |
+| `policy` | `pii_mode`, `security_level`, `preserve_intent`, etc. |
 | `token_budget` | Optimization target (default 1200) |
-| `preserve_intent` | Skip optimization on clean prompts |
 | `timeout_seconds` | Abort after N seconds |
-| `max_retries` | Retry on transient failure (default 0) |
+| `max_retries` | Retry transient failures |
 
 ---
 
-## Agent performance
+## Agent
 
-`Agent` does not accept `mode`, `pii_mode`, or `security_level`. It uses `Pipeline(privacy=..., token_budget=...)`.
-
-For tuned preprocessing, use `process()` before calling your LLM, or configure the pipeline:
+`Agent(privacy=True)` uses strict internal preprocessing. Tune via `token_budget` or preprocess with `process()` yourself.
 
 ```python
 from privysha import Agent
 
 agent = Agent(model="mock", privacy=True, token_budget=800)
-metrics = agent.get_token_metrics("your prompt")
-print(metrics)
 ```
 
 ---
 
-## Environment variables
-
-| Variable | Used by | Notes |
-|----------|---------|-------|
-| `PRIVYSHA_MODEL` | `Agent.from_env()` | Default model name |
-| `PRIVYSHA_TOKEN_BUDGET` | `Agent.from_env()` | Default token budget |
-| `PRIVYSHA_CACHE_DIR` | Local advisor | Catalog cache path |
-
-`PRIVYSHA_MODE` is **not** read by the library. Set `mode` on each `process()` call.
-
----
-
-## Measuring performance
+## Measuring
 
 ```python
 import time
 from privysha import process
 
 start = time.perf_counter()
-result = process("prompt", return_metrics=True, mode="balanced")
-elapsed = (time.perf_counter() - start) * 1000
-
-print(f"Wall time: {elapsed:.1f} ms")
-print(f"Reported: {result['metrics']['processing_time_ms']} ms")
+result = process("prompt", mode="balanced")
+print(f"Wall: {(time.perf_counter()-start)*1000:.1f} ms")
+print(f"Reported: {result.metrics.processing_time_ms} ms")
 ```
-
-Run benchmarks:
 
 ```bash
 python benchmarks/run_benchmarks.py --save
-privysha benchmark --mode lite --save
 ```
 
-See [benchmarks.md](benchmarks.md) for baseline numbers.
+See [benchmarks.md](benchmarks.md).
 
 ---
 
-## Production recommendations
+## Production checklist
 
-1. Use `mode="balanced"` as default
-2. Disable `trace` and `debug` in production
-3. Use `pii_mode="rule"` unless ML accuracy is required
-4. Set `security_fail_closed=True` for regulated workloads
-5. Monitor `return_metrics=True` periodically (not on every request)
-
----
-
-## Related docs
-
-- [Benchmarks](benchmarks.md)
-- [Optimization](optimization.md)
-- [Troubleshooting](troubleshooting.md)
+1. Default `mode="balanced"`
+2. No `trace`/`debug` on every request
+3. `pii_mode="rule"` unless ML needed
+4. `mode="strict"` for regulated paths
+5. Monitor `result.degraded` in logs
+6. Pin `privysha==0.4.1`

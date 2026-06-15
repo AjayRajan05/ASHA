@@ -1,12 +1,10 @@
-# Contributing to PrivySHA
+# Contributing
 
-**v0.3.0 developer preview** — see [developer-preview.md](developer-preview.md) for release expectations.
-
-Thank you for contributing! Small, focused PRs are welcome. Discuss large architectural changes in an issue first.
+**PrivySHA v0.4.1** — development guide.
 
 ---
 
-## Development setup
+## Setup
 
 ```bash
 git clone https://github.com/AjayRajan05/privySHA.git
@@ -14,166 +12,90 @@ cd privySHA
 pip install -e ".[dev]"
 ```
 
-Optional extras for testing integrations:
+Python **3.10+** required.
+
+---
+
+## Run tests
 
 ```bash
-pip install -e ".[dev,ml,integrations,local-advisor]"
-```
+# Full suite
+pytest tests -q
 
-Verify installation:
+# Architecture boundaries only
+pytest tests/architecture -q
 
-```bash
-privysha quick-test
-python examples/developer_preview_demo.py
+# With coverage (CI uses --cov-fail-under=50)
+pytest --cov=privysha --cov-report=term -m "not slow"
 ```
 
 ---
 
-## Project structure
+## Architecture rules
+
+Enforced by `tests/architecture/test_boundaries.py`:
+
+| Layer | Must not import |
+|-------|-----------------|
+| `core/` | `runtime`, `integrations`, `compat` |
+| `runtime/` | `integrations`, `compat` |
+| `types/` | `compat`, `runtime`, `integrations` |
+| `utils/` | `compat` |
+
+Do not reintroduce `Pipeline`, root lazy exports, or `compat/` on the `process()` hot path.
+
+---
+
+## Package layout
 
 ```
 src/privysha/
-├── __init__.py          # Public API (eager + lazy exports)
-├── agent.py             # Agent class
-├── adapters/            # LLM provider adapters
-├── cli/                 # CLI (main.py, benchmark_cli.py, recommend_cli.py)
-├── compiler/            # Optimizer, MSDPC, prompt compiler
-├── core/                # PolicyConfig, hybrid PII, trace, benchmark
-├── integrations/        # FastAPI, LangChain, Instructor, etc.
-├── ir/                  # Prompt IR
-├── local_advisor/       # PrivyFit
-├── pipeline/            # 7-stage pipeline
-├── routing/             # ModelRouter
-├── security/            # PII detection, patterns, masking
-└── utils/               # dropin.py (process, wrap_llm, etc.)
-
-tests/                   # Core tests
-tests_v2/                # Extended tests
-benchmarks/              # Benchmark harness
-docs/                    # Documentation (MkDocs)
-examples/                # Example scripts
+├── core/           # engines, policy, security, compiler
+├── runtime/        # PromptProcessor, Agent, adapters
+├── integrations/   # wrap_llm, auto_patch, middleware
+├── types/          # ProcessResult, etc.
+├── utils/          # dropin functions
+├── compat/         # legacy_results only
+└── cli/
 ```
 
 ---
 
-## Running tests
+## Code style
 
 ```bash
-# Default (skips integration tests requiring API keys)
-pytest
-
-# Include integration tests
-pytest -m integration
-
-# With coverage
-pytest --cov=src --cov-fail-under=40
-
-# Specific file
-pytest tests/test_adapter_factory.py -v
+flake8 src/privysha --select=F401,F824
+mypy src/privysha --ignore-missing-imports
 ```
 
-Integration tests require API keys (`GEMINI_API_KEY`, etc.) and are skipped by default in CI.
+Match existing conventions — minimal diffs, no drive-by refactors.
 
 ---
 
-## Code quality
-
-```bash
-# Format
-black src/ tests/ tests_v2/
-
-# Lint
-flake8 src/ tests/ tests_v2/
-
-# Type check
-mypy src/privysha/
-```
-
-CI runs all of these on every push.
-
----
-
-## Documentation
-
-Docs are in `docs/` and built with MkDocs:
+## Docs
 
 ```bash
 pip install -e ".[docs]"
 mkdocs serve
+mkdocs build --strict
 ```
 
-When changing the public API, update:
-
-- `docs/api-reference.md`
-- `docs/core-concepts.md`
-- Relevant feature docs
-
-Navigation is defined in `mkdocs.yml`.
+Update docs when changing public API. Root exports are only: `process`, `sanitize`, `optimize`, `Agent`.
 
 ---
 
-## Benchmarks
+## Release track
 
-Before submitting performance-related changes:
-
-```bash
-python benchmarks/run_benchmarks.py --save
-python benchmarks/run_benchmarks.py --compare benchmarks/baseline/results.json
-```
-
-Do not regress fail-safe rate (must remain 100%) or false positive rate (must remain 0%).
+Current: **0.4.1 developer preview**. Breaking changes allowed in 0.x — document in `CHANGELOG.md` and `docs/migration-v0.4.md`.
 
 ---
 
-## Pull request guidelines
+## Pull requests
 
-1. Fork and create a feature branch
-2. Write tests for new behavior
-3. Run `pytest` and `black` / `flake8`
-4. Update docs if API changes
-5. Keep PRs focused — one feature or fix per PR
+1. Fork and branch
+2. Add tests for behavior changes
+3. Run full pytest locally
+4. Update relevant docs
+5. Open PR with clear description
 
----
-
-## Release process
-
-Current track: **0.3.x developer preview**.
-
-Releases are triggered via GitHub Release or manual workflow dispatch. See [publishing.md](publishing.md).
-
-Version is defined in:
-
-- `pyproject.toml`
-- `src/privysha/__init__.py` → `__version__`
-
-Update `CHANGELOG.md` for every release.
-
----
-
-## Public API policy
-
-The stable surface for 0.3.x:
-
-```python
-from privysha import (
-    process, wrap_llm, optimize, sanitize,
-    process_async, optimize_async, sanitize_async,
-    unmask, Agent, Pipeline, AdapterFactory,
-    recommend_local_model, get_last_recommendation,
-)
-```
-
-Advanced symbols are lazy-loaded. Changes to eager exports require discussion in an issue.
-
----
-
-## Getting help
-
-- [GitHub Issues](https://github.com/AjayRajan05/privySHA/issues) — bugs and features
-- [GitHub Discussions](https://github.com/AjayRajan05/privySHA/discussions) — design questions
-
----
-
-## License
-
-By contributing, you agree that your contributions will be licensed under the Apache 2.0 License.
+See [developer-preview.md](developer-preview.md) for scope.

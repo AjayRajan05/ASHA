@@ -1,19 +1,18 @@
-# Examples
+# Examples (v0.4.1)
 
-Start here for the developer preview:
+Runnable scripts demonstrating the public API. All use typed `ProcessResult` and canonical import paths.
 
-| Script | Description |
-|--------|-------------|
-| **[developer_preview_demo.py](developer_preview_demo.py)** | **Start here** — `process()` + PrivyFit in ~30 lines, no API keys |
-| [dropin_examples.py](dropin_examples.py) | Core API: `process`, `wrap_llm`, `optimize`, `sanitize` |
-| [basic_usage.py](basic_usage.py) | Agent and routing basics |
-| [adapter_usage.py](adapter_usage.py) | Provider adapters |
-| [provider_testing.py](provider_testing.py) | OpenAI, Claude, Gemini, Ollama, HF smoke tests |
-| [fastapi_integration.py](fastapi_integration.py) | FastAPI middleware |
-| [instructor_guardrails_example.py](instructor_guardrails_example.py) | Instructor + Guardrails composition (mock, no API keys) |
-| [integration_showcase.py](integration_showcase.py) | Multi-framework overview |
-| [oh_shock_moments.py](oh_shock_moments.py) | Before/after PII and injection demos |
-| [fastapi_integration_example.py](fastapi_integration_example.py) | Extended FastAPI middleware example |
+| Script | Description | API keys |
+|--------|-------------|----------|
+| **[developer_preview_demo.py](developer_preview_demo.py)** | **Start here** — `process()` + PrivyFit | None |
+| [dropin_examples.py](dropin_examples.py) | `process`, `sanitize`, `optimize`, `wrap_llm` | None (mock wrap) |
+| [basic_usage.py](basic_usage.py) | `Agent` with mock adapter | None |
+| [adapter_usage.py](adapter_usage.py) | Provider adapter patterns | Optional |
+| [provider_testing.py](provider_testing.py) | Smoke tests for providers | Optional |
+| [oh_shock_moments.py](oh_shock_moments.py) | Before/after demos | None |
+| [integration_showcase.py](integration_showcase.py) | Framework integration snippets | None (prints only) |
+| [fastapi_integration.py](fastapi_integration.py) | FastAPI middleware demo | None (`pip install fastapi uvicorn`) |
+| [v2_examples.py](v2_examples.py) | Agent, routing, tracing patterns | None |
 
 ## Quick run
 
@@ -21,7 +20,22 @@ Start here for the developer preview:
 pip install -e .
 python examples/developer_preview_demo.py
 python examples/dropin_examples.py
-python examples/instructor_guardrails_example.py
+python examples/basic_usage.py
 ```
 
-Most examples use `pip install -e .` from the repo root. Provider examples require optional extras and API keys — see each script's header comments.
+Provider examples need extras and API keys:
+
+```bash
+pip install privysha[openai]
+export OPENAI_API_KEY=...
+python examples/provider_testing.py
+```
+
+FastAPI example:
+
+```bash
+pip install privysha[fastapi]  # or: pip install fastapi uvicorn
+python examples/fastapi_integration.py
+```
+
+See [docs/examples.md](../docs/examples.md) for copy-paste patterns.

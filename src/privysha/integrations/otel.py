@@ -38,12 +38,14 @@ def enable_otel(service_name: str = "privysha") -> bool:
             BatchSpanProcessor,
             ConsoleSpanExporter,
         )
+        from ..runtime.observability import set_tracer
 
         provider = TracerProvider()
         provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
         trace.set_tracer_provider(provider)
         _tracer = trace.get_tracer(service_name)
         _otel_enabled = True
+        set_tracer(_tracer, enabled=True)
         return True
     except ImportError:
         return False
@@ -51,11 +53,10 @@ def enable_otel(service_name: str = "privysha") -> bool:
 
 @contextmanager
 def stage_span(stage_name: str) -> Iterator[Optional[Any]]:
-    """Context manager for pipeline stage spans (no-op when OTEL disabled)."""
-    if not _otel_enabled or _tracer is None:
-        yield None
-        return
-    with _tracer.start_as_current_span(f"privysha.stage.{stage_name}") as span:
+    """Re-export from runtime observability (backward compat)."""
+    from ..runtime.observability import stage_span as _stage_span
+
+    with _stage_span(stage_name) as span:
         yield span
 
 

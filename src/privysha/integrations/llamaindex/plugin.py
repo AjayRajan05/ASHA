@@ -116,20 +116,18 @@ def _optimize_prompt_text(
     debug_metrics: bool,
 ) -> tuple[str, Optional[Dict[str, Any]]]:
     """Run process() and return optimized text plus optional metrics."""
+    mode = "balanced" if privacy else "off"
     if debug_metrics:
-        result = cast(
-            Dict[str, Any],
-            process(
-                text,
-                privacy=privacy,
-                token_budget=token_budget,
-                return_metrics=True,
-            ),
+        processed = process(
+            text,
+            mode=mode,
+            token_budget=token_budget,
         )
+        result = processed.to_dict()
         return str(result["optimized"]), result
     return (
         _coerce_process_output(
-            process(text, privacy=privacy, token_budget=token_budget),
+            process(text, mode=mode, token_budget=token_budget),
             text,
         ),
         None,
@@ -187,22 +185,20 @@ class PrivySHAPromptTemplate(PromptTemplate):
         formatted_prompt = super().format(**kwargs)
 
         # Apply PrivySHA optimization
+        mode = "balanced" if self.privacy else "off"
         if self.debug_metrics:
-            result = cast(
-                Dict[str, Any],
-                process(
-                    formatted_prompt,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
-                ),
+            processed = process(
+                formatted_prompt,
+                mode=mode,
+                token_budget=self.token_budget,
             )
+            result = processed.to_dict()
             self._last_metrics = result
             return str(result["optimized"])
         return _coerce_process_output(
             process(
                 formatted_prompt,
-                privacy=self.privacy,
+                mode=mode,
                 token_budget=self.token_budget,
             ),
             formatted_prompt,
@@ -274,22 +270,20 @@ class PrivySHALLM(CustomLLM):
             LLM response
         """
         # Apply PrivySHA optimization
+        mode = "balanced" if self.privacy else "off"
         if self.debug_metrics:
-            result = cast(
-                Dict[str, Any],
-                process(
-                    prompt,
-                    privacy=self.privacy,
-                    token_budget=self.token_budget,
-                    return_metrics=True,
-                ),
+            processed = process(
+                prompt,
+                mode=mode,
+                token_budget=self.token_budget,
             )
+            result = processed.to_dict()
             self._last_metrics = result
             optimized_prompt = str(result["optimized"])
         else:
             optimized_prompt = _coerce_process_output(
                 process(
-                    prompt, privacy=self.privacy, token_budget=self.token_budget
+                    prompt, mode=("balanced" if self.privacy else "off"), token_budget=self.token_budget
                 ),
                 prompt,
             )
@@ -358,7 +352,7 @@ class PrivySHAQueryEngine(BaseQueryEngine):
         if self.optimize_queries:
             optimized_query, metrics = _optimize_prompt_text(
                 query_str,
-                privacy=self.privacy,
+                mode=("balanced" if self.privacy else "off"),
                 token_budget=self.token_budget,
                 debug_metrics=self.debug_metrics,
             )
@@ -389,7 +383,7 @@ class PrivySHAQueryEngine(BaseQueryEngine):
         if self.optimize_queries:
             optimized_query, metrics = _optimize_prompt_text(
                 query_str,
-                privacy=self.privacy,
+                mode=("balanced" if self.privacy else "off"),
                 token_budget=self.token_budget,
                 debug_metrics=self.debug_metrics,
             )
@@ -453,7 +447,7 @@ class PrivySHARetriever(BaseRetriever):
 
         optimized_query, metrics = _optimize_prompt_text(
             query_str,
-            privacy=self.privacy,
+            mode=("balanced" if self.privacy else "off"),
             token_budget=self.token_budget,
             debug_metrics=self.debug_metrics,
         )
@@ -480,7 +474,7 @@ class PrivySHARetriever(BaseRetriever):
 
         optimized_query, metrics = _optimize_prompt_text(
             query_str,
-            privacy=self.privacy,
+            mode=("balanced" if self.privacy else "off"),
             token_budget=self.token_budget,
             debug_metrics=self.debug_metrics,
         )
@@ -658,20 +652,16 @@ class PrivySHAPostProcessor:
         for node in nodes:
             if hasattr(node, "text") and node.text:
                 # Process the node text through PrivySHA
-                result = process(
+                processed = process(
                     node.text,
-                    privacy=self.privacy,
+                    mode=("balanced" if self.privacy else "off"),
                     token_budget=self.token_budget,
-                    return_metrics=self.debug_metrics,
                 )
+                result = processed.to_dict() if self.debug_metrics else None
+                processed_text = processed.output
 
-                # Create new document with processed text
-                if isinstance(result, str):
-                    processed_text = result
-                else:
-                    processed_text = result.get("optimized", node.text)
-                    if self.debug_metrics:
-                        self._last_metrics = result.get("metrics", {})
+                if self.debug_metrics and result:
+                    self._last_metrics = result.get("metrics", {})
 
                 # Create new node with processed text
                 if hasattr(node, "copy"):
@@ -702,18 +692,16 @@ class PrivySHAPostProcessor:
         Returns:
             Processed query string
         """
-        result = process(
+        processed = process(
             query_str,
-            privacy=self.privacy,
+            mode=("balanced" if self.privacy else "off"),
             token_budget=self.token_budget,
-            return_metrics=self.debug_metrics,
         )
 
-        if isinstance(result, str):
-            return result
         if self.debug_metrics:
+            result = processed.to_dict()
             self._last_metrics = cast(Dict[str, Any], result.get("metrics", {}))
-        return str(result.get("optimized", query_str))
+        return processed.output
 
     def get_metrics(self) -> Dict[str, Any]:
         """

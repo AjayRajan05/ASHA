@@ -1,26 +1,31 @@
 # Examples
 
-**PrivySHA v0.3.0** — real-world usage patterns.
-
-All examples use the actual public API. See [api-reference.md](api-reference.md) for full signatures.
+**PrivySHA v0.4.1** — copy-paste patterns with valid imports.
 
 ---
 
-## Basic prompt processing
+## Basic processing
 
 ```python
 from privysha import process
 
-# Simple — returns a string
 result = process("My email is john@example.com. Analyze this dataset.")
-print(result)
-
-# With metrics
-result = process("prompt", return_metrics=True)
-print(result["optimized"])
-print(f"Saved {result['token_reduction']}% tokens")
-print(f"PII masked: {result.get('pii_masked', False)}")
+print(result)                          # str → optimized output
+print(result.security.pii_detected)
+print(result.metrics.token_reduction_pct)
 ```
+
+---
+
+## Strict mode (regulated workloads)
+
+```python
+from privysha import process
+
+result = process("Sensitive prompt with PII", mode="strict")
+```
+
+Raises `PrivySHAProcessingError` on total failure instead of degraded fallback.
 
 ---
 
@@ -28,61 +33,70 @@ print(f"PII masked: {result.get('pii_masked', False)}")
 
 ```python
 import os
-from privysha import wrap_llm
+from privysha.integrations import wrap_llm
 import openai
 
 os.environ["OPENAI_API_KEY"] = "your-key"
-client = openai.OpenAI()
-secure = wrap_llm(client, mode="balanced")
+client = wrap_llm(openai.OpenAI(), mode="balanced")
 
-response = secure.chat.completions.create(
+response = client.chat.completions.create(
     model="gpt-4o-mini",
-    messages=[{"role": "user", "content": "Analyze data from john@example.com"}],
+    messages=[{"role": "user", "content": "Data from john@example.com"}],
 )
 ```
 
-Requires `pip install privysha[openai]`.
-
 ---
 
-## Security-only sanitization
+## Security only
 
 ```python
 from privysha import sanitize
+from privysha.core.policy_config import PolicyConfig
 
-safe = sanitize("Contact me at 555-123-4567 or john@company.com")
-
-# With details
-result = sanitize("prompt", return_details=True)
-print(result["sanitized"])
-print(result["pii_detected"])
+result = sanitize(
+    "Contact john@corp.com",
+    policy=PolicyConfig(reversible=True),
+)
+print(result.output)
+print(result.security.masking_map)
 ```
 
 ---
 
-## Optimization-only
+## Optimize only
 
 ```python
 from privysha import optimize
 
-compressed = optimize(
-    "Hey bro can you please thoroughly analyze this entire dataset for me?",
-    return_metrics=True,
-)
-print(compressed["optimized"])
-print(f"Reduction: {compressed['token_reduction']}%")
+result = optimize("Hey bro can you please analyze this dataset")
+print(result.output)
 ```
 
 ---
 
-## Agent with mock adapter (no API key)
+## Hybrid PII
+
+```python
+from privysha import process
+from privysha.core.policy_config import PolicyConfig
+
+result = process(
+    "Contact john@example.com",
+    policy=PolicyConfig(pii_mode="hybrid"),
+)
+```
+
+Requires `pip install privysha[ml]`.
+
+---
+
+## Agent with mock (no API key)
 
 ```python
 from privysha import Agent
 
 agent = Agent(model="mock", privacy=True)
-response = agent.run("Analyze this dataset with john@example.com")
-print(response)
+print(agent.run("Summarize sales data from john@example.com"))
 ```
 
 ---
@@ -92,167 +106,74 @@ print(response)
 ```python
 from privysha import Agent
 
-agent = Agent(model="mock", privacy=True)
-result = agent.run("Analyze dataset with john@example.com", trace=True)
-
-print("Optimized:", result["prompts"]["optimized"])
-print("Response:", result["response"])
+agent = Agent(model="mock")
+result = agent.run("prompt", trace=True)
+print(result.output)
+print(result.response)
 ```
 
 ---
 
-## Agent with OpenAI
-
-```python
-import os
-from privysha import Agent
-
-os.environ["OPENAI_API_KEY"] = "your-key"
-agent = Agent(model="gpt-4o-mini", privacy=True)
-response = agent.run("Summarize the key trends in this data")
-print(response)
-```
-
----
-
-## Agent with fallback providers
+## Smart routing
 
 ```python
 from privysha import Agent
 
 agent = Agent(
     model="gpt-4o-mini",
-    fallback_providers=[
-        {"provider": "anthropic", "model": "claude-3-haiku"},
-        {"provider": "ollama", "model": "llama3"},
-    ],
+    routing_config={
+        "chat": "gpt-4o-mini",
+        "analysis": "gpt-4o",
+    },
 )
-response = agent.run("Analyze this data")
-```
-
-Each fallback provider requires its optional extra and credentials.
-
----
-
-## Reversible masking
-
-```python
-from privysha import sanitize, unmask
-
-result = sanitize(
-    "Reply to alice@corp.com about order #12345",
-    return_details=True,
-    reversible=True,
-)
-
-safe_prompt = result["sanitized"]
-# Send safe_prompt to LLM...
-llm_output = "Confirmed for alice@corp.com"
-restored = unmask(llm_output, result["masking_map"])
+agent.run("Analyze Q1 revenue", task_type="analysis")
 ```
 
 ---
 
-## PrivyFit local model recommendation
-
-```python
-from privysha import recommend_local_model
-
-report = recommend_local_model(
-    prompts=[
-        "My email is john@company.com — analyze this dataset.",
-        "Write a Python REST API client.",
-    ],
-    mode="strict",
-    gpu="RTX 4090",
-    top=3,
-)
-
-for model in report.top_models:
-    print(model.model_id, model.ollama_pull_name, model.reasoning)
-```
-
----
-
-## FastAPI middleware
-
-```python
-from fastapi import FastAPI
-from privysha.integrations.fastapi.middleware import PrivySHAMiddleware
-
-app = FastAPI()
-app.add_middleware(PrivySHAMiddleware, mode="balanced", privacy=True)
-```
-
-See `examples/fastapi_integration.py`.
-
----
-
-## LangChain wrapper
-
-```python
-from langchain_openai import ChatOpenAI
-from privysha import wrap_langchain_llm
-
-llm = ChatOpenAI(model="gpt-4o-mini")
-secure_llm = wrap_langchain_llm(llm, mode="balanced")
-response = secure_llm.invoke("Contact john@example.com")
-```
-
----
-
-## Async processing
+## Async
 
 ```python
 import asyncio
-from privysha import process_async
+from privysha.utils.dropin import process_async
 
 async def main():
-    result = await process_async(
-        "Analyze data with john@example.com",
-        mode="balanced",
-    )
-    print(result)
+    result = await process_async("prompt", mode="balanced")
+    print(result.output)
 
 asyncio.run(main())
 ```
 
 ---
 
-## Benchmarking
+## Trace and diff
 
-```bash
-python benchmarks/run_benchmarks.py --save
-privysha benchmark --save
+```python
+from privysha import process
+
+result = process("john@x.com — analyze", trace=True, debug=True)
+print(result.trace)
+print(result.diff)
 ```
 
-See [benchmarks.md](benchmarks.md).
-
 ---
 
-## Developer preview demo
+## Local model advisor (preview)
 
-```bash
-pip install -e .
-python examples/developer_preview_demo.py
+```python
+from privysha.runtime.local_advisor.advisor import recommend_local_model
+
+report = recommend_local_model(
+    prompts=["Summarize with john@x.com"],
+    mode="balanced",
+    top=3,
+)
+print(report.top_pick)
 ```
 
-Runs `process()` and `recommend_local_model()` with no API keys.
-
 ---
 
-## More examples in repo
+## Related
 
-| File | Description |
-|------|-------------|
-| `examples/developer_preview_demo.py` | Minimal no-keys demo |
-| `examples/fastapi_integration.py` | FastAPI middleware |
-| `examples/integration_showcase.py` | Framework integrations |
-
----
-
-## Related docs
-
-- [Getting Started](getting-started.md)
-- [API Reference](api-reference.md)
-- [Integrations](integrations.md)
+- [api-reference.md](api-reference.md)
+- [getting-started.md](getting-started.md)

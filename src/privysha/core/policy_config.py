@@ -72,7 +72,12 @@ class PolicyConfig:
     # Audit and debugging
     audit_trail: bool = False
     debug_diff: bool = False
-    security_fail_closed: bool = False
+
+    # Advanced processing knobs (use via policy=PolicyConfig(...))
+    pii_mode: str = "rule"
+    reversible: bool = False
+    preserve_intent: bool = False
+    security_level: str = "medium"
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -148,6 +153,48 @@ class PolicyConfig:
 
         return cls(mode=mode, **overrides)
 
+    @classmethod
+    def resolve(
+        cls,
+        mode: str,
+        privacy: bool = True,
+        *,
+        security: bool = True,
+        compile: bool = True,
+        optimize: bool = True,
+        **overrides: Any,
+    ) -> "PolicyConfig":
+        """Unified mode precedence — delegates to policy_resolution."""
+        from .policy_resolution import (
+            apply_stage_flags,
+            build_pipeline_config,
+            resolve_effective_privacy,
+        )
+        from .safety import safety_mode_from_policy_mode
+
+        effective_privacy = resolve_effective_privacy(mode, privacy)
+        _, _, policy_dict = build_pipeline_config(
+            mode=mode,
+            privacy=privacy,
+            security=security,
+            compile=compile,
+            optimize=optimize,
+            safety_mode=safety_mode_from_policy_mode(mode),
+            pii_mode=overrides.pop("pii_mode", "rule"),
+            reversible=overrides.pop("reversible", False),
+            debug=overrides.pop("debug", False),
+            extra=overrides or None,
+        )
+        policy_dict.pop("safety_mode", None)
+        cfg = cls.from_dict({**policy_dict, **overrides})
+        return apply_stage_flags(
+            cfg,
+            security=security,
+            compile=compile,
+            optimize=optimize,
+            privacy=effective_privacy,
+        )
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
@@ -167,18 +214,22 @@ class PolicyConfig:
             "enable_context_analysis": self.enable_context_analysis,
             "audit_trail": self.audit_trail,
             "debug_diff": self.debug_diff,
-            "security_fail_closed": self.security_fail_closed,
+            "pii_mode": self.pii_mode,
+            "reversible": self.reversible,
+            "preserve_intent": self.preserve_intent,
+            "security_level": self.security_level,
         }
 
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> "PolicyConfig":
         """Create PolicyConfig from dictionary."""
-        # Handle mode conversion
+        config_dict = dict(config_dict)
+        config_dict.pop("safety_mode", None)
         if "mode" in config_dict:
             if isinstance(config_dict["mode"], str):
                 config_dict["mode"] = PolicyMode(config_dict["mode"])
 
-        return cls(**config_dict)
+        return cls(**{k: v for k, v in config_dict.items() if k in cls.__dataclass_fields__})
 
     def validate_behavior(self) -> Dict[str, Any]:
         """

@@ -218,19 +218,17 @@ class PrivySHAMiddleware(BaseHTTPMiddleware):
         for field_path, prompt in prompts_found:
             try:
                 # Process prompt through PrivySHA
-                result = cast(
-                    Dict[str, Any],
-                    process(
-                        prompt,
-                        privacy=self.privacy,
-                        token_budget=self.token_budget,
-                        return_metrics=True,
-                    ),
+                mode = "balanced" if self.privacy else "off"
+                proc = process(
+                    prompt,
+                    mode=mode,
+                    token_budget=self.token_budget,
                 )
+                result = proc.to_dict()
 
                 # Update the field in the processed body
                 self._update_field(
-                    processed_body, field_path, str(result["optimized"])
+                    processed_body, field_path, proc.output
                 )
 
                 # Track processing info

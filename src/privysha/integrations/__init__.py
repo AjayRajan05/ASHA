@@ -1,24 +1,22 @@
 # Copyright 2026 Ajay Rajan
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-"""
-PrivySHA Framework Integrations
+"""LLM integration layer."""
 
-Provides ready-to-use integrations for popular frameworks and systems.
-These integrations make PrivySHA feel like a plugin rather than a system.
-"""
+from .auto_patch import (
+    auto_patch,
+    disable_auto_patch,
+    enable_auto_patch,
+    get_patch_status,
+)
+from .llm_wrap import UniversalWrapper, wrap_llm
 
-from .fastapi import PrivySHAMiddleware, add_privysha_middleware
-
-__all__ = ["PrivySHAMiddleware", "add_privysha_middleware"]
+__all__ = [
+    "wrap_llm",
+    "UniversalWrapper",
+    "auto_patch",
+    "get_patch_status",
+    "disable_auto_patch",
+    "enable_auto_patch",
+]

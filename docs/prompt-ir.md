@@ -1,147 +1,53 @@
 # Prompt IR
 
-**PrivySHA v0.3.0** — structured intermediate representation for prompts.
+**PrivySHA v0.4.1** — internal intermediate representation.
 
 ---
 
-## What is Prompt IR?
+## Not public API
 
-Prompt IR (Intermediate Representation) is a structured object that captures the semantic content of a natural language prompt. It enables compiler-style optimization and intelligent model routing.
+Prompt IR lives in `core/_ir/`. It is built internally by `compile_prompt()` and used by the compiler and optimizer.
 
-Instead of treating prompts as opaque strings, PrivySHA extracts:
-
-- **Intent** — what the user wants (analyze, create, summarize, …)
-- **Object** — what the intent acts upon (dataset, code, email, …)
-- **Constraints** — requirements (thorough, concise, GDPR-compliant, …)
-- **Entities** — named entities detected in the prompt
-- **Privacy metadata** — PII presence, sensitivity level
-
----
-
-## IntentType enum
-
-Defined in `ir/prompt_ir.py`:
+**Do not import** `PromptIR` or `IRBuilder` in application code — the API may change without notice.
 
 ```python
-from privysha import IntentType
-
-# Available intents include:
-# ANALYZE, CREATE, MODIFY, DELETE, SUMMARIZE, TRANSLATE,
-# EXPLAIN, COMPARE, CLASSIFY, GENERATE, QUERY, OTHER
+from privysha import compile_prompt  # NOT available at root
 ```
+
+Use `process()` or `optimize()` instead.
 
 ---
 
-## PromptIR class
+## What IR captures
+
+When `compile_prompt()` runs inside `process()`:
+
+- Intent (analyze, summarize, create, …)
+- Entities and constraints
+- Structure for MSDPC optimization
+
+You never pass or receive IR objects from public functions.
+
+---
+
+## compile_prompt engine
 
 ```python
-from privysha import PromptIR
-
-ir = PromptIR({
-    "intent": "analyze",
-    "object": "dataset",
-    "constraints": ["thorough"],
-    "style": "analytical",
-})
-
-print(ir.intent)
-print(ir.to_dict())
+# Internal flow only:
+# IRBuilder.parse(prompt) → PromptCompiler.compile(ir)
 ```
+
+Exposed only via `process()` and `PromptProcessor`.
 
 ---
 
-## IRBuilder
+## Agent and routing
 
-Builds PromptIR from natural language:
-
-```python
-from privysha import IRBuilder
-
-builder = IRBuilder()
-ir = builder.generate("Analyze this dataset for anomalies")
-
-print(ir.intent)     # analyze
-print(ir.object)     # dataset
-```
-
-Custom intent patterns:
-
-```python
-builder.add_intent_pattern(
-    name="visualize",
-    patterns=["plot", "chart", "graph", "visualize"],
-)
-```
+v0.4.1 does not expose IR-based `ModelRouter`. Task routing uses `Agent(routing_config={...})` with string model names.
 
 ---
 
-## PromptCompiler
+## Related
 
-Converts IR back to optimized prompt text:
-
-```python
-from privysha import PromptCompiler
-
-compiler = PromptCompiler()
-compiled = compiler.compile(ir)
-```
-
-Used internally by the compilation pipeline stage.
-
----
-
-## IR in the pipeline
-
-IR generation is stage 2 of the 7-stage pipeline:
-
-```
-Security → IR Generation → Routing → Compilation → Optimization → ...
-```
-
-The IR drives:
-
-- **Routing** — `ModelRouter.route(ir, constraints)` selects the best model
-- **Compilation** — IR → structured prompt text
-- **Optimization** — MSDPC operates on compiled output
-
-For drop-in usage, IR is built internally — you don't need to interact with it directly.
-
----
-
-## PrivyFit workload profiling
-
-PrivyFit uses compiled prompt stats (token counts, IR-derived intent) to rank local models:
-
-```python
-from privysha import recommend_local_model
-
-report = recommend_local_model(
-    prompts=["Analyze customer feedback with PII."],
-    mode="strict",
-)
-```
-
-See [local-advisor.md](local-advisor.md).
-
----
-
-## Routing integration
-
-```python
-from privysha import ModelRouter, RoutingStrategy
-
-router = ModelRouter(default_strategy=RoutingStrategy.TASK_BASED)
-decision = router.route(ir, constraints={"force_local": False})
-print(decision.selected_model.name)
-print(decision.reasoning)
-```
-
-See [routing.md](routing.md).
-
----
-
-## Related docs
-
-- [Pipeline](pipeline.md) — IR generation stage
-- [Architecture](architecture.md) — `ir/` package layout
-- [Routing](routing.md) — model selection based on IR
+- [architecture.md](architecture.md)
+- [pipeline.md](pipeline.md)

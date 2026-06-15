@@ -5,7 +5,7 @@ Regex-based PII Detector - High precision pattern matching
 import re
 from typing import List, Dict
 from ...stages.base_stage import PIIEntity
-from .....security.patterns import compile_pii_patterns, is_example_email
+from ....security.patterns import compile_pii_patterns, is_example_email
 
 
 class RegexDetector:

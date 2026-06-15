@@ -1,5 +1,5 @@
 site_name: PrivySHA
-site_description: Drop-in security and optimization layer for LLM applications
+site_description: Drop-in security and optimization layer for LLM applications (v0.4.1)
 site_url: https://ajayrajan05.github.io/privySHA/
 repo_url: https://github.com/AjayRajan05/privySHA
 repo_name: AjayRajan05/privySHA
@@ -48,7 +48,7 @@ nav:
   - Security: security.md
   - Compliance: compliance.md
   - Integrations: integrations.md
-  - Pipeline: pipeline.md
+  - Processing Flow: pipeline.md
   - Prompt IR: prompt-ir.md
   - Optimization: optimization.md
   - Debugging: debugging.md
@@ -57,6 +57,8 @@ nav:
   - FAQ: faq.md
   - Examples: examples.md
   - Migration: migration.md
+  - Migration v0.4: migration-v0.4.md
+  - Deprecations: deprecations.md
   - Versioning: versioning.md
   - Benchmarks: benchmarks.md
   - Local Model Advisor: local-advisor.md

@@ -307,19 +307,17 @@ class PrivySHAMiddleware(MiddlewareMixin):
         for field_path, prompt in prompts_found:
             try:
                 # Process prompt through PrivySHA
-                result = cast(
-                    Dict[str, Any],
-                    process(
-                        prompt,
-                        privacy=self.privacy,
-                        token_budget=self.token_budget,
-                        return_metrics=True,
-                    ),
+                mode = "balanced" if self.privacy else "off"
+                proc = process(
+                    prompt,
+                    mode=mode,
+                    token_budget=self.token_budget,
                 )
+                result = proc.to_dict()
 
                 # Update the field in the processed data
                 self._update_field(
-                    processed_data, field_path, str(result["optimized"])
+                    processed_data, field_path, proc.output
                 )
 
                 # Track processing info
@@ -518,22 +516,20 @@ def privysha_view(
 
             # Process through PrivySHA
             try:
-                result = process(
+                mode = "balanced" if privacy else "off"
+                proc = process(
                     json.dumps(data),
-                    privacy=privacy,
+                    mode=mode,
                     token_budget=token_budget,
-                    return_metrics=debug_metrics,
                 )
 
                 if debug_metrics:
                     # Store metrics in request object
-                    request.privysha_view_metrics = result
+                    request.privysha_view_metrics = proc.to_dict()
 
                 # Update request data
-                processed_data = (
-                    cast(Dict[str, Any], json.loads(str(result["optimized"])))
-                    if isinstance(result, dict)
-                    else cast(Dict[str, Any], result)
+                processed_data = cast(
+                    Dict[str, Any], json.loads(proc.output)
                 )
 
             except Exception as e:
@@ -593,10 +589,7 @@ if DJANGO_COMMAND_AVAILABLE:
 
             # Test basic processing
             test_prompt = "Hey bro analyze this dataset with john@email.com"
-            result = cast(
-                Dict[str, Any],
-                process(test_prompt, return_metrics=True),
-            )
+            result = process(test_prompt).to_dict()
 
             self.stdout.write(f"Original: {test_prompt}")
             self.stdout.write(f"Optimized: {result['optimized']}")

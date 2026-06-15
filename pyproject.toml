@@ -18,8 +18,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "privysha"
-version = "0.3.0"
-description = "PrivySHA (privacy focused secure hashing library) — drop-in security + optimization layer for LLM apps (developer preview)"
+version = "0.4.1"
+description = "PrivySHA (privacy focused secure hashing library) - drop-in security + optimization layer for LLM apps (developer preview)"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -91,14 +91,11 @@ transformers = [
     "accelerate>=0.20.0,<2.0.0"
 ]
 ml = [
+    "privysha[transformers]",
     "spacy>=3.4.0,<4.0.0",
-    "transformers>=4.20.0,<6.0.0",
-    "torch>=1.12.0,<3.0.0",
-    "accelerate>=0.20.0,<2.0.0"
 ]
 fastapi = [
     "fastapi>=0.100.0,<1.0.0",
-    "starlette>=0.27.0,<1.0.0",
     "uvicorn>=0.23.0,<1.0.0",
 ]
 flask = [
@@ -113,19 +110,10 @@ langchain = [
 ]
 instructor = [
     "instructor>=0.4.0,<2.0.0",
-    "openai>=1.0.0,<3.0.0",
-]
-guardrails = [
-    "guardrails-ai>=0.4.0,<1.0.0",
+    "privysha[openai]",
 ]
 integrations = [
-    "fastapi>=0.100.0,<1.0.0",
-    "starlette>=0.27.0,<1.0.0",
-    "uvicorn>=0.23.0,<1.0.0",
-    "langchain-core>=0.1.0,<2.0.0",
-    "langchain-openai>=0.1.0,<2.0.0",
-    "instructor>=0.4.0,<2.0.0",
-    "openai>=1.0.0,<3.0.0",
+    "privysha[fastapi,langchain,instructor]",
 ]
 llamaindex = [
     "llama-index-core>=0.10.0,<1.0.0",
@@ -142,25 +130,7 @@ local-advisor-gpu = [
     "nvidia-ml-py>=12.0.0,<14.0.0",
 ]
 all = [
-    "openai>=1.0.0,<3.0.0",
-    "anthropic>=0.5.0,<1.0.0",
-    "google-generativeai>=0.3.0,<1.0.0",
-    "transformers>=4.20.0,<6.0.0",
-    "torch>=1.12.0,<3.0.0",
-    "accelerate>=0.20.0,<2.0.0",
-    "spacy>=3.4.0,<4.0.0",
-    "fastapi>=0.100.0,<1.0.0",
-    "starlette>=0.27.0,<1.0.0",
-    "uvicorn>=0.23.0,<1.0.0",
-    "langchain-core>=0.1.0,<2.0.0",
-    "langchain-openai>=0.1.0,<2.0.0",
-    "instructor>=0.4.0,<2.0.0",
-    "flask>=2.0.0,<4.0.0",
-    "django>=4.0.0,<6.0.0",
-    "guardrails-ai>=0.4.0,<1.0.0",
-    "opentelemetry-api>=1.20.0,<3.0.0",
-    "opentelemetry-sdk>=1.20.0,<3.0.0",
-    "llama-index-core>=0.10.0,<1.0.0",
+    "privysha[openai,anthropic,gemini,ml,fastapi,flask,django,langchain,instructor,otel,llamaindex,local-advisor]",
 ]
 
 [project.urls]
@@ -176,7 +146,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 privysha = ["py.typed"]
-"privysha.local_advisor.catalog" = ["fallback.json"]
+"privysha.runtime.local_advisor.catalog" = ["fallback.json"]
 "*" = ["*.md", "*.txt"]
 
 [tool.black]
@@ -215,7 +185,7 @@ strict_equality = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers --strict-config -m \"not integration\""
-testpaths = ["tests", "tests_v2"]
+testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

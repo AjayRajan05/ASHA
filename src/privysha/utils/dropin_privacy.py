@@ -17,8 +17,8 @@
 import re
 from typing import Any, Dict, List, Optional
 
-from ..security.security_layer import SecurityLevel
-from ..security.service import run_security_only
+from ..core.security.security_layer import SecurityLevel
+from ..core.security.service import run_security_only
 
 SECURITY_FAIL_CLOSED_PLACEHOLDER = "[BLOCKED: security processing failed]"
 
@@ -143,17 +143,21 @@ def privacy_fallback(
     prompt: str,
     privacy: bool,
     *,
-    security_fail_closed: bool = False,
+    safety: "SafetyMode | None" = None,
 ) -> str:
     """Apply canonical security-only processing when the full pipeline fails."""
+    from ..core.safety import SafetyMode, is_fail_closed
+
     if not privacy or not prompt:
         return prompt
+    effective = safety or SafetyMode.BALANCED
+    fail_closed = is_fail_closed(effective)
     try:
         return run_security_only(
             prompt, security_level=SecurityLevel.MEDIUM
         ).sanitized_content
     except Exception:
-        if security_fail_closed:
+        if fail_closed:
             return SECURITY_FAIL_CLOSED_PLACEHOLDER
         return prompt
 
@@ -211,7 +215,7 @@ def extract_pii_types(
     pii_types = list(dict.fromkeys(pii_types))  # dedupe, preserve order
 
     if not pii_types and privacy and prompt:
-        from ..security.pii_detector import PIIDetector
+        from ..core.security.pii_detector import PIIDetector
 
         pii_types = PIIDetector().detect_pii_types(prompt)
 

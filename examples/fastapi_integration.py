@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-FastAPI Integration Example
+FastAPI integration (v0.4.1).
 
-Demonstrates how PrivySHA middleware works as a drop-in security layer
-for FastAPI applications.
+Demonstrates PrivySHA middleware as a drop-in layer for FastAPI apps.
+``privacy=True`` maps to internal mode ``balanced``.
 """
 
 from fastapi import FastAPI, HTTPException

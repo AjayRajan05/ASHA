@@ -333,7 +333,7 @@ class ScoringStage(BaseStage):
         filtered_count = 0
 
         for entity in entities:
-            from ....security.patterns import is_example_email
+            from ...security.patterns import is_example_email
 
             if entity.pii_type == "email" and is_example_email(entity.text):
                 filtered_count += 1

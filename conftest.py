@@ -1,10 +1,15 @@
 """Pytest configuration — ensure local src/ is used before site-packages."""
 
+from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path
+from typing import Union
 
 import pytest
+
+from privysha.types.results import OptimizeResult, ProcessResult, SanitizeResult
 
 # Disable ML/safety classifier downloads during tests (fast, deterministic CI)
 os.environ.setdefault("PRIVYSHA_DISABLE_ML", "1")
@@ -13,6 +18,32 @@ ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+ResultType = Union[ProcessResult, SanitizeResult, OptimizeResult, str, dict]
+
+
+def output_of(result: ResultType) -> str:
+    """Extract prompt text from ProcessResult or legacy shapes."""
+    if isinstance(result, (ProcessResult, SanitizeResult, OptimizeResult)):
+        return result.output
+    if isinstance(result, dict):
+        return str(
+            result.get("optimized")
+            or result.get("sanitized")
+            or result.get("output")
+            or ""
+        )
+    return str(result)
+
+
+def metrics_of(result: ResultType) -> dict:
+    if isinstance(result, ProcessResult) and result.metrics:
+        return result.metrics.to_dict()
+    if isinstance(result, OptimizeResult) and result.metrics:
+        return result.metrics.to_dict()
+    if isinstance(result, dict):
+        return dict(result.get("metrics") or result)
+    return {}
 
 
 @pytest.fixture(autouse=True)

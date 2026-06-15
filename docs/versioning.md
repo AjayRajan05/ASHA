@@ -2,45 +2,70 @@
 
 PrivySHA follows [Semantic Versioning 2.0.0](https://semver.org/).
 
-## Current release track
+---
+
+## Current release
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| **0.3.x** | **Active — developer preview** | Current line; APIs may change |
-| 1.0.x | Superseded | Released 2026-05-24, then project returned to 0.x preview track |
-| 0.2.x | Previous preview | Modular pipeline, drop-in API |
-| 0.1.x | Historical | Initial releases |
+| **0.4.1** | **Active — developer preview** | Architecture complete; pin in production |
+| 0.4.0 | Superseded | Typed results introduced |
+| 0.3.x | Previous preview | Dict/string returns, lazy root exports |
+| 1.0.x (2026-05) | Retracted track | Brief release; project returned to 0.x |
 
-See [developer-preview.md](developer-preview.md) for scope and limitations.
+PyPI classifier: **Development Status :: 3 - Alpha**
 
-## Release timeline
+---
 
-```
-2026-03-13  0.1.0   Initial release
-2026-05-23  0.2.0   Modular pipeline
-2026-05-24  1.0.0   Brief stable release
-2026-05-24  1.0.1   Patch
-2026-06-05  0.3.0   Developer preview re-release (+ PrivyFit)
-```
+## What 0.4.1 means
 
-Future **1.0.0** (stable) is planned after community feedback on the 0.3.x preview — not before.
+- Root API frozen: `process`, `sanitize`, `optimize`, `Agent` only
+- `Pipeline`, `Processor`, root `wrap_llm` **removed** (not deprecated)
+- `process(mode=)` + `policy=PolicyConfig(...)` — no loose deprecated kwargs
+- Layer boundaries enforced in CI
 
-## Breaking changes
+Breaking changes within 0.4.x are documented in the [CHANGELOG](https://github.com/AjayRajan05/privySHA/blob/main/CHANGELOG.md) and [migration-v0.4.md](migration-v0.4.md).
 
-During **0.x**, breaking changes are allowed in any release. They are documented in `CHANGELOG.md` and `docs/migration.md`.
+---
 
-After **1.0.0** (when it ships as stable), breaking changes are reserved for major releases.
+## Path to 1.0.0
 
-## Deprecation policy
+1. **0.4.x** — Architecture and API surface settled (current)
+2. **0.5.x** — API freeze; deprecation-only changes
+3. **1.0.0** — Stable public API guarantee
 
-- Deprecated APIs receive at least one minor release with warnings before removal.
-- `DebugTracer` is deprecated in favor of `TraceContext` (see [debugging.md](debugging.md)).
-- Experimental APIs (`auto_patch`, `pii_mode="ml_only"`, PrivyFit) may change with notice in release notes.
+---
+
+## Breaking changes during 0.x
+
+Allowed in any 0.x release. Documented in:
+
+- `CHANGELOG.md` on GitHub
+- `docs/migration-v0.4.md`
+- `docs/deprecations.md`
+
+After **1.0.0**, breaking changes require a major release.
+
+---
+
+## Deprecation policy (post-1.0)
+
+- Deprecated APIs get at least one minor release with warnings before removal
+- v0.4.1 removed several symbols **without** a deprecation period (breaking cleanup within 0.4.x)
+
+---
 
 ## Python support
 
-PrivySHA **0.3.x** requires **Python 3.10+** (3.10, 3.11, 3.12 supported per classifiers).
+**Python 3.10+** (3.10, 3.11, 3.12 tested in CI).
 
-## PyPI classifiers
+---
 
-Current package status: **Development Status :: 3 - Alpha** (developer preview).
+## Pinning in production
+
+```toml
+# pyproject.toml or requirements.txt
+privysha==0.4.1
+```
+
+Review the [CHANGELOG](https://github.com/AjayRajan05/privySHA/blob/main/CHANGELOG.md) before upgrading across minor versions.
