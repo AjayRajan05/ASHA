@@ -135,18 +135,30 @@ try:
     @click.option("--mode", "-m", default="balanced", help="Policy mode to test")
     def benchmark(mode: str) -> None:
         class Args:
-            mode = mode
-            config = None
-            custom = None
-            compare = None
-            output = None
-            save = False
-            format = "readable"
-            verbose = False
-            quiet = False
-            timeout = 5000
+            mode: str
+            config: str | None
+            custom: str | None
+            compare: str | None
+            output: str | None
+            save: bool
+            format: str
+            verbose: bool
+            quiet: bool
+            timeout: int
 
-        run_benchmark(Args())
+            def __init__(self, benchmark_mode: str) -> None:
+                self.mode = benchmark_mode
+                self.config = None
+                self.custom = None
+                self.compare = None
+                self.output = None
+                self.save = False
+                self.format = "readable"
+                self.verbose = False
+                self.quiet = False
+                self.timeout = 5000
+
+        run_benchmark(Args(mode))
 
     cli.add_command(benchmark)
 except ImportError:

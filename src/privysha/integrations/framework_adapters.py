@@ -37,7 +37,7 @@ from typing import (
     TYPE_CHECKING,
     cast,
 )
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import wraps
 
 # Framework imports from our local source
@@ -122,12 +122,15 @@ def _integration_process_text(text: str, config: "IntegrationConfig") -> str:
     if not config.enable_pii_detection and not config.enable_optimization:
         return text
 
+    policy = replace(
+        config.to_policy_config(),
+        security_level="high" if config.enable_safety_check else "medium",
+    )
     processed = process(
         text,
-        privacy=config.enable_pii_detection,
+        mode=config.policy_mode if config.enable_pii_detection else "off",
         token_budget=1200 if config.enable_optimization else 99999,
-        security_level="high" if config.enable_safety_check else "medium",
-        mode=config.policy_mode,
+        policy=policy,
     )
     return _coerce_process_output(processed, text)
 

@@ -7,7 +7,10 @@
 from __future__ import annotations
 
 import concurrent.futures as cf
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from ..core.safety import SafetyMode
 
 from ..core._ir.ir_builder import IRBuilder
 from ..core.compiler.prompt_compiler import PromptCompiler

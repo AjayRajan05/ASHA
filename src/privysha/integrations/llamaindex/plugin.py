@@ -111,12 +111,11 @@ from ...utils.dropin import process, _coerce_process_output
 def _optimize_prompt_text(
     text: str,
     *,
-    privacy: bool,
+    mode: str = "balanced",
     token_budget: int,
     debug_metrics: bool,
 ) -> tuple[str, Optional[Dict[str, Any]]]:
     """Run process() and return optimized text plus optional metrics."""
-    mode = "balanced" if privacy else "off"
     if debug_metrics:
         processed = process(
             text,

@@ -190,7 +190,7 @@ class Agent:
         prompt: str,
         trace: bool = False,
         fallback_adapters: Optional[List[BaseAdapter]] = None,
-    ) -> Union[str, Dict[str, Any]]:
+    ) -> Union[str, AgentResult, Dict[str, Any]]:
         """
         Run prompt with explicit fallback adapters.
 

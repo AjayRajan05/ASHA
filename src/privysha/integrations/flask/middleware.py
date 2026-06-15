@@ -509,19 +509,17 @@ def privysha_endpoint(
             try:
                 result = process(
                     json.dumps(data),
-                    privacy=privacy,
+                    mode="balanced" if privacy else "off",
                     token_budget=token_budget,
                 )
-                result_dict = result.to_dict() if hasattr(result, "to_dict") else result
-
                 if debug_metrics:
                     # Store metrics in Flask context
-                    g.privysha_endpoint_metrics = result_dict
+                    g.privysha_endpoint_metrics = result.to_dict()
 
                 # Update request data
                 processed_data = cast(
                     Dict[str, Any],
-                    json.loads(str(result_dict["optimized"])),
+                    json.loads(result.output),
                 )
 
             except Exception as e:

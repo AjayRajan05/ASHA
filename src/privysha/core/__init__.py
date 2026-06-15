@@ -22,7 +22,10 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+from typing import Any
+
+
+def __getattr__(name: str) -> Any:
     if name in ("sanitize_text", "compile_prompt", "optimize_tokens"):
         from . import engines as _engines
         return getattr(_engines, name)

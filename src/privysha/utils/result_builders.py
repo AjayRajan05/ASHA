@@ -129,8 +129,16 @@ def build_sanitize_result(
         summary = build_security_summary(security_result)
         if degraded:
             summary["is_safe"] = safe
-        security = SecurityInfo.from_summary(summary)
-        assert security is not None
+        security_info = SecurityInfo.from_summary(summary)
+        if security_info is None:
+            security = SecurityInfo(
+                safe=safe,
+                pii_detected=[],
+                threats=[],
+                masked_entities={},
+            )
+        else:
+            security = security_info
     return SanitizeResult(
         output=output,
         original=original,

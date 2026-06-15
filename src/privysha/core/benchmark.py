@@ -305,7 +305,8 @@ class BenchmarkHarness:
 
             if isinstance(result, (ProcessResult, OptimizeResult, SanitizeResult)):
                 output_prompt = result.output
-                metrics = result.metrics.to_dict() if result.metrics else {}
+                raw_metrics = getattr(result, "metrics", None)
+                metrics = raw_metrics.to_dict() if raw_metrics else {}
                 input_tokens = _count_tokens(prompt)
                 output_tokens = _count_tokens(output_prompt)
                 token_reduction = max(0, input_tokens - output_tokens)

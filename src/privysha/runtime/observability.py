@@ -27,7 +27,7 @@ def is_otel_enabled() -> bool:
 @contextmanager
 def stage_span(stage_name: str) -> Iterator[Optional[Any]]:
     """Context manager for pipeline stage spans (no-op when OTEL disabled)."""
-    if not is_otel_enabled():
+    if not is_otel_enabled() or _tracer is None:
         yield None
         return
     with _tracer.start_as_current_span(f"privysha.stage.{stage_name}") as span:

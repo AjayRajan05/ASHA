@@ -15,7 +15,10 @@
 """Privacy helpers and security result accessors for drop-in utilities."""
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from ..core.safety import SafetyMode
 
 from ..core.security.security_layer import SecurityLevel
 from ..core.security.service import run_security_only
