@@ -58,6 +58,7 @@ class Agent:
         api_key: Optional[str] = None,
         local_model: Optional[str] = None,
         sample_prompts: Optional[List[str]] = None,
+        tools: Optional[List[Any]] = None,
     ) -> None:
         """
         Initialize Agent with full v2 capabilities.
@@ -78,6 +79,7 @@ class Agent:
         self.privacy = privacy
         self.token_budget = token_budget
         self.sample_prompts = sample_prompts or []
+        self.tools = tools or []
 
         if local_model == "auto":
             from ..runtime.local_advisor.advisor import recommend_local_model

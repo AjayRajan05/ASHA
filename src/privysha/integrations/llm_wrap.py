@@ -65,8 +65,46 @@ def _process_prompt_for_wrap(
     return _coerce_process_output(processed, prompt)
 
 
+def _evaluate_anchor(response: Any, kwargs: dict[str, Any]) -> None:
+    try:
+        from ..runtime.anchor.runtime import current_anchor_runtime
+    except ImportError:
+        return
+        
+    runtime = current_anchor_runtime.get()
+    if not runtime:
+        return
+        
+    tool_calls = []
+    
+    # OpenAI style
+    if hasattr(response, "choices") and response.choices:
+        message = getattr(response.choices[0], "message", None)
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            for tc in message.tool_calls:
+                if hasattr(tc, "function"):
+                    tool_calls.append({
+                        "name": getattr(tc.function, "name", ""),
+                        "arguments": getattr(tc.function, "arguments", "")
+                    })
+                    
+    # Anthropic style
+    elif hasattr(response, "content") and isinstance(response.content, list):
+        for block in response.content:
+            if getattr(block, "type", "") == "tool_use":
+                tool_calls.append({
+                    "name": getattr(block, "name", ""),
+                    "arguments": getattr(block, "input", "")
+                })
+                
+    for tc in tool_calls:
+        if not runtime.evaluate_action_request("tool_call", {"tool_name": tc["name"], "arguments": tc["arguments"]}):
+            from ..exceptions import PrivySHAProcessingError
+            raise PrivySHAProcessingError(f"AnchorRuntime blocked tool call: {tc['name']}")
+
 def _guard_response(output_guard: OutputGuard, response: Any, kwargs: dict[str, Any]) -> Any:
     """Validate LLM response with optional format constraint."""
+    _evaluate_anchor(response, kwargs)
     response_format = kwargs.get("response_format")
     fmt: Optional[str] = (
         response_format if isinstance(response_format, str) else None
