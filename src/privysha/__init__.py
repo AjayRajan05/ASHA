@@ -27,6 +27,7 @@ Advanced components live in subpackages:
 __version__ = "0.4.1"
 
 from .runtime.agent import Agent
+from .runtime.anchor.runtime import anchor
 from .utils.dropin import (
     optimize,
     process,
@@ -39,4 +40,5 @@ __all__ = [
     "sanitize",
     "optimize",
     "Agent",
+    "anchor",
 ]
