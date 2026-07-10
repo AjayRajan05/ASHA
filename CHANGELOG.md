@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See README **Migration from PrivySHA** — pin `asha==0.4.2` in production.
 
+### Acknowledgments
+
+- **ANCHOR** was designed and led by **Ajay Rajan A**.
+- The initial module scaffold and partial implementation were contributed by **Yeshwanth Raj C**.
+
 ---
 
 ## [0.4.1] - 2026-06-15

@@ -216,14 +216,6 @@ mkdocs serve
 
 ---
 
-## Acknowledgments
-
-**ANCHOR** was designed and led by **Ajay Rajan A**. The initial module scaffold and partial implementation were contributed by **Yeshwanth Raj C**.
-
-ASHA v0.4.2 is the renamed release of the PrivySHA codebase (same version line, new PyPI package name).
-
----
-
 ## License
 
 Apache 2.0 - see [LICENSE](LICENSE).
