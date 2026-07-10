@@ -1,6 +1,6 @@
 # Security
 
-**PrivySHA v0.4.1** — PII detection, masking, and prompt injection checks.
+**ASHA v0.4.2** - PII detection, masking, and prompt injection checks.
 
 Security runs as the first engine in `process()` and is the sole engine in `sanitize()`.
 
@@ -40,18 +40,18 @@ sk-abc123...      →  [REDACTED]
 Set via `PolicyConfig`, not a top-level kwarg:
 
 ```python
-from privysha import process
-from privysha.core.policy_config import PolicyConfig
+from asha import process
+from asha.core.policy_config import PolicyConfig
 
 process("Contact john@example.com", policy=PolicyConfig(pii_mode="rule"))
-process("...", policy=PolicyConfig(pii_mode="hybrid"))   # needs privysha[ml]
+process("...", policy=PolicyConfig(pii_mode="hybrid"))   # needs asha[ml]
 ```
 
 | `pii_mode` | Description | Install |
 |------------|-------------|---------|
 | `rule` | Regex + heuristic (default) | Core only |
-| `hybrid` | Rules + ML pipeline | `privysha[ml]` |
-| `ml_only` | Experimental ML-only | `privysha[ml]` |
+| `hybrid` | Rules + ML pipeline | `asha[ml]` |
+| `ml_only` | Experimental ML-only | `asha[ml]` |
 
 Missing ML deps fall back to `rule` with a warning.
 
@@ -60,10 +60,10 @@ Missing ML deps fall back to `rule` with a warning.
 ## Safety modes
 
 ```python
-from privysha import process, sanitize
+from asha import process, sanitize
 
 process(prompt, mode="balanced")  # fail-open fallback
-process(prompt, mode="strict")      # raises PrivySHAProcessingError
+process(prompt, mode="strict")      # raises ASHAProcessingError
 sanitize(prompt, mode="strict")
 ```
 
@@ -78,9 +78,9 @@ sanitize(prompt, mode="strict")
 ## sanitize() only
 
 ```python
-from privysha import sanitize
+from asha import sanitize
 
-result = sanitize("john@corp.com — summarize")
+result = sanitize("john@corp.com - summarize")
 print(result.safe)
 print(result.security.pii_detected)
 ```
@@ -90,9 +90,9 @@ print(result.security.pii_detected)
 ## Reversible masking
 
 ```python
-from privysha import sanitize
-from privysha.core.policy_config import PolicyConfig
-from privysha.utils.unmask import unmask
+from asha import sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.utils.unmask import unmask
 
 result = sanitize(
     "Email alice@corp.com",
@@ -106,7 +106,7 @@ restored = unmask(llm_output, result.security.masking_map)
 ## wrap_llm security
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 
 client = wrap_llm(openai_client, mode="balanced")
 ```
@@ -124,6 +124,6 @@ Injection patterns and threat scoring run inside `core/security/service.py`. Res
 
 ## Related
 
-- [compliance.md](compliance.md) — GDPR/CCPA tooling notes
-- [core-concepts.md](core-concepts.md) — modes and PolicyConfig
+- [compliance.md](compliance.md) - GDPR/CCPA tooling notes
+- [core-concepts.md](core-concepts.md) - modes and PolicyConfig
 - [faq.md](faq.md)

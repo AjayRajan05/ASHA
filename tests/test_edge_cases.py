@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process, sanitize, optimize
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process, sanitize, optimize
 
 from conftest import output_of
 
@@ -88,7 +88,7 @@ def test_credit_card_valid_detected_and_masked():
 
 def test_credit_card_invalid_luhn_not_masked():
     """Random digit sequences failing Luhn should not be treated as cards."""
-    from privysha.core.security.pii_detector import PIIDetector
+    from asha.core.security.pii_detector import PIIDetector
 
     prompt = f"Reference number {INVALID_CARD}"
     detector = PIIDetector()
@@ -98,7 +98,7 @@ def test_credit_card_invalid_luhn_not_masked():
 
 def test_address_type_detected_by_detector():
     """Address detection is available on PIIDetector; masking is not required yet."""
-    from privysha.core.security.pii_detector import PIIDetector
+    from asha.core.security.pii_detector import PIIDetector
 
     detector = PIIDetector()
     types = detector.detect_pii_types("Ship to 742 Evergreen Street, Springfield")

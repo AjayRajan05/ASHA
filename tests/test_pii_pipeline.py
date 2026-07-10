@@ -1,6 +1,6 @@
 import pytest
-from privysha.core.pii_pipeline.pii_pipeline import PIIPipeline
-from privysha.core.pii_pipeline.stages.base_stage import PIIEntity
+from asha.core.pii_pipeline.pii_pipeline import PIIPipeline
+from asha.core.pii_pipeline.stages.base_stage import PIIEntity
 
 def test_pii_pipeline_full_flow():
     """Test the complete 7-stage PII pipeline flow."""

@@ -1,7 +1,7 @@
 """Tests for policy mode passthrough and stage guards."""
 
-from privysha import process
-from privysha.types.results import ProcessResult
+from asha import process
+from asha.types.results import ProcessResult
 
 from conftest import output_of
 

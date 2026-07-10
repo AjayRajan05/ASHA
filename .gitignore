@@ -49,3 +49,7 @@ benchmarks/output/
 # Logs
 logs/
 *.log
+
+# ANCHOR runtime telemetry (generated locally)
+anchor_telemetry.jsonl
+**/anchor_telemetry.jsonl

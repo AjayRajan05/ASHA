@@ -1,10 +1,10 @@
 # Third-Party Notices
 
-This file contains attribution notices and license information for third-party software components used in PrivySHA.
+This file contains attribution notices and license information for third-party software components used in ASHA.
 
 ## Attribution Requirements
 
-PrivySHA incorporates the following open-source software components. Each component is subject to its own license terms, which require attribution and preservation of copyright notices.
+ASHA incorporates the following open-source software components. Each component is subject to its own license terms, which require attribution and preservation of copyright notices.
 
 ---
 
@@ -178,4 +178,4 @@ For the most up-to-date license information, please refer to the original packag
 
 ---
 
-*This file was generated on 2026-04-23 and reflects the dependencies listed in PrivySHA's pyproject.toml.*
+*This file was generated on 2026-04-23 and reflects the dependencies listed in ASHA's pyproject.toml.*

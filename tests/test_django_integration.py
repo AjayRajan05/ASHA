@@ -1,4 +1,4 @@
-"""Django integration tests — Gap 14.
+"""Django integration tests - Gap 14.
 
 Tests the Django middleware without requiring a full Django project.
 Uses the middleware's internal methods directly (no live HTTP needed),
@@ -16,27 +16,27 @@ import pytest
 
 def test_django_middleware_module_importable():
     """The middleware module must be importable even without Django."""
-    from privysha.integrations.django import middleware  # noqa: F401
+    from asha.integrations.django import middleware  # noqa: F401
 
     assert middleware is not None
 
 
 def test_django_middleware_class_exists():
-    from privysha.integrations.django.middleware import PrivySHAMiddleware
+    from asha.integrations.django.middleware import ASHAMiddleware
 
-    assert PrivySHAMiddleware is not None
+    assert ASHAMiddleware is not None
 
 
 def test_django_import_raises_without_django(monkeypatch):
-    """Instantiating PrivySHAMiddleware without Django raises ImportError."""
-    import privysha.integrations.django.middleware as dj_mod
+    """Instantiating ASHAMiddleware without Django raises ImportError."""
+    import asha.integrations.django.middleware as dj_mod
 
     monkeypatch.setattr(dj_mod, "DJANGO_AVAILABLE", False)
 
     with pytest.raises((ImportError, TypeError)):
         # __init__ checks DJANGO_AVAILABLE and raises ImportError
-        PrivySHAMiddleware = dj_mod.PrivySHAMiddleware
-        PrivySHAMiddleware(get_response=lambda r: r)
+        ASHAMiddleware = dj_mod.ASHAMiddleware
+        ASHAMiddleware(get_response=lambda r: r)
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ def test_django_import_raises_without_django(monkeypatch):
 
 
 class _MockSettings:
-    PRIVYSHA_CONFIG = {
+    ASHA_CONFIG = {
         "PRIVACY": True,
         "TOKEN_BUDGET": 800,
         "ENDPOINTS": ["/api/chat"],
@@ -74,15 +74,15 @@ class _MockResponse:
 
 
 def _make_middleware_instance():
-    """Build PrivySHAMiddleware skipping the DJANGO_AVAILABLE guard."""
-    import privysha.integrations.django.middleware as dj_mod
+    """Build ASHAMiddleware skipping the DJANGO_AVAILABLE guard."""
+    import asha.integrations.django.middleware as dj_mod
 
     # Temporarily pretend Django is available
     orig_flag = dj_mod.DJANGO_AVAILABLE
     dj_mod.DJANGO_AVAILABLE = True
-    import privysha.integrations.django.middleware as dj_fresh
+    import asha.integrations.django.middleware as dj_fresh
 
-    mw = object.__new__(dj_fresh.PrivySHAMiddleware)
+    mw = object.__new__(dj_fresh.ASHAMiddleware)
     mw.privacy = True
     mw.token_budget = 800
     mw.debug_mode = False
@@ -164,8 +164,8 @@ def test_replace_request_data_stores_json():
     mw = _make_middleware_instance()
     req = _MockRequest()
     mw._replace_request_data(req, {"prompt": "processed"})
-    assert hasattr(req, "privysha_processed_data")
-    assert req.privysha_processed_data["prompt"] == "processed"
+    assert hasattr(req, "asha_processed_data")
+    assert req.asha_processed_data["prompt"] == "processed"
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ def test_replace_request_data_stores_json():
 
 def test_django_middleware_smoke_with_real_django():
     pytest.importorskip("django")
-    from privysha.integrations.django.middleware import PrivySHAMiddleware
+    from asha.integrations.django.middleware import ASHAMiddleware
 
-    assert PrivySHAMiddleware is not None
-    assert callable(PrivySHAMiddleware)
+    assert ASHAMiddleware is not None
+    assert callable(ASHAMiddleware)

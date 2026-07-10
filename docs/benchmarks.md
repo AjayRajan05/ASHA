@@ -1,6 +1,6 @@
 # Benchmarks
 
-**PrivySHA v0.4.1** — reproducible performance measurements.
+**ASHA v0.4.2** - reproducible performance measurements.
 
 ---
 
@@ -13,7 +13,7 @@ python benchmarks/run_benchmarks.py --save
 
 ```bash
 python benchmarks/run_benchmarks.py --compare benchmarks/baseline/results.json
-privysha benchmark --save
+asha benchmark --save
 ```
 
 ---
@@ -36,11 +36,11 @@ Test prompts: `benchmarks/sample_prompts.json`.
 
 | Metric | Range |
 |--------|-------|
-| Token reduction | 5–15% typical; higher on benchmark suite |
-| P95 pipeline latency | ~50–80 ms |
+| Token reduction | 5-15% typical; higher on benchmark suite |
+| P95 pipeline latency | ~50-80 ms |
 | Fail-safe rate | ~100% in CI gates |
 
-Not guarantees — your hardware and prompts differ.
+Not guarantees - your hardware and prompts differ.
 
 ---
 
@@ -59,7 +59,7 @@ On every push (Ubuntu, Python 3.11):
 ## Programmatic
 
 ```python
-from privysha.core.benchmark import BenchmarkHarness
+from asha.core.benchmark import BenchmarkHarness
 
 harness = BenchmarkHarness()
 summary = harness.run_all(mode="balanced")

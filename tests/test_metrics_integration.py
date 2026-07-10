@@ -1,7 +1,7 @@
 """Metrics dashboard integration tests."""
 
-from privysha import process
-from privysha.core.metrics_dashboard import dashboard
+from asha import process
+from asha.core.metrics_dashboard import dashboard
 
 
 def test_process_records_dashboard_metrics():

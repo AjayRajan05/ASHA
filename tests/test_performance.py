@@ -4,9 +4,9 @@ import concurrent.futures
 
 import pytest
 
-from privysha.core.benchmark import BenchmarkHarness
-from privysha.types.results import ProcessResult
-from privysha.utils.dropin import process
+from asha.core.benchmark import BenchmarkHarness
+from asha.types.results import ProcessResult
+from asha.utils.dropin import process
 
 from conftest import metrics_of, output_of
 

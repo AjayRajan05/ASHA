@@ -1,8 +1,8 @@
 """PII detection tests for credit cards and addresses."""
 
-from privysha.core.security.pii_detector import PIIDetector
-from privysha.core.pii_pipeline.stages.detection_stage import RegexDetector
-from privysha.utils.dropin import sanitize
+from asha.core.security.pii_detector import PIIDetector
+from asha.core.pii_pipeline.stages.detection_stage import RegexDetector
+from asha.utils.dropin import sanitize
 
 from conftest import output_of
 
@@ -53,7 +53,7 @@ class TestAddressDetection:
         assert "[ADDRESS_HASH]" in out
 
     def test_process_masks_full_address(self):
-        from privysha import process
+        from asha import process
 
         text = "Office at 100 Oak Avenue, Springfield, IL 62701"
         out = output_of(process(text, mode="strict"))

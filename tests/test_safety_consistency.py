@@ -2,10 +2,10 @@
 
 import pytest
 
-from privysha import process, sanitize
-from privysha.core.safety import SafetyMode, safety_mode_from_policy_mode
-from privysha.exceptions import PrivySHAProcessingError
-from privysha.integrations.llm_wrap import _handle_wrap_processing_error, _process_prompt_for_wrap
+from asha import process, sanitize
+from asha.core.safety import SafetyMode, safety_mode_from_policy_mode
+from asha.exceptions import ASHAProcessingError
+from asha.integrations.llm_wrap import _handle_wrap_processing_error, _process_prompt_for_wrap
 
 
 def test_policy_mode_maps_to_safety_mode():
@@ -20,7 +20,7 @@ def test_wrap_uses_mode_for_processing(monkeypatch):
 
     def fake_process(prompt, **kwargs):
         captured.update(kwargs)
-        from privysha.types.results import ProcessResult, SecurityInfo
+        from asha.types.results import ProcessResult, SecurityInfo
 
         return ProcessResult(
             output="masked",
@@ -32,7 +32,7 @@ def test_wrap_uses_mode_for_processing(monkeypatch):
             metrics=None,
         )
 
-    import privysha.utils.dropin as dropin_mod
+    import asha.utils.dropin as dropin_mod
 
     monkeypatch.setattr(dropin_mod, "process", fake_process)
     _process_prompt_for_wrap("secret@company.com", mode="lite")
@@ -43,10 +43,10 @@ def test_strict_process_raises_on_security_failure(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("security failed")
 
-    import privysha.runtime.processor as proc_mod
+    import asha.runtime.processor as proc_mod
 
     monkeypatch.setattr(proc_mod.PromptProcessor, "_run_engines", boom)
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         process("x@y.com", mode="strict")
 
 
@@ -54,7 +54,7 @@ def test_balanced_sanitize_keeps_prompt_on_failure(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("security failed")
 
-    import privysha.core.engines as engines
+    import asha.core.engines as engines
 
     monkeypatch.setattr(engines, "run_security_only", boom)
     result = sanitize("keep@me.com", mode="balanced")
@@ -68,12 +68,12 @@ def test_wrap_mode_off_does_not_fail_closed_on_error():
 
 
 def test_wrap_mode_balanced_fail_closed_on_transport_error():
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         _handle_wrap_processing_error("balanced", RuntimeError("transport"))
 
 
 def test_auto_patch_accepts_mode_parameter():
-    from privysha.integrations.auto_patch import auto_patch
+    from asha.integrations.auto_patch import auto_patch
     import inspect
 
     sig = inspect.signature(auto_patch)

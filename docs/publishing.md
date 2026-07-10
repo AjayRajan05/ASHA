@@ -1,6 +1,6 @@
 # Publishing
 
-**Current release: v0.4.1** (developer preview, Alpha classifier).
+**Current release: v0.4.2** (developer preview, Alpha classifier).
 
 See [versioning.md](versioning.md).
 
@@ -23,10 +23,10 @@ CI runs wheel build and fresh-install smoke test on every push.
 Update version in:
 
 - `pyproject.toml` → `[project].version`
-- `src/privysha/__init__.py` → `__version__`
+- `src/asha/__init__.py` → `__version__`
 - `CHANGELOG.md`
 
-Tag: `v0.4.1` (must match `pyproject.toml`).
+Tag: `v0.4.2` (must match `pyproject.toml`).
 
 ---
 
@@ -37,8 +37,8 @@ Workflows: `.github/workflows/publish-testpypi.yml`, `publish.yml`.
 Smoke test after install:
 
 ```bash
-python -c "from privysha import process, sanitize; print(process('hello'))"
-python -c "from privysha.integrations import wrap_llm; print(wrap_llm)"
+python -c "from asha import process, sanitize; print(process('hello'))"
+python -c "from asha.integrations import wrap_llm; print(wrap_llm)"
 ```
 
 ---

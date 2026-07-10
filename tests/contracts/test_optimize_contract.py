@@ -1,13 +1,13 @@
-"""Contract tests — optimize() must never invoke security."""
+"""Contract tests - optimize() must never invoke security."""
 
 import ast
 import inspect
 
 import pytest
 
-from privysha import optimize
-from privysha.core import engines
-from privysha.types.results import OptimizeResult
+from asha import optimize
+from asha.core import engines
+from asha.types.results import OptimizeResult
 
 
 def test_optimize_preserves_pii_email():
@@ -43,7 +43,7 @@ def test_sanitize_does_not_call_optimize_engine(monkeypatch):
         raise AssertionError("sanitize must not call optimize_tokens")
 
     monkeypatch.setattr(engines, "optimize_tokens", fake_optimize)
-    from privysha import sanitize
+    from asha import sanitize
 
     result = sanitize("hello@example.com")
     assert calls["optimize"] == 0

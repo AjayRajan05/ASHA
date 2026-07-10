@@ -1,6 +1,6 @@
 # Routing
 
-**PrivySHA v0.4.1** — task-based model selection via `Agent`.
+**ASHA v0.4.2** - task-based model selection via `Agent`.
 
 The standalone `ModelRouter` class was removed in v0.4.1. Routing is handled by `SmartRoutingAdapter` when you pass `routing_config` to `Agent`.
 
@@ -9,7 +9,7 @@ The standalone `ModelRouter` class was removed in v0.4.1. Routing is handled by 
 ## Smart routing
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(
     routing_config={
@@ -42,7 +42,7 @@ Use `agent.run_with_fallback()` for explicit fallback behavior.
 
 ---
 
-## Local model (PrivyFit)
+## Local model (AshaFit)
 
 ```python
 agent = Agent(
@@ -52,14 +52,14 @@ agent = Agent(
 )
 ```
 
-PrivyFit picks a local model from your prompt corpus and hardware. Preview API — see [local-advisor.md](local-advisor.md).
+AshaFit picks a local model from your prompt corpus and hardware. Preview API - see [local-advisor.md](local-advisor.md).
 
 ---
 
 ## wrap_llm auto-select
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 
 client = wrap_llm(
     ollama_client,
@@ -90,7 +90,7 @@ Override with `provider="openai"` etc.
 
 ## What was removed
 
-| Removed (v0.4.1) | Replacement |
+| Removed (v0.4.2) | Replacement |
 |------------------|---------------|
 | `ModelRouter` | `Agent(routing_config=...)` |
 | `RoutingStrategy` enum | Task-type dict keys |
@@ -100,7 +100,7 @@ Override with `provider="openai"` etc.
 
 ## Status
 
-Smart routing is **preview** — `routing_config` shape may evolve before 1.0.0.
+Smart routing is **preview** - `routing_config` shape may evolve before 1.0.0.
 
 ---
 

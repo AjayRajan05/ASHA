@@ -1,8 +1,8 @@
 # Core Concepts
 
-**PrivySHA v0.4.1**
+**ASHA v0.4.2**
 
-PrivySHA preprocesses prompts: detect PII, check threats, compile structure, compress tokens. You call one function; the engines run inside `PromptProcessor`.
+ASHA preprocesses prompts: detect PII, check threats, compile structure, compress tokens. You call one function; the engines run inside `PromptProcessor`.
 
 ---
 
@@ -11,19 +11,19 @@ PrivySHA preprocesses prompts: detect PII, check threats, compile structure, com
 ### Root package (only these)
 
 ```python
-from privysha import process, sanitize, optimize, Agent
+from asha import process, sanitize, optimize, Agent
 ```
 
 ### Common subpackage imports
 
 ```python
-from privysha.integrations import wrap_llm
-from privysha.types import ProcessResult, SanitizeResult, OptimizeResult
-from privysha.core.policy_config import PolicyConfig
-from privysha.runtime import PromptProcessor
-from privysha.utils.dropin import process_async
-from privysha.utils.unmask import unmask
-from privysha.runtime.local_advisor.advisor import recommend_local_model
+from asha.integrations import wrap_llm
+from asha.types import ProcessResult, SanitizeResult, OptimizeResult
+from asha.core.policy_config import PolicyConfig
+from asha.runtime import PromptProcessor
+from asha.utils.dropin import process_async
+from asha.utils.unmask import unmask
+from asha.runtime.local_advisor.advisor import recommend_local_model
 ```
 
 There is **no** global `configure()`. Pass `mode` and `policy` per call.
@@ -51,7 +51,7 @@ process(prompt)
 | Mode | Security | Optimization | On total failure |
 |------|----------|--------------|------------------|
 | `balanced` | Standard | Yes | Fail-open + fallback |
-| `strict` | Maximum | Yes | Raises `PrivySHAProcessingError` |
+| `strict` | Maximum | Yes | Raises `ASHAProcessingError` |
 | `lite` | Minimal features | Reduced | Fail-open (same as balanced) |
 | `off` | Skipped | Skipped | Passthrough |
 
@@ -68,7 +68,7 @@ process("prompt", mode="off")
 Advanced knobs are **not** top-level kwargs on `process()`:
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 
 process(
     prompt,
@@ -83,7 +83,7 @@ process(
 
 | Field | Purpose |
 |-------|---------|
-| `pii_mode` | Detection strategy (`hybrid` needs `privysha[ml]`) |
+| `pii_mode` | Detection strategy (`hybrid` needs `asha[ml]`) |
 | `reversible` | Store masking map for `unmask()` |
 | `preserve_intent` | Skip optimization when no PII/threats |
 | `security_level` | `low` / `medium` / `high` |
@@ -108,9 +108,9 @@ str(result)            # same as result.output
 
 ### SanitizeResult / OptimizeResult
 
-Same pattern — `.output`, `.security` (sanitize), `.metrics` (optimize).
+Same pattern - `.output`, `.security` (sanitize), `.metrics` (optimize).
 
-Legacy dict: `result.to_dict()` or `privysha.compat.legacy_results.to_legacy_pipeline_dict(result)`.
+Legacy dict: `result.to_dict()` or `asha.compat.legacy_results.to_legacy_pipeline_dict(result)`.
 
 ---
 
@@ -127,9 +127,9 @@ Legacy dict: `result.to_dict()` or `privysha.compat.legacy_results.to_legacy_pip
 ## Reversible masking
 
 ```python
-from privysha import sanitize
-from privysha.core.policy_config import PolicyConfig
-from privysha.utils.unmask import unmask
+from asha import sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.utils.unmask import unmask
 
 result = sanitize(
     "Email alice@corp.com",
@@ -161,4 +161,4 @@ restored = unmask("Reply to alice@corp.com", result.security.masking_map)
 
 **Internal (do not import in app code):** `core/_ir/`, `core/pii_pipeline/` stages, compiler internals.
 
-IR is built inside `compile_prompt()` — never passed as a public argument.
+IR is built inside `compile_prompt()` - never passed as a public argument.

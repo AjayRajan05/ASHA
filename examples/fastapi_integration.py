@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-FastAPI integration (v0.4.1).
+FastAPI integration (v0.4.2).
 
-Demonstrates PrivySHA middleware as a drop-in layer for FastAPI apps.
+Demonstrates ASHA middleware as a drop-in layer for FastAPI apps.
 ``privacy=True`` maps to internal mode ``balanced``.
 """
 
@@ -11,14 +11,14 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 import json
 
-# Import PrivySHA middleware
-from privysha.integrations.fastapi import add_privysha_middleware
+# Import ASHA middleware
+from asha.integrations.fastapi import add_asha_middleware
 
 # Create FastAPI app
-app = FastAPI(title="Chat API with PrivySHA Protection")
+app = FastAPI(title="Chat API with ASHA Protection")
 
-# Add PrivySHA middleware - ONE LINE ADDITION!
-add_privysha_middleware(
+# Add ASHA middleware - ONE LINE ADDITION!
+add_asha_middleware(
     app, 
     privacy=True,
     token_budget=1200,
@@ -60,11 +60,11 @@ async def chat_completions(request: ChatRequest) -> ChatResponse:
     """
     Chat completions endpoint.
     
-    NOTE: PrivySHA middleware automatically processes all prompts
+    NOTE: ASHA middleware automatically processes all prompts
     before they reach this endpoint. No changes needed here!
     """
     try:
-        # Process request (prompts already optimized by PrivySHA)
+        # Process request (prompts already optimized by ASHA)
         response = mock_llm_service(request.messages, request.model)
         return ChatResponse(**response)
     
@@ -76,7 +76,7 @@ async def completions(prompt: str, model: str = "gpt-4o-mini") -> ChatResponse:
     """
     Simple completions endpoint.
     
-    PrivySHA middleware automatically processes the prompt parameter.
+    ASHA middleware automatically processes the prompt parameter.
     """
     messages = [{"role": "user", "content": prompt}]
     response = mock_llm_service(messages, model)
@@ -86,30 +86,30 @@ async def completions(prompt: str, model: str = "gpt-4o-mini") -> ChatResponse:
 async def root():
     """Root endpoint showing the API is running."""
     return {
-        "message": "Chat API with PrivySHA Protection",
+        "message": "Chat API with ASHA Protection",
         "endpoints": [
             "/chat/completions",
             "/completions",
             "/health"
         ],
-        "protection": "All prompts automatically processed by PrivySHA"
+        "protection": "All prompts automatically processed by ASHA"
     }
 
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "healthy", "privysha": "active"}
+    return {"status": "healthy", "asha": "active"}
 
 # Example usage (for testing)
 if __name__ == "__main__":
     import uvicorn
     
-    print("Starting FastAPI app with PrivySHA middleware...")
+    print("Starting FastAPI app with ASHA middleware...")
     print("Test with:")
     print('curl -X POST "http://localhost:8000/chat/completions" \\')
     print('  -H "Content-Type: application/json" \\')
     print('  -d \'{"messages": [{"role": "user", "content": "Hey bro analyze dataset with john@email.com"}]}\'')
     print()
-    print("Check response headers for PrivySHA processing info!")
+    print("Check response headers for ASHA processing info!")
     
     uvicorn.run(app, host="0.0.0.0", port=8000)

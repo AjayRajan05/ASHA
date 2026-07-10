@@ -5,9 +5,9 @@ import threading
 
 import pytest
 
-from privysha.core.metrics_dashboard import dashboard
-from privysha.types.results import ProcessResult
-from privysha.utils.dropin import process
+from asha.core.metrics_dashboard import dashboard
+from asha.types.results import ProcessResult
+from asha.utils.dropin import process
 
 from conftest import output_of
 
@@ -36,7 +36,7 @@ def test_metrics_dashboard_concurrent_recording():
     start = len(dashboard.collector.events)
 
     def record_one(_):
-        from privysha.core.metrics_dashboard import record_request
+        from asha.core.metrics_dashboard import record_request
 
         record_request(latency_ms=1.0, tokens_processed=10, tokens_saved=1)
 
@@ -47,7 +47,7 @@ def test_metrics_dashboard_concurrent_recording():
 
 
 def test_security_layer_instances_thread_local():
-    from privysha.core.security.security_layer import SecurityLayer
+    from asha.core.security.security_layer import SecurityLayer
 
     results = []
 

@@ -1,19 +1,19 @@
 # Shim deprecation and removal policy
 
-PrivySHA v0.4.1 completes the architecture redesign. **Removed symbols raise `AttributeError`** — there are no root lazy imports.
+ASHA v0.4.1 completes the architecture redesign. **Removed symbols raise `AttributeError`** - there are no root lazy imports.
 
 ## Removed in v0.4.1
 
 | Removed | Use instead |
 |---------|-------------|
-| `from privysha import wrap_llm` | `from privysha.integrations import wrap_llm` |
-| `from privysha import auto_patch` | `from privysha.integrations import auto_patch` |
-| `from privysha import Processor` | `from privysha.runtime import PromptProcessor` |
-| `from privysha import Pipeline` | `process()` or `to_legacy_pipeline_dict()` |
-| `from privysha import ProcessResult` | `from privysha.types import ProcessResult` |
+| `from asha import wrap_llm` | `from asha.integrations import wrap_llm` |
+| `from asha import auto_patch` | `from asha.integrations import auto_patch` |
+| `from asha import Processor` | `from asha.runtime import PromptProcessor` |
+| `from asha import Pipeline` | `process()` or `to_legacy_pipeline_dict()` |
+| `from asha import ProcessResult` | `from asha.types import ProcessResult` |
 | `security_fail_closed=` | `mode="strict"` or `mode="balanced"` |
 | `privacy=`, `security=`, `compile=`, `optimize=` kwargs on `process()` | `mode=` or `policy=PolicyConfig(...)` |
-| `ProcessResult.to_legacy_pipeline_dict()` | `privysha.compat.legacy_results.to_legacy_pipeline_dict` |
+| `ProcessResult.to_legacy_pipeline_dict()` | `asha.compat.legacy_results.to_legacy_pipeline_dict` |
 
 ## Removed modules (v0.4.1 cleanup)
 
@@ -33,27 +33,27 @@ Legacy pipeline-era code removed from `src/`:
 | `runtime/router.py` | `Agent(routing_config=...)` |
 | `runtime/routing/model_router.py` | `SmartRoutingAdapter` in adapters |
 
-## Public API (v0.4.1)
+## Public API (v0.4.2)
 
 Root exports only:
 
 ```python
-from privysha import process, sanitize, optimize, Agent
+from asha import process, sanitize, optimize, Agent, anchor
 ```
 
 Advanced:
 
 ```python
-from privysha.runtime import PromptProcessor, ExecutionProfile
-from privysha.integrations import wrap_llm, auto_patch
-from privysha.types import ProcessResult, SanitizeResult
-from privysha.core.policy_config import PolicyConfig
+from asha.runtime import PromptProcessor, ExecutionProfile
+from asha.integrations import wrap_llm, auto_patch
+from asha.types import ProcessResult, SanitizeResult
+from asha.core.policy_config import PolicyConfig
 ```
 
 Legacy dict shapes (opt-in):
 
 ```python
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.compat.legacy_results import to_legacy_pipeline_dict
 
 result = process("prompt", include_legacy_detail=True)
 legacy = to_legacy_pipeline_dict(result)
@@ -62,14 +62,14 @@ legacy = to_legacy_pipeline_dict(result)
 ## Architecture
 
 ```
-privysha/
+asha/
 ├── core/          # engines, policy, security, compiler, _ir (internal)
 ├── runtime/       # PromptProcessor, resolve, Agent, adapters
 ├── integrations/  # wrap_llm, auto_patch, framework middleware
 ├── compat/        # legacy_results only (opt-in dict conversion)
 ├── types/         # ProcessResult, SanitizeResult
 ├── utils/         # dropin (process/sanitize/optimize)
-├── cli/           # privysha CLI (ancillary)
+├── cli/           # asha CLI (ancillary)
 └── __init__.py    # 5 exports only
 ```
 
@@ -93,7 +93,7 @@ process(prompt, mode="strict")
 Advanced knobs via `PolicyConfig`:
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 
 process(
     prompt,

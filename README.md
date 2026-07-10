@@ -1,162 +1,188 @@
-# PrivySHA
+# ASHA
 
-**Drop-in security and token optimization for LLM apps** — mask PII, block injection patterns, and compress prompts before they reach any model.
+**Adaptive Security for Human-AI systems**
 
-> **v0.4.1 developer preview** — architecture-stable, API may evolve before 1.0.0. Pin your version in production. See [docs/developer-preview.md](docs/developer-preview.md).
+Mission-aware agent governance for autonomous AI: one line to secure any agent.
+
+ASHA is a Python library built for the Human-AI era. Its flagship runtime is **ANCHOR** - it keeps autonomous agents aligned with the user's original goal, blocks unauthorized actions, and sandboxes OS-level side effects. ASHA also includes drop-in prompt security (`process`) and client wrapping (`wrap_llm`) for traditional LLM applications.
+
+> **v0.4.2**: renamed from PrivySHA. Pin `asha==0.4.2` in production. See [docs/developer-preview.md](docs/developer-preview.md).
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-0.4.1-orange)](https://pypi.org/project/privysha/)
+[![PyPI](https://img.shields.io/badge/pypi-0.4.2-orange)](https://pypi.org/project/asha/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![Status](https://img.shields.io/badge/status-developer%20preview-orange)](docs/developer-preview.md)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-material-blue)](https://ajayrajan05.github.io/privySHA/)
 
 ---
 
-## What it does
+## Why ASHA
+
+Autonomous agents can drift from their mission, call tools they should not, leak data over the network, or poison long-term memory. ASHA's **ANCHOR** runtime wraps your agent:
 
 ```
-Your app  →  process() / wrap_llm()  →  safe, smaller prompt  →  LLM
+User prompt  →  Mission Contract (immutable)  →  governed agent.run()
+                      ↓
+        Action / memory / chain / plan guards  →  ALLOW | WARN | BLOCK | REVIEW
+                      ↓
+        Process sandbox (hooks or subprocess)  →  execution or halt
 ```
 
-PrivySHA sits between your application and the model. One function call can:
+**One line adoption:**
 
-- Mask emails, phones, API keys, and other PII
-- Run prompt-injection checks
-- Compress verbose prompts to save tokens
-- Return typed results with metrics and optional traces
+```python
+from asha import Agent, anchor
 
-No global config. No pipeline boilerplate. Works without API keys for preprocessing.
+agent = Agent(provider="openai", model="gpt-4o-mini", tools=["read_file", "email"])
+agent = anchor(agent)
+
+agent.run("Generate the monthly sales report")
+```
+
+No YAML policies. No separate proxy service. Works with mock providers (no API key) for local development.
 
 ---
 
 ## Install
 
 ```bash
-pip install privysha
+pip install asha
 ```
 
-Python **3.10+** required. From source:
+Python **3.10+** required.
 
 ```bash
-pip install -e .
+pip install asha[openai]          # OpenAI Agent + wrap_llm
+pip install asha[integrations]    # LangChain, FastAPI, etc.
+pip install asha[ml]              # Hybrid ML PII (for process())
 ```
 
-Optional extras:
+From source:
 
 ```bash
-pip install privysha[openai]        # OpenAI client wrapping
-pip install privysha[ml]              # Hybrid ML PII detection
-pip install privysha[integrations]  # FastAPI, LangChain, etc.
+git clone https://github.com/AjayRajan05/privySHA.git
+cd privySHA
+pip install -e ".[dev]"
 ```
 
 ---
 
-## 60-second example
+## ANCHOR in 60 seconds
 
 ```python
-from privysha import process
+from asha import Agent, anchor
 
-result = process("Contact john@company.com — analyze this sales data")
-print(result)                    # str(result) → optimized output
-print(result.output)             # same text, typed access
-print(result.security.pii_detected)
-print(result.metrics.token_reduction_pct)
+agent = anchor(
+    Agent(provider="mock", model="mock", tools=["read_file", "email"]),
+    risk_tolerance="LOW",
+    isolation="auto",
+)
+
+result = agent.run("Generate monthly sales report from Q1 data")
+print(result)
 ```
 
-**Wrap an existing client** (recommended for production):
+### Isolation modes
+
+| Mode | Use when |
+|------|----------|
+| `auto` (default) | In-process hooks: guarded `open()`, blocked network imports |
+| `hard` / `subprocess` | Tool runs in an isolated child process |
+| `off` | Disable sandbox enforcement (guards still apply) |
 
 ```python
-from privysha.integrations import wrap_llm
+agent = anchor(agent, isolation="hard")
+agent = anchor(agent, isolation="off")
+```
+
+Container backends (`docker`, `bwrap`) are on the roadmap; use `hard` today for stronger isolation.
+
+Full reference: **[docs/anchor.md](docs/anchor.md)**
+
+---
+
+## What ANCHOR governs
+
+| Layer | Enforcement |
+|-------|-------------|
+| **Mission** | Immutable contract from the user prompt |
+| **Actions** | Tool calls, shell, file writes, network requests |
+| **Memory** | Read/write scope, poisoning detection, quarantine |
+| **Plans** | ReAct / CoT planning text validated before tool execution |
+| **Chains** | Multi-step attack patterns via transition graph |
+| **LLM** | Pre/post gates on `wrap_llm` and streaming responses |
+| **Sandbox** | `socket`, `subprocess`, `open` writes, imports (in-process hooks or subprocess) |
+
+```python
+from asha.runtime.anchor import AnchorRuntime
+
+runtime = AnchorRuntime(warn_policy="control", risk_tolerance="LOW")
+```
+
+### Framework adapters
+
+```python
+from asha.runtime.anchor.adapters import anchor_langchain, anchor_crewai, anchor_mcp
+```
+
+---
+
+## Prompt security (included)
+
+```python
+from asha import process
+
+result = process("Contact john@company.com; analyze this sales data")
+print(result.output)
+```
+
+Wrap an existing SDK client:
+
+```python
+from asha.integrations import wrap_llm
 import openai
 
 client = wrap_llm(openai.OpenAI(), mode="balanced")
-client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=[{"role": "user", "content": "Email me at john@corp.com"}],
-)
 ```
 
 ---
 
 ## Public API
 
-Root package exports **five symbols only**:
-
 ```python
-from privysha import process, sanitize, optimize, Agent
+from asha import process, sanitize, optimize, Agent, anchor
 ```
 
-Everything else uses explicit subpackage imports:
-
-```python
-from privysha.integrations import wrap_llm, auto_patch
-from privysha.runtime import PromptProcessor
-from privysha.types import ProcessResult, SanitizeResult
-from privysha.core.policy_config import PolicyConfig
-```
-
-| Function | What it does |
-|----------|--------------|
-| `process()` | Security → compile → optimize (full path) |
-| `sanitize()` | Security / PII only |
-| `optimize()` | Token compression only |
+| Symbol | Description |
+|--------|-------------|
+| `anchor()` | **Primary**: mission-aware runtime governance |
 | `Agent` | Preprocess + call an LLM adapter |
-| `wrap_llm()` | Transparent SDK wrapper (integrations) |
+| `process()` | Security → compile → optimize |
+| `sanitize()` | PII / threat detection only |
+| `optimize()` | Token compression only |
+| `wrap_llm()` | Transparent SDK wrapper |
 
----
+CLI:
 
-## Modes
-
-```python
-process(prompt, mode="balanced")  # default — fail-open with fallback
-process(prompt, mode="strict")    # fail-closed — raises on total failure
-process(prompt, mode="lite")      # minimal policy features
-process(prompt, mode="off")       # passthrough, no changes
-```
-
-Advanced options go in `PolicyConfig`, not loose kwargs:
-
-```python
-from privysha.core.policy_config import PolicyConfig
-
-process(
-    prompt,
-    policy=PolicyConfig(
-        pii_mode="hybrid",      # needs privysha[ml]
-        reversible=True,
-        preserve_intent=True,
-    ),
-)
+```bash
+asha "hello world"
+asha benchmark
+asha recommend
 ```
 
 ---
 
-## Agent (preprocess + LLM)
-
-```python
-from privysha import Agent
-
-agent = Agent(model="mock")  # no API key needed for mock
-print(agent.run("Summarize data from john@example.com"))
-```
-
-With a real provider, set `OPENAI_API_KEY` and use `model="gpt-4o-mini"`.
-
----
-
-## Architecture (v0.4.1)
+## Architecture
 
 ```
-privysha/
-├── core/           # engines: security, compiler, policy
-├── runtime/        # PromptProcessor, Agent, adapters
-├── integrations/   # wrap_llm, auto_patch, framework middleware
-├── types/          # ProcessResult, SanitizeResult
-├── utils/          # drop-in functions
-├── compat/         # opt-in legacy dict helpers
-└── cli/            # privysha command
+asha/
+├── runtime/
+│   ├── anchor/          # ANCHOR: mission governance, guards, isolation
+│   ├── agent.py
+│   └── processor.py
+├── core/                  # Security, compiler, optimization engines
+├── integrations/          # wrap_llm, framework middleware
+└── types/
 ```
-
-`process()` → `PromptProcessor` → three engines: **security**, **compile**, **optimize**.
 
 Details: [docs/architecture.md](docs/architecture.md)
 
@@ -166,14 +192,10 @@ Details: [docs/architecture.md](docs/architecture.md)
 
 | Guide | Description |
 |-------|-------------|
+| [ANCHOR Runtime](docs/anchor.md) | Mission contracts, sandbox, isolation |
 | [Quickstart](docs/quickstart.md) | 5-minute walkthrough |
-| [Getting Started](docs/getting-started.md) | Install, modes, CLI |
 | [API Reference](docs/api-reference.md) | Full signatures |
-| [Security](docs/security.md) | PII, masking, fail-closed |
-| [Migration v0.4](docs/migration-v0.4.md) | Upgrading from 0.3.x |
-| [Deprecations](docs/deprecations.md) | Removed symbols |
-
-Build docs locally:
+| [Publishing](docs/publishing.md) | PyPI release process |
 
 ```bash
 pip install -e ".[docs]"
@@ -182,29 +204,26 @@ mkdocs serve
 
 ---
 
-## Tests
+## Migration from PrivySHA
 
-```bash
-pip install -e ".[dev]"
-pytest tests -q
-```
-
-CI runs on Ubuntu, Windows, and macOS (Python 3.10–3.12).
+| Before | After |
+|--------|-------|
+| `pip install privysha` | `pip install asha` |
+| `from privysha import anchor` | `from asha import anchor` |
+| `privysha` CLI | `asha` CLI |
+| `PRIVYSHA_*` env vars | `ASHA_*` env vars |
+| `PrivySHAAnchorBlocked` | `ASHAAnchorBlocked` |
 
 ---
 
-## Status
+## Acknowledgments
 
-| Ready for | Not yet |
-|-----------|---------|
-| Pinned production pilots (`privysha==0.4.1`) | Stable 1.0 API guarantee |
-| `process()` / `wrap_llm()` drop-in use | Certified compliance product |
-| Architecture-frozen 0.4.x line | Unpinned dep without migration budget |
+**ANCHOR** was designed and led by **Ajay Rajan A**. The initial module scaffold and partial implementation were contributed by **Yeshwanth Raj C**.
 
-Stable public API is planned for **1.0.0** after a freeze period on 0.5.x. See [docs/versioning.md](docs/versioning.md).
+ASHA v0.4.2 is the renamed release of the PrivySHA codebase (same version line, new PyPI package name).
 
 ---
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0 - see [LICENSE](LICENSE).

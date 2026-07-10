@@ -2,9 +2,9 @@
 
 import pytest
 
-from privysha.integrations import wrap_llm
-from privysha.exceptions import PrivySHAProcessingError, PrivySHAWrapError
-from privysha.integrations.llm_wrap import (
+from asha.integrations import wrap_llm
+from asha.exceptions import ASHAProcessingError, ASHAWrapError
+from asha.integrations.llm_wrap import (
     wrap_llm as wrapper_wrap_llm,
     safe_wrap,
     auto_wrap,
@@ -60,12 +60,12 @@ def test_wrap_llm_fail_closed_on_process_error(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("process failed")
 
-    import privysha.integrations.llm_wrap as llm_wrap_mod
+    import asha.integrations.llm_wrap as llm_wrap_mod
 
     monkeypatch.setattr(llm_wrap_mod, "_process_prompt_for_wrap", boom)
     client = _MockClient()
     wrapped = wrapper_wrap_llm(client)
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         wrapped.chat.completions.create(
             messages=[{"role": "user", "content": "keep@example.com"}],
         )
@@ -94,24 +94,24 @@ def test_wrap_function_sync_fail_closed(monkeypatch):
     def echo(x):
         return x
 
-    import privysha.utils.dropin as dropin_mod
+    import asha.utils.dropin as dropin_mod
 
     def boom(prompt, **kwargs):
         raise RuntimeError("fail")
 
     monkeypatch.setattr(dropin_mod, "process", boom)
     wrapped = wrap_function(echo)
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         wrapped("hello")
 
 
 def test_safe_wrap_raises_on_failure():
-    with pytest.raises(PrivySHAWrapError):
+    with pytest.raises(ASHAWrapError):
         safe_wrap(object())
 
 
 def test_auto_wrap_raises_on_failure():
-    with pytest.raises(PrivySHAWrapError):
+    with pytest.raises(ASHAWrapError):
         auto_wrap(object())
 
 

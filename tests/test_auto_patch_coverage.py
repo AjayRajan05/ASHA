@@ -1,4 +1,4 @@
-"""Additional auto_patch coverage tests — targets ~54% → 70%+ coverage.
+"""Additional auto_patch coverage tests - targets ~54% → 70%+ coverage.
 
 Covers: _check_version_compatibility, get_patch_status, _unpatch_all,
 version-gated patching, providers keyword, warning text.
@@ -12,9 +12,9 @@ import warnings
 import pytest
 
 # Canonical implementation lives in integrations; utils.auto_patch is a shim.
-ap_mod = importlib.import_module("privysha.integrations.auto_patch")
+ap_mod = importlib.import_module("asha.integrations.auto_patch")
 
-from privysha.integrations.auto_patch import (
+from asha.integrations.auto_patch import (
     auto_patch,
     disable_auto_patch,
     enable_auto_patch,
@@ -202,7 +202,7 @@ def test_auto_patch_verbose_does_not_raise(monkeypatch):
 
 def test_huggingface_adapter_generate_mocked():
     """Gap 13: Ensure the HF adapter's generate() pipeline path is covered via mock."""
-    from privysha.runtime.adapters.hf_adapter import HuggingFaceAdapter
+    from asha.runtime.adapters.hf_adapter import HuggingFaceAdapter
 
     # Build a mock pipeline generator (the `self.generator` branch)
     class _FakePipeline:

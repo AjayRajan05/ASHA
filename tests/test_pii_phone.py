@@ -1,9 +1,9 @@
 """Phone number PII detection and masking tests."""
 
-from privysha import process, sanitize
-from privysha.core.pii_pipeline.stages.detection_stage import RegexDetector
-from privysha.core.security.pii_detector import PIIDetector
-from privysha.types.results import OptimizeResult
+from asha import process, sanitize
+from asha.core.pii_pipeline.stages.detection_stage import RegexDetector
+from asha.core.security.pii_detector import PIIDetector
+from asha.types.results import OptimizeResult
 
 from conftest import output_of
 
@@ -31,7 +31,7 @@ def test_process_masks_phone_dash_format():
 
 def test_optimize_tokens_only_may_keep_phone():
     """optimize() is tokens-only and does not mask PII."""
-    from privysha import optimize
+    from asha import optimize
 
     result = optimize("My number is 555-111-2222")
     assert isinstance(result, OptimizeResult)

@@ -1,13 +1,13 @@
 # Quickstart Guide
 
-**Get started with PrivySHA in 5 minutes** (v0.4.1 developer preview)
+**Get started with ASHA in 5 minutes** (v0.4.2 developer preview)
 
 ---
 
 ## Install
 
 ```bash
-pip install privysha
+pip install asha
 ```
 
 Or from source:
@@ -22,10 +22,10 @@ python examples/developer_preview_demo.py
 ## Process a prompt
 
 ```python
-from privysha import process
+from asha import process
 
 result = process("Hey bro analyze my dataset with john@email.com")
-print(result)  # ProcessResult — str() returns optimized output
+print(result)  # ProcessResult - str() returns optimized output
 ```
 
 With typed fields:
@@ -61,7 +61,7 @@ process(prompt, mode="strict")
 ## Wrap an LLM client
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 import openai
 
 client = openai.OpenAI()
@@ -81,10 +81,10 @@ Use `mode="off"` for passthrough without preprocessing.
 
 | Mode | Behavior |
 |------|----------|
-| `balanced` | Default — security + optimization |
+| `balanced` | Default - security + optimization |
 | `strict` | Fail-closed on total failure |
 | `lite` | Minimal policy features |
-| `off` | Passthrough — no modification |
+| `off` | Passthrough - no modification |
 
 ```python
 process(prompt, mode="lite")
@@ -94,7 +94,7 @@ process(prompt, mode="off")
 Advanced policy via `PolicyConfig`:
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 
 process(prompt, policy=PolicyConfig(pii_mode="hybrid", reversible=True))
 ```
@@ -119,7 +119,7 @@ print(result.diff)
 
 ```python
 import asyncio
-from privysha.utils.dropin import process_async
+from asha.utils.dropin import process_async
 
 async def main():
     result = await process_async("prompt", mode="balanced")
@@ -133,7 +133,7 @@ asyncio.run(main())
 ## Agent
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(model="mock")
 response = agent.run("Summarize this dataset")
@@ -145,11 +145,11 @@ print(response)
 ## Canonical imports
 
 ```python
-from privysha import process, sanitize, optimize, Agent
-from privysha.runtime import PromptProcessor
-from privysha.integrations import wrap_llm, auto_patch
-from privysha.types import ProcessResult
-from privysha.core.policy_config import PolicyConfig
+from asha import process, sanitize, optimize, Agent
+from asha.runtime import PromptProcessor
+from asha.integrations import wrap_llm, auto_patch
+from asha.types import ProcessResult
+from asha.core.policy_config import PolicyConfig
 ```
 
 See [api-reference.md](api-reference.md) and [deprecations.md](deprecations.md).

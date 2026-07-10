@@ -1,8 +1,8 @@
-"""Tests for security/masking_vault.py — brings coverage from 0% to ~100%."""
+"""Tests for security/masking_vault.py - brings coverage from 0% to ~100%."""
 
 import pytest
 
-from privysha.core.security.masking_vault import (
+from asha.core.security.masking_vault import (
     MaskingVault,
     get_active_vault,
     set_active_vault,
@@ -27,8 +27,8 @@ def test_lookup_missing_returns_none():
 
 def test_register_ignores_empty_token():
     vault = MaskingVault()
-    vault.register("", "value")  # empty token — should not crash or register
-    vault.register("[TOKEN]", "")  # empty original — should not register
+    vault.register("", "value")  # empty token - should not crash or register
+    vault.register("[TOKEN]", "")  # empty original - should not register
     assert vault.lookup("") is None
     assert vault.lookup("[TOKEN]") is None
 
@@ -99,6 +99,6 @@ def test_set_active_vault_none():
 
 
 def test_active_vault_initially_none_or_vault():
-    """Active vault is either None or a MaskingVault — never an unexpected type."""
+    """Active vault is either None or a MaskingVault - never an unexpected type."""
     v = get_active_vault()
     assert v is None or isinstance(v, MaskingVault)

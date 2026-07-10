@@ -8,12 +8,12 @@ pytest.importorskip("fastapi")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from privysha.integrations.fastapi.middleware import PrivySHAMiddleware
+from asha.integrations.fastapi.middleware import ASHAMiddleware
 
 
 def _make_app(**middleware_kwargs):
     app = FastAPI()
-    app.add_middleware(PrivySHAMiddleware, **middleware_kwargs)
+    app.add_middleware(ASHAMiddleware, **middleware_kwargs)
 
     @app.post("/chat/completions")
     async def chat(body: dict):
@@ -42,14 +42,14 @@ def test_middleware_processes_chat_completions_json_body():
     }
     response = client.post("/chat/completions", json=body)
     assert response.status_code == 200
-    assert response.headers.get("X-PrivySHA-Processed") == "true"
+    assert response.headers.get("X-ASHA-Processed") == "true"
 
 
 def test_middleware_fail_safe_on_process_error(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("process failed")
 
-    import privysha.integrations.fastapi.middleware as mw
+    import asha.integrations.fastapi.middleware as mw
 
     monkeypatch.setattr(mw, "process", boom)
     app = _make_app()

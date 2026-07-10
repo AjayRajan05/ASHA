@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-from privysha.types import ProcessResult
+from asha.types import ProcessResult
 
 pytestmark = pytest.mark.integration
 
@@ -24,7 +24,7 @@ def gemini_key():
 
 
 def test_dropin_process_live(gemini_key):
-    from privysha import process
+    from asha import process
 
     result = process(
         "Summarize machine learning in one sentence. Email: test@example.com",
@@ -35,7 +35,7 @@ def test_dropin_process_live(gemini_key):
 
 
 def test_gemini_adapter_generate(gemini_key):
-    from privysha.runtime.adapters.gemini_adapter import GeminiAdapter
+    from asha.runtime.adapters.gemini_adapter import GeminiAdapter
 
     adapter = GeminiAdapter(model="gemini-1.5-flash")
     response = adapter.generate("Reply with the word OK only.")
@@ -44,7 +44,7 @@ def test_gemini_adapter_generate(gemini_key):
 
 
 def test_agent_live_run(gemini_key):
-    from privysha import Agent
+    from asha import Agent
 
     agent = Agent(model="gemini-1.5-flash", privacy=True)
     response = agent.run("What is 2+2? Reply with the number only.")

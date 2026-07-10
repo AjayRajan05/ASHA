@@ -1,6 +1,6 @@
 # Performance Tuning
 
-**PrivySHA v0.4.1**
+**ASHA v0.4.2**
 
 ---
 
@@ -18,7 +18,7 @@
 ## Fastest path
 
 ```python
-from privysha import process
+from asha import process
 
 result = process(prompt, mode="lite")
 # or
@@ -32,8 +32,8 @@ Avoid in hot paths: `trace=True`, `debug=True`, `pii_mode="hybrid"` (ML load).
 ## Maximum security
 
 ```python
-from privysha import process
-from privysha.core.policy_config import PolicyConfig
+from asha import process
+from asha.core.policy_config import PolicyConfig
 
 result = process(
     prompt,
@@ -48,7 +48,7 @@ result = process(
 
 ```python
 import asyncio
-from privysha.utils.dropin import process_async
+from asha.utils.dropin import process_async
 
 async def batch(prompts):
     return await asyncio.gather(
@@ -60,7 +60,7 @@ async def batch(prompts):
 
 ## Tunable parameters
 
-All per-call on `process()` — no global config.
+All per-call on `process()` - no global config.
 
 | Parameter | Effect |
 |-----------|--------|
@@ -77,7 +77,7 @@ All per-call on `process()` — no global config.
 `Agent(privacy=True)` uses strict internal preprocessing. Tune via `token_budget` or preprocess with `process()` yourself.
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(model="mock", privacy=True, token_budget=800)
 ```
@@ -88,7 +88,7 @@ agent = Agent(model="mock", privacy=True, token_budget=800)
 
 ```python
 import time
-from privysha import process
+from asha import process
 
 start = time.perf_counter()
 result = process("prompt", mode="balanced")
@@ -111,4 +111,4 @@ See [benchmarks.md](benchmarks.md).
 3. `pii_mode="rule"` unless ML needed
 4. `mode="strict"` for regulated paths
 5. Monitor `result.degraded` in logs
-6. Pin `privysha==0.4.1`
+6. Pin `asha==0.4.2`

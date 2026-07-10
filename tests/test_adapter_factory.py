@@ -3,11 +3,11 @@ import os
 import pytest
 from unittest.mock import patch
 
-from privysha.runtime.adapters.factory import AdapterFactory
-from privysha.runtime.adapters.openai_adapter import OpenAIAdapter
-from privysha.runtime.adapters.ollama_adapter import OllamaAdapter
-from privysha.runtime.adapters.mock_adapter import MockAdapter
-from privysha.runtime.adapters.claude_adapter import ClaudeAdapter
+from asha.runtime.adapters.factory import AdapterFactory
+from asha.runtime.adapters.openai_adapter import OpenAIAdapter
+from asha.runtime.adapters.ollama_adapter import OllamaAdapter
+from asha.runtime.adapters.mock_adapter import MockAdapter
+from asha.runtime.adapters.claude_adapter import ClaudeAdapter
 
 
 class TestAdapterFactory:

@@ -1,6 +1,6 @@
 """OpenTelemetry optional integration tests."""
 
-from privysha.integrations.otel import enable_otel, get_tracer, trace_stage
+from asha.integrations.otel import enable_otel, get_tracer, trace_stage
 
 
 def test_trace_stage_noop_when_otel_disabled():
@@ -16,7 +16,7 @@ def test_get_tracer_none_by_default():
 
 
 def test_enable_otel_returns_bool():
-    result = enable_otel(service_name="privysha-test")
+    result = enable_otel(service_name="asha-test")
     assert isinstance(result, bool)
     if result:
         assert get_tracer() is not None
@@ -29,9 +29,9 @@ def test_enable_otel_returns_bool():
 
 
 def test_process_runs_with_otel_enabled_or_skipped():
-    from privysha import process
+    from asha import process
 
-    enabled = enable_otel("privysha-test-pipeline")
+    enabled = enable_otel("asha-test-pipeline")
     result = process("Hello world", mode="off")
     assert result.output
     if not enabled:

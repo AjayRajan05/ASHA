@@ -28,16 +28,16 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run tests before publish
-        run: python -m pytest tests/ -q --tb=no -m "not slow" --cov=privysha --cov-fail-under=40
+        run: python -m pytest tests/ -q --tb=no -m "not slow" --cov=asha --cov-fail-under=40
         env:
-          PRIVYSHA_DISABLE_ML: "1"
+          ASHA_DISABLE_ML: "1"
 
       - name: Run benchmark quality gates
         run: |
           python benchmarks/run_benchmarks.py
           python benchmarks/run_benchmarks.py --compare benchmarks/baseline/results.json
         env:
-          PRIVYSHA_DISABLE_ML: "1"
+          ASHA_DISABLE_ML: "1"
 
       - name: Build package
         run: python -m build
@@ -48,7 +48,7 @@ jobs:
       - name: Fresh-install smoke test
         run: |
           python -m pip install dist/*.whl --force-reinstall
-          python -c "from privysha import process, sanitize; assert sanitize('a@b.com'); print(process('hello'))"
+          python -c "from asha import process, sanitize, anchor, Agent; assert sanitize('a@b.com'); print(process('hello')); print(anchor(Agent(provider='mock', model='mock')))"
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,7 +1,7 @@
-"""Tests for optimize() API — tokens-only in v0.4."""
+"""Tests for optimize() API - tokens-only in v0.4."""
 
-from privysha import optimize
-from privysha.types.results import OptimizeResult
+from asha import optimize
+from asha.types.results import OptimizeResult
 
 
 def test_optimize_returns_optimize_result():
@@ -18,7 +18,7 @@ def test_optimize_trust_input_bypasses_compression():
 
 
 def test_optimize_tokens_only_may_keep_pii():
-    """optimize() does not run security — email may remain."""
+    """optimize() does not run security - email may remain."""
     result = optimize("Contact secret@company.com for help")
     assert isinstance(result, OptimizeResult)
     # tokens-only path; PII masking is not guaranteed

@@ -4,11 +4,11 @@ import time
 
 import pytest
 
-from privysha.core.security.security_layer import SecurityLayer, ThreatType
-from privysha.core.security.pii_detector import PIIDetector
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process, sanitize
-from privysha.utils.dropin_privacy import extract_pii_types
+from asha.core.security.security_layer import SecurityLayer, ThreatType
+from asha.core.security.pii_detector import PIIDetector
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process, sanitize
+from asha.utils.dropin_privacy import extract_pii_types
 
 
 def test_injection_detection_registers_threats():
@@ -82,8 +82,8 @@ def test_sanitize_api_key():
 
 def test_processor_timeout_fail_safe():
     """Processor returns gracefully when timeout budget is exceeded."""
-    from privysha.compat.legacy_results import to_legacy_pipeline_dict
-    from privysha.runtime.processor import PromptProcessor
+    from asha.compat.legacy_results import to_legacy_pipeline_dict
+    from asha.runtime.processor import PromptProcessor
 
     processor = PromptProcessor()
     prompt = "Hello " * 500 + "john@example.com"

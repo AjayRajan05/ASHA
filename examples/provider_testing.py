@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Provider smoke tests (v0.4.1).
+Provider smoke tests (v0.4.2).
 
 Tests basic APIs without keys; optional provider tests when API keys are set.
 """
@@ -8,9 +8,9 @@ Tests basic APIs without keys; optional provider tests when API keys are set.
 import os
 import time
 
-from privysha import Agent, optimize, process, sanitize
-from privysha.core.policy_config import PolicyConfig
-from privysha.integrations import wrap_llm
+from asha import Agent, optimize, process, sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.integrations import wrap_llm
 
 TEST_PROMPT = (
     "Hey bro can you please help me analyze this dataset for anomalies? "
@@ -19,7 +19,7 @@ TEST_PROMPT = (
 
 
 def test_basic_functionality() -> None:
-    print("=== Basic PrivySHA APIs ===")
+    print("=== Basic ASHA APIs ===")
 
     result = process(TEST_PROMPT, mode="balanced")
     print(f"process output : {result.output[:80]}...")
@@ -51,7 +51,7 @@ def test_agent_mock() -> None:
 def test_openai() -> None:
     print("=== OpenAI (optional) ===")
     if not os.getenv("OPENAI_API_KEY"):
-        print("OPENAI_API_KEY not set — skipped.\n")
+        print("OPENAI_API_KEY not set - skipped.\n")
         return
     try:
         import openai
@@ -73,7 +73,7 @@ def test_openai() -> None:
         print(f"Agent output: {str(result.response)[:80]}...")
         print("OpenAI OK.\n")
     except ImportError:
-        print("openai not installed — skipped.\n")
+        print("openai not installed - skipped.\n")
     except Exception as exc:
         print(f"OpenAI failed: {exc}\n")
 
@@ -82,7 +82,7 @@ def test_gemini() -> None:
     print("=== Gemini (optional) ===")
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
-        print("GOOGLE_API_KEY / GEMINI_API_KEY not set — skipped.\n")
+        print("GOOGLE_API_KEY / GEMINI_API_KEY not set - skipped.\n")
         return
     try:
         import google.generativeai as genai
@@ -93,7 +93,7 @@ def test_gemini() -> None:
         print(str(response.text)[:100])
         print("Gemini OK.\n")
     except ImportError:
-        print("google-generativeai not installed — skipped.\n")
+        print("google-generativeai not installed - skipped.\n")
     except Exception as exc:
         print(f"Gemini failed: {exc}\n")
 
@@ -101,7 +101,7 @@ def test_gemini() -> None:
 def test_anthropic() -> None:
     print("=== Anthropic (optional) ===")
     if not os.getenv("ANTHROPIC_API_KEY"):
-        print("ANTHROPIC_API_KEY not set — skipped.\n")
+        print("ANTHROPIC_API_KEY not set - skipped.\n")
         return
     try:
         import anthropic
@@ -120,7 +120,7 @@ def test_anthropic() -> None:
         print(response.content[0].text[:100])
         print("Anthropic OK.\n")
     except ImportError:
-        print("anthropic not installed — skipped.\n")
+        print("anthropic not installed - skipped.\n")
     except Exception as exc:
         print(f"Anthropic failed: {exc}\n")
 
@@ -182,7 +182,7 @@ def test_wrap_llm_mock() -> None:
 
 
 def main() -> None:
-    print("PrivySHA provider testing (v0.4.1)")
+    print("ASHA provider testing (v0.4.2)")
     print("=" * 50)
     test_basic_functionality()
     test_agent_mock()

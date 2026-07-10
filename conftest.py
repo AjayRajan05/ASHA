@@ -1,4 +1,4 @@
-"""Pytest configuration — ensure local src/ is used before site-packages."""
+"""Pytest configuration - ensure local src/ is used before site-packages."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from typing import Union
 
 import pytest
 
-from privysha.types.results import OptimizeResult, ProcessResult, SanitizeResult
+from asha.types.results import OptimizeResult, ProcessResult, SanitizeResult
 
 # Disable ML/safety classifier downloads during tests (fast, deterministic CI)
-os.environ.setdefault("PRIVYSHA_DISABLE_ML", "1")
+os.environ.setdefault("ASHA_DISABLE_ML", "1")
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
@@ -51,7 +51,7 @@ def _reset_auto_patch_state():
     """Prevent auto_patch tests from leaking global SDK patch state."""
     yield
     try:
-        from privysha.utils.auto_patch import auto_patch, enable_auto_patch
+        from asha.utils.auto_patch import auto_patch, enable_auto_patch
 
         enable_auto_patch()
         auto_patch(enable=False)

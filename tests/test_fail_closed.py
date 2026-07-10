@@ -2,12 +2,12 @@
 
 import pytest
 
-from privysha import process, sanitize
-from privysha.core.safety import SafetyMode
-from privysha.exceptions import PrivySHAProcessingError
-from privysha.runtime.processor import PromptProcessor
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin_privacy import (
+from asha import process, sanitize
+from asha.core.safety import SafetyMode
+from asha.exceptions import ASHAProcessingError
+from asha.runtime.processor import PromptProcessor
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin_privacy import (
     SECURITY_FAIL_CLOSED_PLACEHOLDER,
     privacy_fallback,
 )
@@ -22,7 +22,7 @@ def test_privacy_fallback_strict_placeholder_on_security_error(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("security failed")
 
-    import privysha.utils.dropin_privacy as dp
+    import asha.utils.dropin_privacy as dp
 
     monkeypatch.setattr(dp, "run_security_only", boom)
     out = privacy_fallback(
@@ -35,10 +35,10 @@ def test_sanitize_strict_raises_on_security_error(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("security failed")
 
-    import privysha.core.engines as engines
+    import asha.core.engines as engines
 
     monkeypatch.setattr(engines, "run_security_only", boom)
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         sanitize("secret@company.com", mode="strict")
 
 
@@ -46,7 +46,7 @@ def test_sanitize_balanced_degrades_on_security_error(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("security failed")
 
-    import privysha.core.engines as engines
+    import asha.core.engines as engines
 
     monkeypatch.setattr(engines, "run_security_only", boom)
     result = sanitize("secret@company.com", mode="balanced")
@@ -59,11 +59,11 @@ def test_process_strict_raises_on_processor_failure(monkeypatch):
     def engines_boom(*args, **kwargs):
         raise RuntimeError("processor failed")
 
-    import privysha.runtime.processor as proc_mod
+    import asha.runtime.processor as proc_mod
 
     monkeypatch.setattr(proc_mod.PromptProcessor, "_run_engines", engines_boom)
 
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         process("secret@company.com", mode="strict")
 
 
@@ -71,7 +71,7 @@ def test_process_balanced_falls_back_on_processor_failure(monkeypatch):
     def engines_boom(*args, **kwargs):
         raise RuntimeError("processor failed")
 
-    import privysha.runtime.processor as proc_mod
+    import asha.runtime.processor as proc_mod
 
     monkeypatch.setattr(proc_mod.PromptProcessor, "_run_engines", engines_boom)
 

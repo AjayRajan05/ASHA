@@ -5,14 +5,14 @@ import pytest
 pytest.importorskip("anyio")
 pytestmark = pytest.mark.anyio
 
-from privysha.core.streaming import (
+from asha.core.streaming import (
     handle_streaming_response,
     handle_async_streaming_response,
     is_streaming_response,
 )
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process_async, sanitize_async
-from privysha.integrations.llm_wrap import wrap_llm
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process_async, sanitize_async
+from asha.integrations.llm_wrap import wrap_llm
 
 from conftest import output_of
 
@@ -158,15 +158,15 @@ def test_wrap_llm_forwards_privacy_and_budget():
 
 
 def test_streaming_does_not_buffer_chunks():
-    from privysha.core.streaming import handle_streaming_response
+    from asha.core.streaming import handle_streaming_response
 
     chunks = list(handle_streaming_response(iter(["a", "b", "c"])))
     assert chunks == ["a", "b", "c"]
 
 
 def test_wrap_llm_sync_streaming_fail_closed_on_process_error(monkeypatch):
-    from privysha.exceptions import PrivySHAProcessingError
-    import privysha.integrations.llm_wrap as llm_wrap_mod
+    from asha.exceptions import ASHAProcessingError
+    import asha.integrations.llm_wrap as llm_wrap_mod
 
     def boom(*args, **kwargs):
         raise RuntimeError("process failed")
@@ -174,7 +174,7 @@ def test_wrap_llm_sync_streaming_fail_closed_on_process_error(monkeypatch):
     monkeypatch.setattr(llm_wrap_mod, "_process_prompt_for_wrap", boom)
     client = MockSyncStreamClient()
     wrapped = wrap_llm(client)
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         wrapped.chat.completions.create(
             messages=[{"role": "user", "content": "stream@test.com"}],
             stream=True,

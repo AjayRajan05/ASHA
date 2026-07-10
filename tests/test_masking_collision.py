@@ -1,7 +1,7 @@
 """Collision-safe masking: same entity -> same token, different -> different."""
 
-from privysha import sanitize
-from privysha.types.results import SanitizeResult
+from asha import sanitize
+from asha.types.results import SanitizeResult
 
 
 def test_same_email_same_token():

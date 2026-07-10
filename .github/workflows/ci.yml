@@ -1,4 +1,4 @@
-name: PrivySHA CI
+name: ASHA CI
 
 on:
   push:
@@ -41,18 +41,22 @@ jobs:
 
     - name: Lint (flake8)
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      run: flake8 src/privysha --select=F401,F824 --count --show-source
+      run: flake8 src/asha --select=F401,F824 --count --show-source
 
     - name: Type check (mypy)
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      run: mypy src/privysha --ignore-missing-imports
+      run: mypy src/asha --ignore-missing-imports
 
     - name: Architecture boundary tests
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: pytest tests/architecture tests/imports tests/public_api -q
 
     - name: Run unit tests
-      run: pytest --cov=privysha --cov-report=xml --cov-report=term --cov-fail-under=50 -m "not slow"
+      run: pytest --cov=asha --cov-report=xml --cov-report=term --cov-fail-under=50 -m "not slow"
+
+    - name: Run ANCHOR tests
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      run: pytest tests/runtime/anchor/ -q
 
     - name: Run slow tests
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -63,7 +67,7 @@ jobs:
       run: python benchmarks/run_benchmarks.py --save
       timeout-minutes: 5
       env:
-        PRIVYSHA_DISABLE_ML: "1"
+        ASHA_DISABLE_ML: "1"
 
     - name: Semantic equivalence quality gate
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -71,7 +75,7 @@ jobs:
         python - <<'EOF'
         import json, sys
         sys.path.insert(0, "src")
-        from privysha.core.benchmark import check_semantic_equivalence
+        from asha.core.benchmark import check_semantic_equivalence
         with open("benchmarks/output/results.json") as f:
             data = json.load(f)
         results = data.get("results", [])
@@ -87,7 +91,7 @@ jobs:
             sys.exit(1)
         EOF
       env:
-        PRIVYSHA_DISABLE_ML: "1"
+        ASHA_DISABLE_ML: "1"
 
     - name: Prompt repair quality gate
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -106,14 +110,14 @@ jobs:
             sys.exit(1)
         EOF
       env:
-        PRIVYSHA_DISABLE_ML: "1"
+        ASHA_DISABLE_ML: "1"
 
     - name: Regression benchmark vs baseline
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: python benchmarks/run_benchmarks.py --compare benchmarks/baseline/results.json
       timeout-minutes: 5
       env:
-        PRIVYSHA_DISABLE_ML: "1"
+        ASHA_DISABLE_ML: "1"
 
     - name: Build documentation
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -131,7 +135,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
         python -m pip install dist/*.whl --force-reinstall
-        python -c "from privysha import process, sanitize; assert sanitize('a@b.com'); print(process('hello'))"
+        python -c "from asha import process, sanitize, anchor, Agent; assert sanitize('a@b.com'); print(process('hello')); print(anchor(Agent(provider='mock', model='mock')))"
 
     - name: Upload coverage artifact
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -146,3 +150,51 @@ jobs:
       with:
         name: benchmark-results
         path: benchmarks/output/
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.11"
+
+    - name: Install package with optional framework deps
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev,integrations,flask,django,llamaindex]"
+        pip install "crewai>=0.80.0,<1.0.0" "langgraph>=0.2.0,<1.0.0"
+
+    - name: Check for dependency conflicts
+      run: pip check
+
+    - name: Framework integration smoke tests
+      run: |
+        pytest \
+          tests/test_framework_smoke.py \
+          tests/test_fastapi_integration.py \
+          tests/test_django_integration.py \
+          tests/test_langchain_integration.py \
+          tests/test_llamaindex_integration.py \
+          tests/test_instructor_integration.py \
+          -q --tb=short
+      env:
+        ASHA_DISABLE_ML: "1"
+        ASHA_ANCHOR_INTERACTIVE: "0"
+
+    - name: ANCHOR adapter smoke (real imports)
+      run: |
+        python - <<'EOF'
+        import crewai
+        import langchain_core
+        import llama_index.core
+        from asha.runtime.anchor.adapters import anchor_any
+        print("crewai", crewai.__version__)
+        print("langchain_core", langchain_core.__version__)
+        print("llama_index", llama_index.core.__version__)
+        print("anchor_any", anchor_any)
+        EOF
+

@@ -1,4 +1,4 @@
-"""Tests for prompt content preservation — Gaps 2, 3, 4, 5.
+"""Tests for prompt content preservation - Gaps 2, 3, 4, 5.
 
 Gap 2: Safe prompts should be unchanged under mode="off".
 Gap 3: Semantic meaning should be preserved (key intent words survive).
@@ -10,9 +10,9 @@ Gap 5: JSON and code blocks must pass through under mode="off".
 
 import json
 
-from privysha.core.policy_config import PolicyConfig
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process, sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process, sanitize
 
 from conftest import output_of
 
@@ -157,7 +157,7 @@ def test_markdown_code_fence_preserved_mode_off():
 
 
 # ---------------------------------------------------------------------------
-# Gap 3: preserve_intent=True — clean prompts returned verbatim
+# Gap 3: preserve_intent=True - clean prompts returned verbatim
 # ---------------------------------------------------------------------------
 
 
@@ -178,7 +178,7 @@ def test_preserve_intent_returns_original_simple():
 def test_preserve_intent_false_may_rewrite():
     """When preserve_intent=False (default), the optimizer may rewrite clean prompts."""
     original = "Tell me about customer support best practices."
-    # We only assert we get some string back — the exact output is optimizer-dependent
+    # We only assert we get some string back - the exact output is optimizer-dependent
     result = process(original, policy=PolicyConfig(preserve_intent=False))
     assert isinstance(result, ProcessResult)
     assert len(result.output) > 0

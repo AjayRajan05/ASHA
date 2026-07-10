@@ -1,15 +1,15 @@
 # Optimization
 
-**PrivySHA v0.4.1** — token reduction via MSDPC.
+**ASHA v0.4.2** - token reduction via MSDPC.
 
 ---
 
 ## optimize()
 
-Token compression only — no PII masking, no compile stage:
+Token compression only - no PII masking, no compile stage:
 
 ```python
-from privysha import optimize
+from asha import optimize
 
 result = optimize("Hey bro can you please analyze this dataset thoroughly")
 print(result.output)
@@ -23,7 +23,7 @@ print(result.metrics.token_reduction_pct)
 Full path includes security + compile + optimize:
 
 ```python
-from privysha import process
+from asha import process
 
 result = process("long verbose prompt...", token_budget=1200)
 print(result.metrics.tokens_saved)
@@ -34,7 +34,7 @@ print(result.metrics.tokens_saved)
 ## Skip optimization when safe
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 
 process(
     prompt,

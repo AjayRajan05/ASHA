@@ -2,11 +2,11 @@
 
 import pytest
 
-from privysha import sanitize
-from privysha.core.policy_config import PolicyConfig
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process
-from privysha.utils.unmask import unmask
+from asha import sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process
+from asha.utils.unmask import unmask
 
 from conftest import output_of
 

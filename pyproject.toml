@@ -17,9 +17,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "privysha"
-version = "0.4.1"
-description = "PrivySHA (privacy focused secure hashing library) - drop-in security + optimization layer for LLM apps (developer preview)"
+name = "asha"
+version = "0.4.2"
+description = "ASHA - mission-aware agent governance (ANCHOR) plus drop-in LLM security and optimization (developer preview)"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -91,7 +91,7 @@ transformers = [
     "accelerate>=0.20.0,<2.0.0"
 ]
 ml = [
-    "privysha[transformers]",
+    "asha[transformers]",
     "spacy>=3.4.0,<4.0.0",
 ]
 fastapi = [
@@ -110,10 +110,10 @@ langchain = [
 ]
 instructor = [
     "instructor>=0.4.0,<2.0.0",
-    "privysha[openai]",
+    "asha[openai]",
 ]
 integrations = [
-    "privysha[fastapi,langchain,instructor]",
+    "asha[fastapi,langchain,instructor]",
 ]
 llamaindex = [
     "llama-index-core>=0.10.0,<1.0.0",
@@ -126,11 +126,11 @@ local-advisor = [
     "huggingface_hub>=0.20.0,<2.0.0",
 ]
 local-advisor-gpu = [
-    "privysha[local-advisor]",
+    "asha[local-advisor]",
     "nvidia-ml-py>=12.0.0,<14.0.0",
 ]
 all = [
-    "privysha[openai,anthropic,gemini,ml,fastapi,flask,django,langchain,instructor,otel,llamaindex,local-advisor]",
+    "asha[openai,anthropic,gemini,ml,fastapi,flask,django,langchain,instructor,otel,llamaindex,local-advisor]",
 ]
 
 [project.urls]
@@ -139,14 +139,14 @@ Issues = "https://github.com/AjayRajan05/privySHA/issues"
 Changelog = "https://github.com/AjayRajan05/privySHA/blob/main/CHANGELOG.md"
 
 [project.scripts]
-privysha = "privysha.cli:main"
+asha = "asha.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-privysha = ["py.typed"]
-"privysha.runtime.local_advisor.catalog" = ["fallback.json"]
+asha = ["py.typed"]
+"asha.runtime.local_advisor.catalog" = ["fallback.json"]
 "*" = ["*.md", "*.txt"]
 
 [tool.black]

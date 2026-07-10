@@ -1,10 +1,10 @@
-"""Mock-based adapter tests — no network required."""
+"""Mock-based adapter tests - no network required."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from privysha.runtime.adapters.factory import AdapterFactory
+from asha.runtime.adapters.factory import AdapterFactory
 
 
 def test_mock_adapter_generate():

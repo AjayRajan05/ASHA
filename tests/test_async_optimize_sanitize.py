@@ -7,9 +7,9 @@ import pytest
 pytest.importorskip("anyio")
 pytestmark = pytest.mark.anyio
 
-from privysha.utils.dropin import optimize_async, process_async, sanitize_async
-from privysha.types.results import OptimizeResult, ProcessResult, SanitizeResult
-from privysha.utils.dropin_privacy import SECURITY_FAIL_CLOSED_PLACEHOLDER
+from asha.utils.dropin import optimize_async, process_async, sanitize_async
+from asha.types.results import OptimizeResult, ProcessResult, SanitizeResult
+from asha.utils.dropin_privacy import SECURITY_FAIL_CLOSED_PLACEHOLDER
 
 
 async def test_optimize_async_returns_optimize_result():
@@ -28,7 +28,7 @@ async def test_process_async_fail_closed(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("fail")
 
-    import privysha.runtime.processor as proc_mod
+    import asha.runtime.processor as proc_mod
 
     monkeypatch.setattr(proc_mod.PromptProcessor, "_run_engines", boom)
     result = await process_async("secret@company.com", mode="balanced")
@@ -48,7 +48,7 @@ async def test_sanitize_async_observable_failure(monkeypatch):
     def boom(*args, **kwargs):
         raise RuntimeError("fail")
 
-    import privysha.core.engines as engines
+    import asha.core.engines as engines
 
     monkeypatch.setattr(engines, "run_security_only", boom)
     result = await sanitize_async("fallback@company.com")

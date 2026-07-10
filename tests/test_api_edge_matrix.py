@@ -1,8 +1,8 @@
 """Cross-API edge-case matrix tests."""
 
-from privysha import optimize, sanitize
-from privysha.integrations import wrap_llm
-from privysha.types.results import OptimizeResult, SanitizeResult
+from asha import optimize, sanitize
+from asha.integrations import wrap_llm
+from asha.types.results import OptimizeResult, SanitizeResult
 
 from conftest import output_of
 

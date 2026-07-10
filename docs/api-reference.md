@@ -1,6 +1,6 @@
 # API Reference
 
-**PrivySHA v0.4.1** — canonical signatures and import paths.
+**ASHA v0.4.2** - canonical signatures and import paths.
 
 ---
 
@@ -8,18 +8,22 @@
 
 ```python
 # Root (only these)
-from privysha import process, sanitize, optimize, Agent
+from asha import process, sanitize, optimize, Agent, anchor
+
+# ANCHOR (also available from root)
+from asha.runtime.anchor import anchor_any
+from asha.runtime.anchor.adapters import anchor_crewai, anchor_langchain
 
 # Subpackages
-from privysha.integrations import wrap_llm, auto_patch
-from privysha.runtime import PromptProcessor, ExecutionProfile
-from privysha.types import ProcessResult, SanitizeResult, OptimizeResult, AgentResult
-from privysha.core.policy_config import PolicyConfig, PolicyMode
-from privysha.utils.dropin import process_async, optimize_async, sanitize_async
-from privysha.utils.unmask import unmask
-from privysha.runtime.local_advisor.advisor import recommend_local_model
-from privysha.runtime.adapters.factory import AdapterFactory
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.integrations import wrap_llm, auto_patch
+from asha.runtime import PromptProcessor, ExecutionProfile
+from asha.types import ProcessResult, SanitizeResult, OptimizeResult, AgentResult
+from asha.core.policy_config import PolicyConfig, PolicyMode
+from asha.utils.dropin import process_async, optimize_async, sanitize_async
+from asha.utils.unmask import unmask
+from asha.runtime.local_advisor.advisor import recommend_local_model
+from asha.runtime.adapters.factory import AdapterFactory
+from asha.compat.legacy_results import to_legacy_pipeline_dict
 ```
 
 ---
@@ -46,8 +50,8 @@ result.to_dict()      # legacy dict shape
 ## process()
 
 ```python
-from privysha import process
-from privysha.core.policy_config import PolicyConfig
+from asha import process
+from asha.core.policy_config import PolicyConfig
 
 result = process(
     prompt: str,
@@ -69,7 +73,7 @@ result = process(
 
 | Mode | Behavior |
 |------|----------|
-| `strict` | Fail-closed — raises on total failure |
+| `strict` | Fail-closed - raises on total failure |
 | `balanced` | Fail-open fallback (default) |
 | `lite` | Minimal policy; fail-open |
 | `off` | Passthrough |
@@ -81,7 +85,7 @@ result = process(
 ## sanitize()
 
 ```python
-from privysha import sanitize
+from asha import sanitize
 
 result = sanitize(
     prompt: str,
@@ -101,7 +105,7 @@ result = sanitize(
 ## optimize()
 
 ```python
-from privysha import optimize
+from asha import optimize
 
 result = optimize(
     prompt: str,
@@ -113,14 +117,14 @@ result = optimize(
 ) -> OptimizeResult
 ```
 
-Token compression only — no security or compile stages.
+Token compression only - no security or compile stages.
 
 ---
 
 ## wrap_llm()
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 
 client = wrap_llm(
     client,
@@ -131,7 +135,7 @@ client = wrap_llm(
 )
 ```
 
-- `mode="off"` — no preprocessing
+- `mode="off"` - no preprocessing
 - Processing errors: strict raises; balanced degrades
 - Wrap infrastructure errors raise when `mode != "off"`
 
@@ -140,8 +144,8 @@ client = wrap_llm(
 ## auto_patch()
 
 ```python
-from privysha.integrations import auto_patch
-from privysha.integrations.auto_patch import (
+from asha.integrations import auto_patch
+from asha.integrations.auto_patch import (
     get_patch_status,
     disable_auto_patch,
     enable_auto_patch,
@@ -157,7 +161,7 @@ Globally patches installed SDKs. **Prefer `wrap_llm()`** for production.
 ## Async
 
 ```python
-from privysha.utils.dropin import process_async, sanitize_async, optimize_async
+from asha.utils.dropin import process_async, sanitize_async, optimize_async
 
 result = await process_async("prompt", mode="balanced")
 ```
@@ -167,7 +171,7 @@ result = await process_async("prompt", mode="balanced")
 ## unmask()
 
 ```python
-from privysha.utils.unmask import unmask
+from asha.utils.unmask import unmask
 
 restored = unmask(llm_output, masking_map)
 ```
@@ -179,7 +183,7 @@ Requires `policy=PolicyConfig(reversible=True)` during `process()` / `sanitize()
 ## Agent
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(
     model: str = "gpt-4o-mini",
@@ -209,7 +213,7 @@ result = agent.run(prompt, trace=True)
 ## PromptProcessor
 
 ```python
-from privysha.runtime import PromptProcessor, ExecutionProfile
+from asha.runtime import PromptProcessor, ExecutionProfile
 
 processor = PromptProcessor()
 result = processor.run("prompt", mode="balanced", profile=ExecutionProfile(...))
@@ -220,7 +224,7 @@ result = processor.run("prompt", mode="balanced", profile=ExecutionProfile(...))
 ## recommend_local_model()
 
 ```python
-from privysha.runtime.local_advisor.advisor import recommend_local_model
+from asha.runtime.local_advisor.advisor import recommend_local_model
 
 report = recommend_local_model(
     prompts: list[str] | None = None,
@@ -236,14 +240,14 @@ report = recommend_local_model(
 )
 ```
 
-Preview API — see [local-advisor.md](local-advisor.md).
+Preview API - see [local-advisor.md](local-advisor.md).
 
 ---
 
 ## AdapterFactory
 
 ```python
-from privysha.runtime.adapters.factory import AdapterFactory
+from asha.runtime.adapters.factory import AdapterFactory
 
 adapter = AdapterFactory.create(provider="openai", model="gpt-4o-mini")
 adapter = AdapterFactory.create(provider="mock")
@@ -257,7 +261,7 @@ Providers: `openai`, `anthropic`, `gemini`, `ollama`, `huggingface`, `grok`, `mo
 ## Legacy dict
 
 ```python
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.compat.legacy_results import to_legacy_pipeline_dict
 
 legacy = to_legacy_pipeline_dict(
     process("prompt", include_legacy_detail=True)
@@ -270,11 +274,11 @@ legacy = to_legacy_pipeline_dict(
 
 | Command | Description |
 |---------|-------------|
-| `privysha "prompt"` | Demo process |
-| `privysha quick-test` | Built-in tests |
-| `privysha examples` | Sample transformations |
-| `privysha benchmark` | Benchmark harness |
-| `privysha recommend` | PrivyFit advisor |
+| `asha "prompt"` | Demo process |
+| `asha quick-test` | Built-in tests |
+| `asha examples` | Sample transformations |
+| `asha benchmark` | Benchmark harness |
+| `asha recommend` | AshaFit advisor |
 
 ---
 
@@ -286,11 +290,11 @@ legacy = to_legacy_pipeline_dict(
 | `ANTHROPIC_API_KEY` | Anthropic adapter |
 | `GOOGLE_API_KEY` | Gemini adapter |
 | `GROK_API_KEY` | Grok adapter |
-| `PRIVYSHA_MODEL` | `Agent.from_env()` |
-| `PRIVYSHA_TOKEN_BUDGET` | `Agent.from_env()` |
-| `PRIVYSHA_CACHE_DIR` | Local advisor catalog |
+| `ASHA_MODEL` | `Agent.from_env()` |
+| `ASHA_TOKEN_BUDGET` | `Agent.from_env()` |
+| `ASHA_CACHE_DIR` | Local advisor catalog |
 
-`mode` is **not** read from env — set per call.
+`mode` is **not** read from env - set per call.
 
 ---
 
@@ -298,7 +302,7 @@ legacy = to_legacy_pipeline_dict(
 
 | Exception | When |
 |-----------|------|
-| `PrivySHAProcessingError` | `mode="strict"` total failure |
+| `ASHAProcessingError` | `mode="strict"` total failure |
 | `TypeError` | Unknown kwargs on `process()` / `sanitize()` |
 | `AttributeError` | Removed root exports (`wrap_llm`, `Pipeline`, etc.) |
 

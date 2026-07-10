@@ -1,25 +1,25 @@
 # Troubleshooting
 
-**PrivySHA v0.4.1**
+**ASHA v0.4.2**
 
 ---
 
 ## Installation
 
-### ImportError: No module named 'privysha'
+### ImportError: No module named 'asha'
 
 ```bash
-pip install privysha
+pip install asha
 # or
 pip install -e .
 ```
 
-### ImportError: cannot import wrap_llm from privysha
+### ImportError: cannot import wrap_llm from asha
 
 Root no longer exports `wrap_llm`:
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 ```
 
 ### TypeError: unexpected keyword argument
@@ -27,7 +27,7 @@ from privysha.integrations import wrap_llm
 Deprecated kwargs were removed. Use `mode` and `PolicyConfig`:
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 process(prompt, policy=PolicyConfig(pii_mode="hybrid"))
 ```
 
@@ -36,11 +36,11 @@ process(prompt, policy=PolicyConfig(pii_mode="hybrid"))
 ## PII not masked
 
 ```python
-from privysha import process
-from privysha.core.policy_config import PolicyConfig
+from asha import process
+from asha.core.policy_config import PolicyConfig
 
 process(prompt, mode="strict")
-process(prompt, policy=PolicyConfig(pii_mode="hybrid"))  # needs privysha[ml]
+process(prompt, policy=PolicyConfig(pii_mode="hybrid"))  # needs asha[ml]
 ```
 
 Check `mode="off"` is not set. Check output via `result.output`, not raw input.
@@ -50,7 +50,7 @@ Check `mode="off"` is not set. Check output via `result.output`, not raw input.
 ## ML / hybrid PII fails
 
 ```bash
-pip install privysha[ml]
+pip install asha[ml]
 ```
 
 Without ML deps, `pii_mode="hybrid"` falls back to `rule`.
@@ -83,7 +83,7 @@ str(result)            # works
 agent = Agent(model="mock")  # no API key needed for tests
 ```
 
-For real providers, set `OPENAI_API_KEY` etc. and `pip install privysha[openai]`.
+For real providers, set `OPENAI_API_KEY` etc. and `pip install asha[openai]`.
 
 ---
 
@@ -103,8 +103,8 @@ Avoid `trace=True` and `debug=True` in production hot paths.
 Removed in v0.4.1:
 
 ```python
-from privysha import process
-from privysha.runtime import PromptProcessor
+from asha import process
+from asha.runtime import PromptProcessor
 ```
 
 ---

@@ -1,9 +1,9 @@
-"""Performance, memory, and sustained-load tests — Gaps 8, 9, 10, 26.
+"""Performance, memory, and sustained-load tests - Gaps 8, 9, 10, 26.
 
 Gap 8:  Cold start latency is noted; a warm P95 quality gate is verified.
 Gap 9:  Memory leak check via tracemalloc over repeated calls.
-Gap 10: CPU spike test — measures elapsed time over a batch.
-Gap 26: Sustained load test (slow marker) — 200 sequential calls stay stable.
+Gap 10: CPU spike test - measures elapsed time over a batch.
+Gap 26: Sustained load test (slow marker) - 200 sequential calls stay stable.
 """
 
 import gc
@@ -13,8 +13,8 @@ import concurrent.futures
 
 import pytest
 
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process, sanitize
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process, sanitize
 
 from conftest import output_of
 
@@ -29,7 +29,7 @@ def test_cold_start_is_noted_as_expected():
     First call may be slow (~14s) due to imports/warmup. This test documents
     the expected behavior and asserts that subsequent calls are fast.
     """
-    # First call (cold): no gate — we just time it and document
+    # First call (cold): no gate - we just time it and document
     t0 = time.monotonic()
     process("What is the capital of France?")
     cold_ms = (time.monotonic() - t0) * 1000
@@ -88,7 +88,7 @@ def test_memory_not_growing_over_repeated_calls():
 
     # Gate: less than 50 MB of net allocations
     assert total_growth_mb < 50, (
-        f"Memory grew by {total_growth_mb:.1f} MB over 30 calls — possible leak"
+        f"Memory grew by {total_growth_mb:.1f} MB over 30 calls - possible leak"
     )
 
 
@@ -131,7 +131,7 @@ def test_cpu_time_batch_under_threshold():
         process(p, mode="balanced")
     elapsed = time.monotonic() - t0
     print(f"20 prompts sequential wall-clock: {elapsed:.2f}s")
-    assert elapsed < 60, f"20 prompts took {elapsed:.1f}s — exceeds 60s budget"
+    assert elapsed < 60, f"20 prompts took {elapsed:.1f}s - exceeds 60s budget"
 
 
 def test_concurrent_cpu_no_crash():
@@ -221,4 +221,4 @@ def test_sustained_throughput_target():
         process(f"Summarize report number {i} for the board.", mode="lite")
     elapsed = time.monotonic() - t0
     print(f"50 process(mode=lite) calls: {elapsed:.2f}s")
-    assert elapsed < 120, f"50 calls took {elapsed:.1f}s — throughput too low"
+    assert elapsed < 120, f"50 calls took {elapsed:.1f}s - throughput too low"

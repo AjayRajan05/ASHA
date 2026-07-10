@@ -1,7 +1,7 @@
 """PII secret detection and masking tests."""
 
-from privysha import sanitize
-from privysha.core.pii_pipeline.pii_pipeline import PIIPipeline
+from asha import sanitize
+from asha.core.pii_pipeline.pii_pipeline import PIIPipeline
 
 
 def test_sanitize_masks_api_key():

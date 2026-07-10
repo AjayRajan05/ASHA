@@ -1,8 +1,16 @@
 # Roadmap
 
-Forward-looking plan from **v0.4.1** (June 2026). Dates are estimates.
+Forward-looking plan from **v0.4.2** (July 2026). Dates are estimates.
 
 ---
+
+## Shipped in v0.4.2
+
+- Package rename: `privysha` → `asha` (PyPI, imports, CLI)
+- **ANCHOR** mission-aware agent governance (`anchor()`, guards, sandbox, human approval)
+- Framework adapters: CrewAI, LangChain, AutoGen, LlamaIndex, MCP, LangGraph, generic
+- CI/publish workflows updated for `asha` package layout
+- Integration test job with optional framework deps in CI
 
 ## Shipped in v0.4.1
 
@@ -10,18 +18,17 @@ Forward-looking plan from **v0.4.1** (June 2026). Dates are estimates.
 - `PromptProcessor` as sole orchestrator (security → compile → optimize)
 - Typed `ProcessResult` / `SanitizeResult` / `OptimizeResult`
 - Unified `mode=` safety semantics
-- `runtime/resolve.py` — no compat on hot path
+- `runtime/resolve.py` - no compat on hot path
 - Architecture boundary tests in CI
 - Dead legacy code removed (`Pipeline`, `ModelRouter`, `debug/` package, etc.)
-- `wrap_llm` / `auto_patch` in `privysha.integrations`
+- `wrap_llm` / `auto_patch` in `asha.integrations`
 
 ---
 
 ## v0.5.x (target: H2 2026)
 
-- API freeze — deprecation warnings only, no breaking removals
-- Docs and examples fully aligned to 0.4.1+
-- Integration test matrix with optional deps in CI
+- API freeze - deprecation warnings only, no breaking removals
+- Container sandbox backends (`docker`, `bwrap`)
 - Prompt caching for repeated patterns
 - Expanded international PII formats
 - PyPI classifier → Beta
@@ -43,7 +50,8 @@ Forward-looking plan from **v0.4.1** (June 2026). Dates are estimates.
 
 | Feature | Module |
 |---------|--------|
-| PrivyFit local advisor | `runtime/local_advisor/` |
+| ANCHOR framework adapters (non-CrewAI) | `runtime/anchor/adapters/` |
+| AshaFit local advisor | `runtime/local_advisor/` |
 | Hybrid ML PII | `core/hybrid_pii.py` + `pii_pipeline/` |
 | `auto_patch()` | `integrations/auto_patch.py` |
 | Framework middleware | `integrations/fastapi`, `langchain`, etc. |
@@ -55,6 +63,6 @@ Forward-looking plan from **v0.4.1** (June 2026). Dates are estimates.
 - Cost-aware multi-model routing
 - Prometheus metrics export expansion
 - Prompt caching engine
-- Additional framework adapters
+- Native function-calling in `asha.Agent` tool loop
 
 See [developer-preview.md](developer-preview.md) for current limitations.

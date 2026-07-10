@@ -1,4 +1,4 @@
-"""LlamaIndex integration tests — Gap 18.
+"""LlamaIndex integration tests - Gap 18.
 
 Tests the LlamaIndex plugin module.  wrap_query_engine and related utilities
 are tested via mock objects; the actual llama_index package is optional.
@@ -6,7 +6,7 @@ are tested via mock objects; the actual llama_index package is optional.
 
 import pytest
 
-from privysha.utils.dropin import process
+from asha.utils.dropin import process
 
 
 # ---------------------------------------------------------------------------
@@ -15,21 +15,21 @@ from privysha.utils.dropin import process
 
 
 def test_llamaindex_plugin_importable():
-    from privysha.integrations.llamaindex import plugin  # noqa: F401
+    from asha.integrations.llamaindex import plugin  # noqa: F401
 
     assert plugin is not None
 
 
 def test_llamaindex_plugin_exports_wrap_query_engine():
-    from privysha.integrations.llamaindex.plugin import wrap_query_engine
+    from asha.integrations.llamaindex.plugin import wrap_query_engine
 
     assert callable(wrap_query_engine)
 
 
-def test_llamaindex_plugin_exports_privysha_llm():
-    from privysha.integrations.llamaindex.plugin import PrivySHALLM
+def test_llamaindex_plugin_exports_asha_llm():
+    from asha.integrations.llamaindex.plugin import ASHALLM
 
-    assert PrivySHALLM is not None
+    assert ASHALLM is not None
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ def test_llamaindex_plugin_exports_privysha_llm():
 
 
 def test_wrap_query_engine_returns_wrapped():
-    from privysha.integrations.llamaindex.plugin import wrap_query_engine
+    from asha.integrations.llamaindex.plugin import wrap_query_engine
 
     responses = []
 
@@ -65,7 +65,7 @@ def _make_query_bundle(query_str: str):
 def test_wrap_query_engine_processes_query():
     """Requires llama_index for the QueryBundle reconstruction inside the plugin."""
     pytest.importorskip("llama_index.core")
-    from privysha.integrations.llamaindex.plugin import wrap_query_engine
+    from asha.integrations.llamaindex.plugin import wrap_query_engine
     from llama_index.core.schema import QueryBundle
 
     received = []
@@ -82,9 +82,9 @@ def test_wrap_query_engine_processes_query():
 
 
 def test_wrap_query_engine_masks_pii():
-    """PII in queries should be masked — requires llama_index for QueryBundle."""
+    """PII in queries should be masked - requires llama_index for QueryBundle."""
     pytest.importorskip("llama_index.core")
-    from privysha.integrations.llamaindex.plugin import wrap_query_engine
+    from asha.integrations.llamaindex.plugin import wrap_query_engine
     from llama_index.core.schema import QueryBundle
 
     received = []
@@ -108,6 +108,6 @@ def test_wrap_query_engine_masks_pii():
 
 def test_llamaindex_real_import_smoke():
     pytest.importorskip("llama_index")
-    from privysha.integrations.llamaindex.plugin import wrap_query_engine
+    from asha.integrations.llamaindex.plugin import wrap_query_engine
 
     assert callable(wrap_query_engine)

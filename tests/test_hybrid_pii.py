@@ -2,9 +2,9 @@
 
 import os
 
-from privysha import process
-from privysha.core.policy_config import PolicyConfig
-from privysha.types.results import ProcessResult
+from asha import process
+from asha.core.policy_config import PolicyConfig
+from asha.types.results import ProcessResult
 
 from conftest import output_of
 
@@ -17,7 +17,7 @@ def test_hybrid_pii_mode_runs_or_falls_back():
     )
     assert isinstance(result, ProcessResult)
     out = output_of(result)
-    if os.environ.get("PRIVYSHA_DISABLE_ML") == "1":
+    if os.environ.get("ASHA_DISABLE_ML") == "1":
         assert "john@company.com" not in out
     else:
         assert isinstance(out, str)

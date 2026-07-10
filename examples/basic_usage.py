@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Basic Agent usage (v0.4.1). No API keys — uses mock adapter."""
+"""Basic Agent usage (v0.4.2). No API keys - uses mock adapter."""
 
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(model="mock", privacy=True, token_budget=1200)
 

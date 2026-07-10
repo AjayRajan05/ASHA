@@ -1,13 +1,13 @@
 # Examples
 
-**PrivySHA v0.4.1** — copy-paste patterns with valid imports.
+**ASHA v0.4.2** - copy-paste patterns with valid imports.
 
 ---
 
 ## Basic processing
 
 ```python
-from privysha import process
+from asha import process
 
 result = process("My email is john@example.com. Analyze this dataset.")
 print(result)                          # str → optimized output
@@ -20,12 +20,12 @@ print(result.metrics.token_reduction_pct)
 ## Strict mode (regulated workloads)
 
 ```python
-from privysha import process
+from asha import process
 
 result = process("Sensitive prompt with PII", mode="strict")
 ```
 
-Raises `PrivySHAProcessingError` on total failure instead of degraded fallback.
+Raises `ASHAProcessingError` on total failure instead of degraded fallback.
 
 ---
 
@@ -33,7 +33,7 @@ Raises `PrivySHAProcessingError` on total failure instead of degraded fallback.
 
 ```python
 import os
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 import openai
 
 os.environ["OPENAI_API_KEY"] = "your-key"
@@ -50,8 +50,8 @@ response = client.chat.completions.create(
 ## Security only
 
 ```python
-from privysha import sanitize
-from privysha.core.policy_config import PolicyConfig
+from asha import sanitize
+from asha.core.policy_config import PolicyConfig
 
 result = sanitize(
     "Contact john@corp.com",
@@ -66,7 +66,7 @@ print(result.security.masking_map)
 ## Optimize only
 
 ```python
-from privysha import optimize
+from asha import optimize
 
 result = optimize("Hey bro can you please analyze this dataset")
 print(result.output)
@@ -77,8 +77,8 @@ print(result.output)
 ## Hybrid PII
 
 ```python
-from privysha import process
-from privysha.core.policy_config import PolicyConfig
+from asha import process
+from asha.core.policy_config import PolicyConfig
 
 result = process(
     "Contact john@example.com",
@@ -86,14 +86,14 @@ result = process(
 )
 ```
 
-Requires `pip install privysha[ml]`.
+Requires `pip install asha[ml]`.
 
 ---
 
 ## Agent with mock (no API key)
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(model="mock", privacy=True)
 print(agent.run("Summarize sales data from john@example.com"))
@@ -104,7 +104,7 @@ print(agent.run("Summarize sales data from john@example.com"))
 ## Agent with tracing
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(model="mock")
 result = agent.run("prompt", trace=True)
@@ -117,7 +117,7 @@ print(result.response)
 ## Smart routing
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(
     model="gpt-4o-mini",
@@ -135,7 +135,7 @@ agent.run("Analyze Q1 revenue", task_type="analysis")
 
 ```python
 import asyncio
-from privysha.utils.dropin import process_async
+from asha.utils.dropin import process_async
 
 async def main():
     result = await process_async("prompt", mode="balanced")
@@ -149,9 +149,9 @@ asyncio.run(main())
 ## Trace and diff
 
 ```python
-from privysha import process
+from asha import process
 
-result = process("john@x.com — analyze", trace=True, debug=True)
+result = process("john@x.com - analyze", trace=True, debug=True)
 print(result.trace)
 print(result.diff)
 ```
@@ -161,7 +161,7 @@ print(result.diff)
 ## Local model advisor (preview)
 
 ```python
-from privysha.runtime.local_advisor.advisor import recommend_local_model
+from asha.runtime.local_advisor.advisor import recommend_local_model
 
 report = recommend_local_model(
     prompts=["Summarize with john@x.com"],

@@ -1,7 +1,7 @@
 """Tests for Agent helper methods."""
 
-from privysha import Agent
-from privysha.types.results import MetricsInfo, ProcessResult
+from asha import Agent
+from asha.types.results import MetricsInfo, ProcessResult
 
 
 class MockAdapter:

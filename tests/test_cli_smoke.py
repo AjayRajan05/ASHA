@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from click.testing import CliRunner
 
-from privysha.cli.main import cli, examples, quick_test
+from asha.cli.main import cli, examples, quick_test
 
 
 def test_quick_test_command():

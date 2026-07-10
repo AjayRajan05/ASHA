@@ -1,10 +1,10 @@
 # Compliance
 
-**PrivySHA v0.4.1** — privacy tooling, not a certified compliance product.
+**ASHA v0.4.2** - privacy tooling, not a certified compliance product.
 
 ---
 
-## What PrivySHA provides
+## What ASHA provides
 
 - PII detection and masking before LLM calls
 - Configurable fail-closed mode (`mode="strict"`)
@@ -13,7 +13,7 @@
 
 ---
 
-## What PrivySHA does not provide
+## What ASHA does not provide
 
 - Legal compliance certification (GDPR, HIPAA, SOC 2, etc.)
 - Data processing agreements or audit reports
@@ -24,12 +24,12 @@
 
 ## Recommended practices
 
-1. **Pin the version** — `privysha==0.4.1`
+1. **Pin the version** - `asha==0.4.2`
 2. **Use `mode="strict"`** for regulated paths where failure must block
 3. **Prefer `wrap_llm()`** over `auto_patch()` for scoped control
-4. **Log `result.degraded`** in balanced mode — indicates fallback was used
-5. **Review mask formats** — `[EMAIL_HASH]_*` tokens, not reversible by default
-6. **Combine with org controls** — access policies, retention, DPA with LLM vendor
+4. **Log `result.degraded`** in balanced mode - indicates fallback was used
+5. **Review mask formats** - `[EMAIL_HASH]_*` tokens, not reversible by default
+6. **Combine with org controls** - access policies, retention, DPA with LLM vendor
 
 ---
 
@@ -38,11 +38,11 @@
 Only enable when you have a documented need to restore values in LLM output:
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 sanitize(prompt, policy=PolicyConfig(reversible=True))
 ```
 
-Store `masking_map` securely — it can reverse pseudonymization.
+Store `masking_map` securely - it can reverse pseudonymization.
 
 ---
 

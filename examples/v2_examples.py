@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Agent and routing patterns (v0.4.1). Uses mock adapter — no API keys required.
+Agent and routing patterns (v0.4.2). Uses mock adapter - no API keys required.
 
 Replaces the legacy v2 import path with the current public Agent API.
 """
 
-from privysha import Agent, optimize, process, sanitize
-from privysha.core.policy_config import PolicyConfig
-from privysha.exceptions import PrivySHAProcessingError
+from asha import Agent, optimize, process, sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.exceptions import ASHAProcessingError
 
 
 def example_basic_agent() -> None:
@@ -26,7 +26,7 @@ def example_trace() -> None:
     print("2. Agent with trace=True (AgentResult)")
     print("=" * 60)
     agent = Agent(model="mock", privacy=True, token_budget=1200)
-    prompt = "Hey bro analyze dataset — contact john@example.com"
+    prompt = "Hey bro analyze dataset - contact john@example.com"
     result = agent.run(prompt, trace=True)
     print(f"Processed : {result.output}")
     print(f"Response  : {result.response}")
@@ -71,7 +71,7 @@ def example_security_modes() -> None:
             safe = result.security.safe if result.security else True
             print(f"Safe  : {safe}")
             print(f"Out   : {result.output[:80]}...")
-        except PrivySHAProcessingError:
+        except ASHAProcessingError:
             print("Safe  : False (blocked by strict mode)")
         print()
 
@@ -97,7 +97,7 @@ def example_optimize_and_sanitize() -> None:
 
 
 def main() -> None:
-    print("PrivySHA Agent examples (v0.4.1)")
+    print("ASHA Agent examples (v0.4.2)")
     print()
     example_basic_agent()
     example_trace()

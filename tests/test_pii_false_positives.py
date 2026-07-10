@@ -1,8 +1,8 @@
 """False positive regression tests."""
 
-from privysha import process, sanitize
-from privysha.core.security.pii_detector import PIIDetector
-from privysha.types.results import ProcessResult, SanitizeResult
+from asha import process, sanitize
+from asha.core.security.pii_detector import PIIDetector
+from asha.types.results import ProcessResult, SanitizeResult
 
 from conftest import output_of
 

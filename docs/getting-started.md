@@ -1,13 +1,13 @@
 # Getting Started
 
-**PrivySHA v0.4.1** — install, run your first prompt, wrap a client.
+**ASHA v0.4.2** - install, run your first prompt, wrap a client.
 
 ---
 
 ## Install
 
 ```bash
-pip install privysha
+pip install asha
 ```
 
 Requires **Python 3.10+**.
@@ -15,19 +15,19 @@ Requires **Python 3.10+**.
 ### Optional extras
 
 ```bash
-pip install privysha[openai]         # OpenAI adapter + wrap_llm
-pip install privysha[anthropic]      # Anthropic
-pip install privysha[gemini]         # Google Gemini
-pip install privysha[ml]             # Hybrid PII (spaCy + transformers)
-pip install privysha[integrations]   # Framework middleware
-pip install privysha[local-advisor]  # PrivyFit catalog
-pip install privysha[all]            # Everything
+pip install asha[openai]         # OpenAI adapter + wrap_llm
+pip install asha[anthropic]      # Anthropic
+pip install asha[gemini]         # Google Gemini
+pip install asha[ml]             # Hybrid PII (spaCy + transformers)
+pip install asha[integrations]   # Framework middleware
+pip install asha[local-advisor]  # AshaFit catalog
+pip install asha[all]            # Everything
 ```
 
 ### Verify
 
 ```python
-from privysha import process
+from asha import process
 
 result = process("Hello world")
 print(result.output)
@@ -38,7 +38,7 @@ print(result.output)
 ## Your first prompt
 
 ```python
-from privysha import process
+from asha import process
 
 result = process("My email is john@gmail.com. Analyze this dataset.")
 print(result)                              # optimized string
@@ -53,7 +53,7 @@ print(result.metrics.token_reduction_pct)  # e.g. 12.0
 ## Wrap an LLM client
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 import openai
 
 client = wrap_llm(openai.OpenAI(), mode="balanced")
@@ -64,7 +64,7 @@ response = client.chat.completions.create(
 )
 ```
 
-Requires `pip install privysha[openai]` and `OPENAI_API_KEY`.
+Requires `pip install asha[openai]` and `OPENAI_API_KEY`.
 
 Use `mode="off"` to disable preprocessing. Use `mode="strict"` for fail-closed behavior.
 
@@ -74,10 +74,10 @@ Use `mode="off"` to disable preprocessing. Use `mode="strict"` for fail-closed b
 
 | Mode | Behavior |
 |------|----------|
-| `balanced` | Default — security + optimization, fail-open on errors |
-| `strict` | Fail-closed — raises `PrivySHAProcessingError` on total failure |
+| `balanced` | Default - security + optimization, fail-open on errors |
+| `strict` | Fail-closed - raises `ASHAProcessingError` on total failure |
 | `lite` | Minimal policy features, same fail-open semantics as balanced |
-| `off` | Passthrough — prompt unchanged |
+| `off` | Passthrough - prompt unchanged |
 
 ```python
 process(prompt, mode="strict")
@@ -91,7 +91,7 @@ process(prompt, mode="off")
 PII mode, reversible masking, and other knobs use `PolicyConfig`:
 
 ```python
-from privysha.core.policy_config import PolicyConfig
+from asha.core.policy_config import PolicyConfig
 
 process(
     prompt,
@@ -99,14 +99,14 @@ process(
 )
 ```
 
-`pii_mode="hybrid"` requires `pip install privysha[ml]`.
+`pii_mode="hybrid"` requires `pip install asha[ml]`.
 
 ---
 
 ## Separate functions
 
 ```python
-from privysha import sanitize, optimize
+from asha import sanitize, optimize
 
 sanitize("john@x.com")   # security only → SanitizeResult
 optimize("long prompt")  # tokens only → OptimizeResult
@@ -119,7 +119,7 @@ optimize("long prompt")  # tokens only → OptimizeResult
 Preprocess and call an LLM in one step:
 
 ```python
-from privysha import Agent
+from asha import Agent
 
 agent = Agent(model="mock", privacy=True)
 print(agent.run("Analyze sales with john@example.com"))
@@ -140,11 +140,11 @@ print(result.response)
 ## CLI
 
 ```bash
-privysha "My email is john@gmail.com — analyze data"
-privysha "prompt" --debug --mode strict
-privysha quick-test
-privysha benchmark --save
-privysha recommend --prompt "Analyze dataset" --gpu "RTX 4090"
+asha "My email is john@gmail.com - analyze data"
+asha "prompt" --debug --mode strict
+asha quick-test
+asha benchmark --save
+asha recommend --prompt "Analyze dataset" --gpu "RTX 4090"
 ```
 
 ---
@@ -163,7 +163,7 @@ export GOOGLE_API_KEY=...
 
 ## Next steps
 
-1. [Core Concepts](core-concepts.md) — results, modes, policy
-2. [API Reference](api-reference.md) — full signatures
-3. [Security](security.md) — PII and fail-closed behavior
-4. [Migration v0.4](migration-v0.4.md) — if upgrading from 0.3.x
+1. [Core Concepts](core-concepts.md) - results, modes, policy
+2. [API Reference](api-reference.md) - full signatures
+3. [Security](security.md) - PII and fail-closed behavior
+4. [Migration v0.4](migration-v0.4.md) - if upgrading from 0.3.x

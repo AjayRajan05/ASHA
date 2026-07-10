@@ -1,10 +1,10 @@
 """Tests for PromptProcessor orchestration (security + compile + optimize)."""
 
 import pytest
-from privysha import process
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
-from privysha.runtime.processor import PromptProcessor
-from privysha.types.results import ProcessResult
+from asha import process
+from asha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.runtime.processor import PromptProcessor
+from asha.types.results import ProcessResult
 
 
 def test_processor_full_flow():

@@ -4,16 +4,16 @@ import asyncio
 
 import pytest
 
-from privysha import process, sanitize, optimize
-from privysha.integrations import wrap_llm
-from privysha.types import (
+from asha import process, sanitize, optimize
+from asha.integrations import wrap_llm
+from asha.types import (
     AgentResult,
     OptimizeResult,
     ProcessResult,
     SanitizeResult,
 )
-from privysha.exceptions import PrivySHAWrapError
-from privysha.utils.dropin import optimize_async, process_async, sanitize_async
+from asha.exceptions import ASHAWrapError
+from asha.utils.dropin import optimize_async, process_async, sanitize_async
 
 
 def test_process_returns_process_result():
@@ -53,7 +53,7 @@ def test_sanitize_observable_failure(monkeypatch):
         raise RuntimeError("detector down")
 
     monkeypatch.setattr(
-        "privysha.core.engines.run_security_only",
+        "asha.core.engines.run_security_only",
         boom,
     )
     result = sanitize("test@example.com")
@@ -67,7 +67,7 @@ def test_process_balanced_failure_no_raw_pii(monkeypatch):
         raise RuntimeError("security down")
 
     monkeypatch.setattr(
-        "privysha.core.security.service.run_security",
+        "asha.core.security.service.run_security",
         boom,
     )
     result = process("Email john@example.com now", mode="balanced")
@@ -91,7 +91,7 @@ def test_optimize_async_returns_optimize_result():
 
 
 def test_agent_trace_returns_agent_result():
-    from privysha import Agent
+    from asha import Agent
 
     agent = Agent(model="mock", privacy=True)
     out = agent.run("hello", trace=True)

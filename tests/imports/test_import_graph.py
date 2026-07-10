@@ -10,30 +10,30 @@ import importlib
 
 
 def test_core_engines_importable() -> None:
-    mod = importlib.import_module("privysha.core.engines")
+    mod = importlib.import_module("asha.core.engines")
     assert callable(mod.sanitize_text)
     assert callable(mod.compile_prompt)
     assert callable(mod.optimize_tokens)
 
 
 def test_runtime_prompt_processor_importable() -> None:
-    mod = importlib.import_module("privysha.runtime")
+    mod = importlib.import_module("asha.runtime")
     assert hasattr(mod, "PromptProcessor")
     assert hasattr(mod, "ExecutionProfile")
     assert not hasattr(mod, "Processor")
 
 
 def test_integrations_wrap_llm_importable() -> None:
-    mod = importlib.import_module("privysha.integrations")
+    mod = importlib.import_module("asha.integrations")
     assert callable(mod.wrap_llm)
     assert callable(mod.auto_patch)
 
 
 def test_compat_legacy_results_importable() -> None:
-    mod = importlib.import_module("privysha.compat.legacy_results")
+    mod = importlib.import_module("asha.compat.legacy_results")
     assert callable(mod.to_legacy_pipeline_dict)
 
 
 def test_types_results_importable() -> None:
-    mod = importlib.import_module("privysha.types")
+    mod = importlib.import_module("asha.types")
     assert hasattr(mod, "ProcessResult")

@@ -2,8 +2,8 @@
 
 import json
 
-from privysha.types.results import ProcessResult
-from privysha.utils.dropin import process
+from asha.types.results import ProcessResult
+from asha.utils.dropin import process
 
 from conftest import output_of
 

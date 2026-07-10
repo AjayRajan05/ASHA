@@ -1,6 +1,6 @@
 # Architecture
 
-**PrivySHA v0.4.1** — compiler-inspired prompt processing with strict layer boundaries.
+**ASHA v0.4.2** - compiler-inspired prompt processing with strict layer boundaries.
 
 ---
 
@@ -31,7 +31,7 @@ For drop-in usage via `process()`, you interact with the pipeline as a black box
 ## Package layout
 
 ```
-src/privysha/
+src/asha/
 ├── __init__.py              # 5 exports: process, sanitize, optimize, Agent, __version__
 ├── core/                    # engines, policy, security, compiler, _ir (internal)
 │   ├── engines.py           # sanitize_text, compile_prompt, optimize_tokens
@@ -40,15 +40,15 @@ src/privysha/
 │   ├── safety.py            # SafetyMode from policy mode
 │   ├── security/            # PII, threats, masking
 │   ├── compiler/            # PromptCompiler, MSDPC optimizer
-│   ├── _ir/                 # Internal IR — not public API
+│   ├── _ir/                 # Internal IR - not public API
 │   └── pii_pipeline/        # Multi-phase PII detection (not main pipeline stages)
 ├── runtime/                 # orchestration
-│   ├── processor.py         # PromptProcessor — only orchestrator
+│   ├── processor.py         # PromptProcessor - only orchestrator
 │   ├── resolve.py           # Hot-path argument resolution for process/sanitize
 │   ├── agent.py             # Agent
 │   ├── adapters/            # Provider-specific LLM clients
 │   ├── routing/             # Model selection (Agent concern)
-│   └── local_advisor/       # PrivyFit local model recommendations
+│   └── local_advisor/       # AshaFit local model recommendations
 ├── integrations/            # wrap_llm, auto_patch, framework middleware
 │   ├── llm_wrap.py
 │   ├── auto_patch.py
@@ -59,7 +59,7 @@ src/privysha/
 │   └── warnings.py
 ├── types/                   # ProcessResult, SanitizeResult, OptimizeResult
 ├── utils/                   # dropin (process/sanitize/optimize), unmask
-└── cli/                     # privysha CLI (ancillary)
+└── cli/                     # asha CLI (ancillary)
 ```
 
 ---
@@ -72,8 +72,8 @@ src/privysha/
 | `runtime/` | `core`, `types` | `integrations`, `compat` |
 | `types/` | `core` (minimal) | `compat`, `runtime`, `integrations` |
 | `utils/` | `runtime`, `core`, `types` | `compat` |
-| `integrations/` | `runtime`, `core`, `utils` | — |
-| `compat/` | anything | — (legacy helpers only) |
+| `integrations/` | `runtime`, `core`, `utils` | - |
+| `compat/` | anything | - (legacy helpers only) |
 
 Enforced by `tests/architecture/test_boundaries.py`.
 
@@ -83,13 +83,13 @@ Enforced by `tests/architecture/test_boundaries.py`.
 
 ### Drop-in first
 
-Primary adoption: `process()`, `sanitize()`, `optimize()`. Integrations via `privysha.integrations.wrap_llm`.
+Primary adoption: `process()`, `sanitize()`, `optimize()`. Integrations via `asha.integrations.wrap_llm`.
 
 ### Safety modes
 
 | Mode | Behavior |
 |------|----------|
-| `strict` | Fail-closed — raises on total failure |
+| `strict` | Fail-closed - raises on total failure |
 | `balanced` | Fail-open with rule-based PII fallback (default) |
 | `lite` | Minimal policy features; same fail-open semantics as balanced |
 | `off` | Passthrough |
@@ -107,7 +107,7 @@ No `compat/` on the hot path.
 Opt-in only:
 
 ```python
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.compat.legacy_results import to_legacy_pipeline_dict
 legacy = to_legacy_pipeline_dict(process("prompt", include_legacy_detail=True))
 ```
 
@@ -121,17 +121,17 @@ legacy = to_legacy_pipeline_dict(process("prompt", include_legacy_detail=True))
 
 ## PII detection architecture
 
-1. **Rule-based** (`core/security/`) — default, no downloads
-2. **Multi-phase pipeline** (`core/pii_pipeline/stages/`) — normalization → detection → verification → scoring → masking
-3. **Hybrid ML** (`core/hybrid_pii.py`) — optional via `pip install privysha[ml]`
+1. **Rule-based** (`core/security/`) - default, no downloads
+2. **Multi-phase pipeline** (`core/pii_pipeline/stages/`) - normalization → detection → verification → scoring → masking
+3. **Hybrid ML** (`core/hybrid_pii.py`) - optional via `pip install asha[ml]`
 
 ---
 
 ## Observability
 
-- **TraceContext** — `process(..., trace=True)`
-- **OpenTelemetry** — optional via `pip install privysha[otel]`
-- **DebugStage** — renamed from `PipelineStage` in `debug/`
+- **TraceContext** - `process(..., trace=True)`
+- **OpenTelemetry** - optional via `pip install asha[otel]`
+- **DebugStage** - renamed from `PipelineStage` in `debug/`
 
 ---
 

@@ -1,19 +1,19 @@
 # Integrations
 
-**PrivySHA v0.4.1** — framework middleware and LLM wrapping.
+**ASHA v0.4.2** - framework middleware and LLM wrapping.
 
 ---
 
 ## wrap_llm (recommended)
 
 ```python
-from privysha.integrations import wrap_llm
+from asha.integrations import wrap_llm
 import openai
 
 client = wrap_llm(openai.OpenAI(), mode="balanced")
 ```
 
-Import from **`privysha.integrations`**, not root.
+Import from **`asha.integrations`**, not root.
 
 | Parameter | Default | Notes |
 |-----------|---------|-------|
@@ -25,7 +25,7 @@ Import from **`privysha.integrations`**, not root.
 ## auto_patch (use with caution)
 
 ```python
-from privysha.integrations import auto_patch, disable_auto_patch
+from asha.integrations import auto_patch, disable_auto_patch
 
 auto_patch(mode="strict")
 # ... application code ...
@@ -41,28 +41,28 @@ Globally monkey-patches SDKs. Prefer per-client `wrap_llm()` in production.
 Install extras first:
 
 ```bash
-pip install privysha[integrations]
-# or specific: privysha[fastapi], privysha[langchain], etc.
+pip install asha[integrations]
+# or specific: asha[fastapi], asha[langchain], etc.
 ```
 
 | Framework | Module |
 |-----------|--------|
-| FastAPI | `privysha.integrations.fastapi` |
-| Flask | `privysha.integrations.flask` |
-| Django | `privysha.integrations.django` |
-| LangChain | `privysha.integrations.langchain` |
-| LlamaIndex | `privysha.integrations.llamaindex` |
-| Instructor | `privysha.integrations.composition_strategy` |
-| OpenTelemetry | `privysha.integrations.otel` |
+| FastAPI | `asha.integrations.fastapi` |
+| Flask | `asha.integrations.flask` |
+| Django | `asha.integrations.django` |
+| LangChain | `asha.integrations.langchain` |
+| LlamaIndex | `asha.integrations.llamaindex` |
+| Instructor | `asha.integrations.composition_strategy` |
+| OpenTelemetry | `asha.integrations.otel` |
 
-Middleware uses `mode="balanced"` or `mode="off"` — not the removed `privacy=` kwarg.
+Middleware uses `mode="balanced"` or `mode="off"` - not the removed `privacy=` kwarg.
 
 ---
 
 ## Composition helpers
 
 ```python
-from privysha.integrations.composition_strategy import (
+from asha.integrations.composition_strategy import (
     compose_with_instructor,
     compose_with_langchain,
 )
@@ -77,7 +77,7 @@ Requires optional deps (`instructor`, `langchain`).
 Integration tests skip when optional deps are missing:
 
 ```bash
-pip install privysha[integrations]
+pip install asha[integrations]
 pytest tests/test_fastapi_integration.py -q
 ```
 
@@ -85,5 +85,5 @@ pytest tests/test_fastapi_integration.py -q
 
 ## Related
 
-- [model-gateway.md](model-gateway.md) — adapters
+- [model-gateway.md](model-gateway.md) - adapters
 - [api-reference.md](api-reference.md)

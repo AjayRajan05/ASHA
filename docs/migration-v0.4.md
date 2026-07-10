@@ -1,6 +1,6 @@
-# Migration Guide — v0.4.x
+# Migration Guide - v0.4.x
 
-Upgrade from PrivySHA **0.3.x** (or early 0.4.0) to **0.4.1**.
+Upgrade from ASHA **0.3.x** (or early 0.4.0) to **0.4.2**.
 
 ---
 
@@ -8,16 +8,16 @@ Upgrade from PrivySHA **0.3.x** (or early 0.4.0) to **0.4.1**.
 
 ```python
 # Before (0.3)
-text = process("a@b.com — analyze")  # sometimes str
+text = process("a@b.com - analyze")  # sometimes str
 result = process("...", return_metrics=True)
 print(result["optimized"])
 
-# After (0.4.1)
-result = process("a@b.com — analyze")
+# After (0.4.2)
+result = process("a@b.com - analyze")
 print(result.output)
 print(result.metrics.token_reduction_pct)
 print(result.security.pii_detected)
-str(result)  # still works — equals result.output
+str(result)  # still works - equals result.output
 ```
 
 | Old dict key | New attribute |
@@ -31,7 +31,7 @@ str(result)  # still works — equals result.output
 Legacy dict: `result.to_dict()` or:
 
 ```python
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.compat.legacy_results import to_legacy_pipeline_dict
 legacy = to_legacy_pipeline_dict(process("...", include_legacy_detail=True))
 ```
 
@@ -41,13 +41,13 @@ legacy = to_legacy_pipeline_dict(process("...", include_legacy_detail=True))
 
 ```python
 # Before
-from privysha import wrap_llm, Pipeline, Processor, ProcessResult
+from asha import wrap_llm, Pipeline, Processor, ProcessResult
 
 # After
-from privysha import process, sanitize, optimize, Agent
-from privysha.integrations import wrap_llm, auto_patch
-from privysha.runtime import PromptProcessor
-from privysha.types import ProcessResult
+from asha import process, sanitize, optimize, Agent
+from asha.integrations import wrap_llm, auto_patch
+from asha.runtime import PromptProcessor
+from asha.types import ProcessResult
 ```
 
 Removed symbols raise **`AttributeError`** at root.
@@ -77,14 +77,14 @@ Unknown kwargs raise **`TypeError`**.
 ## 4. optimize() is tokens-only
 
 ```python
-optimize(prompt)  # no PII, no compile — OptimizeResult only
+optimize(prompt)  # no PII, no compile - OptimizeResult only
 process(prompt)   # full path
 sanitize(prompt)  # security only
 ```
 
 ---
 
-## 5. wrap_llm() — mode only
+## 5. wrap_llm() - mode only
 
 ```python
 # Before
@@ -100,15 +100,15 @@ wrap_llm(client, mode="off")
 
 ```python
 # Before
-from privysha import Pipeline
+from asha import Pipeline
 Pipeline().process("prompt")
 
 # After
-from privysha import process
+from asha import process
 process("prompt")
 
 # Advanced
-from privysha.runtime import PromptProcessor
+from asha.runtime import PromptProcessor
 PromptProcessor().run("prompt", mode="balanced")
 ```
 
@@ -126,9 +126,9 @@ PromptProcessor().run("prompt", mode="balanced")
 
 ## Recommended upgrade steps
 
-1. Pin `privysha==0.4.1`
+1. Pin `asha==0.4.2`
 2. Replace `result["optimized"]` → `result.output`
-3. Move `from privysha import wrap_llm` → `from privysha.integrations import wrap_llm`
+3. Move `from asha import wrap_llm` → `from asha.integrations import wrap_llm`
 4. Replace deprecated kwargs with `mode` / `PolicyConfig`
 5. Remove `Pipeline` / `Processor` usage
 6. Run tests; check `result.degraded` in balanced mode

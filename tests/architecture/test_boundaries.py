@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[2] / "src" / "privysha"
+SRC = Path(__file__).resolve().parents[2] / "src" / "asha"
 
 FORBIDDEN_IMPORTS = {
     "core": {"runtime", "integrations", "compat"},

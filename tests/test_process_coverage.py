@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from privysha.core.policy_config import PolicyConfig
-from privysha.types.results import ProcessResult
-from privysha.utils.dropin import process
+from asha.core.policy_config import PolicyConfig
+from asha.types.results import ProcessResult
+from asha.utils.dropin import process
 
 from conftest import output_of
 

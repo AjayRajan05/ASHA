@@ -1,6 +1,6 @@
 # Processing Flow
 
-**PrivySHA v0.4.1** — three engines, one orchestrator.
+**ASHA v0.4.2** - three engines, one orchestrator.
 
 The old 7-stage `Pipeline` class was removed. `PromptProcessor` runs three core engines in order.
 
@@ -37,7 +37,7 @@ ProcessResult
 | `optimize()` | optimize only |
 
 ```python
-from privysha import process, sanitize, optimize
+from asha import process, sanitize, optimize
 
 process("prompt with john@x.com")
 sanitize("prompt with john@x.com")
@@ -49,13 +49,13 @@ optimize("long verbose prompt please analyze")
 ## Orchestrator
 
 ```python
-from privysha.runtime import PromptProcessor
+from asha.runtime import PromptProcessor
 
 processor = PromptProcessor()
 result = processor.run("prompt", mode="balanced")
 ```
 
-Stage control uses `ExecutionProfile` or `PolicyConfig` — not `security=` / `compile=` / `optimize=` kwargs.
+Stage control uses `ExecutionProfile` or `PolicyConfig` - not `security=` / `compile=` / `optimize=` kwargs.
 
 ---
 
@@ -86,7 +86,7 @@ print(result.trace)
 print(result.diff)
 ```
 
-Uses `core/trace_context.py` — not the removed `PrivySHADebugger`.
+Uses `core/trace_context.py` - not the removed `ASHADebugger`.
 
 ---
 
@@ -95,7 +95,7 @@ Uses `core/trace_context.py` — not the removed `PrivySHADebugger`.
 Opt-in only:
 
 ```python
-from privysha.compat.legacy_results import to_legacy_pipeline_dict
+from asha.compat.legacy_results import to_legacy_pipeline_dict
 
 legacy = to_legacy_pipeline_dict(
     process("prompt", include_legacy_detail=True)
@@ -108,7 +108,7 @@ legacy = to_legacy_pipeline_dict(
 
 ## Related
 
-- [architecture.md](architecture.md) — package layout
-- [core-concepts.md](core-concepts.md) — modes and results
-- [security.md](security.md) — first engine details
-- [optimization.md](optimization.md) — third engine details
+- [architecture.md](architecture.md) - package layout
+- [core-concepts.md](core-concepts.md) - modes and results
+- [security.md](security.md) - first engine details
+- [optimization.md](optimization.md) - third engine details

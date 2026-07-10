@@ -1,6 +1,6 @@
 # Prompt IR
 
-**PrivySHA v0.4.1** — internal intermediate representation.
+**ASHA v0.4.2** - internal intermediate representation.
 
 ---
 
@@ -8,10 +8,10 @@
 
 Prompt IR lives in `core/_ir/`. It is built internally by `compile_prompt()` and used by the compiler and optimizer.
 
-**Do not import** `PromptIR` or `IRBuilder` in application code — the API may change without notice.
+**Do not import** `PromptIR` or `IRBuilder` in application code - the API may change without notice.
 
 ```python
-from privysha import compile_prompt  # NOT available at root
+from asha import compile_prompt  # NOT available at root
 ```
 
 Use `process()` or `optimize()` instead.

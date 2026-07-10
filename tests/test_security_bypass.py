@@ -4,9 +4,9 @@ import base64
 
 import pytest
 
-from privysha.core.security.security_layer import SecurityLayer, ThreatType
-from privysha.types.results import ProcessResult, SanitizeResult
-from privysha.utils.dropin import process, sanitize
+from asha.core.security.security_layer import SecurityLayer, ThreatType
+from asha.types.results import ProcessResult, SanitizeResult
+from asha.utils.dropin import process, sanitize
 
 from conftest import output_of
 

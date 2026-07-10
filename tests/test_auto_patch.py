@@ -6,9 +6,9 @@ import types
 
 import pytest
 
-auto_patch_module = importlib.import_module("privysha.integrations.auto_patch")
+auto_patch_module = importlib.import_module("asha.integrations.auto_patch")
 
-from privysha.integrations.auto_patch import (
+from asha.integrations.auto_patch import (
     _replace_prompt_openai,
     auto_patch,
     disable_auto_patch,
@@ -94,7 +94,7 @@ def test_disable_enable_auto_patch():
 
 
 def test_auto_patch_fail_closed_on_process_error(monkeypatch):
-    from privysha.exceptions import PrivySHAProcessingError
+    from asha.exceptions import ASHAProcessingError
 
     class Completions:
         @staticmethod
@@ -127,7 +127,7 @@ def test_auto_patch_fail_closed_on_process_error(monkeypatch):
     )
 
     auto_patch(providers=["openai"])
-    with pytest.raises(PrivySHAProcessingError):
+    with pytest.raises(ASHAProcessingError):
         Completions.create(
             None,
             messages=[{"role": "user", "content": "original@example.com"}],

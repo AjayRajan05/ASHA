@@ -2,8 +2,8 @@ include README.md
 include LICENSE
 include CHANGELOG.md
 include pyproject.toml
-recursive-include src/privysha *.py
-recursive-include src/privysha *.pyi
+recursive-include src/asha *.py
+recursive-include src/asha *.pyi
 global-exclude *.pyc
 global-exclude __pycache__
 global-exclude .git*

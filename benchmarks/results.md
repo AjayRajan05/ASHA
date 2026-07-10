@@ -1,6 +1,6 @@
-# PrivySHA Performance Benchmarks
+# ASHA Performance Benchmarks
 
-> **Reproducible benchmarks — run locally to verify**
+> **Reproducible benchmarks - run locally to verify**
 >
 > ```bash
 > python benchmarks/run_benchmarks.py --save
@@ -26,7 +26,7 @@ python benchmarks/run_benchmarks.py --config strict --save
 ```
 
 Sample prompts are in `benchmarks/sample_prompts.json`. The harness uses
-`privysha.core.benchmark.BenchmarkHarness` internally.
+`asha.core.benchmark.BenchmarkHarness` internally.
 
 ---
 
@@ -34,8 +34,8 @@ Sample prompts are in `benchmarks/sample_prompts.json`. The harness uses
 
 | Metric | Typical Range | Notes |
 |--------|---------------|-------|
-| Token reduction | 5–15% | Depends on prompt verbosity; structured prompts unchanged |
-| Processing latency | 20–80 ms | Rule-based PII mode, no ML |
+| Token reduction | 5-15% | Depends on prompt verbosity; structured prompts unchanged |
+| Processing latency | 20-80 ms | Rule-based PII mode, no ML |
 | PII detection (rule mode) | High for email/phone/SSN | Validate on your data for compliance use |
 | Fail-safe rate | ~100% | Original prompt returned on component failure |
 
@@ -61,14 +61,14 @@ After:  Contact info masked, redundant phrasing trimmed
 
 ```
 Before: {"task": "summarize", "text": "Quarterly revenue increased 12%."}
-After:  Unchanged — optimizer preserves structured input
+After:  Unchanged - optimizer preserves structured input
 ```
 
 ---
 
 ## Competitive Notes
 
-PrivySHA combines PII masking and token optimization in a single drop-in layer.
+ASHA combines PII masking and token optimization in a single drop-in layer.
 Compare tools on your own prompt set using `benchmarks/run_benchmarks.py`.
 
 ---

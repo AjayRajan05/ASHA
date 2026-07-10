@@ -1,8 +1,8 @@
-# Contributing to PrivySHA
+# Contributing to ASHA
 
 Thank you for your interest in contributing!
 
-> **Project stage:** Developer preview (v0.4.1). We welcome bug reports, documentation fixes, and focused PRs.
+> **Project stage:** Developer preview (v0.4.2). We welcome bug reports, documentation fixes, and focused PRs.
 
 ## What we need most right now
 
@@ -11,15 +11,15 @@ Thank you for your interest in contributing!
 | **Feedback** | Run [examples/developer_preview_demo.py](examples/developer_preview_demo.py) and open an issue |
 | **Bug reports** | Repro steps, Python version, optional `[extras]` used |
 | **Docs & examples** | Clarify setup, add real-world snippets |
-| **Tests** | PII edge cases, adapter smoke tests, PrivyFit scenarios |
+| **Tests** | PII edge cases, adapter smoke tests, AshaFit scenarios |
 | **Large features** | Discuss in an issue before a big PR |
 
-We are **not** looking for drive-by refactors or scope creep in preview — keep PRs focused.
+We are **not** looking for drive-by refactors or scope creep in preview - keep PRs focused.
 
 ## Quick Links
 
 - **Full contributing guide**: [docs/contributing.md](docs/contributing.md)
-- **Security reports**: [SECURITY.md](SECURITY.md) — do not open public issues for vulnerabilities
+- **Security reports**: [SECURITY.md](SECURITY.md) - do not open public issues for vulnerabilities
 - **Code of conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## Getting Started
@@ -38,7 +38,7 @@ pytest
 - Python **3.10+**
 - Follow existing code style (Black, flake8)
 - Add tests for new behavior in `tests/`
-- Keep changes focused — one concern per PR
+- Keep changes focused - one concern per PR
 
 ## Pull Request Checklist
 

@@ -9,18 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.2] - 2026-07-10
+
+### Added
+
+- **Package rename** — `privysha` → `asha` on PyPI and in imports (`from asha import ...`).
+- **ANCHOR runtime** — mission-aware agent governance: action, memory, chain, and plan guards; human approval; OS sandbox (`auto` hooks or `subprocess`).
+- **Framework adapters** — CrewAI, LangChain, AutoGen, LlamaIndex, MCP, LangGraph, `asha.Agent`, and generic duck-typed agents via `anchor()` / `anchor_any()`.
+- **CLI** — `asha` entry point (replaces `privysha`).
+
+### Changed
+
+- Environment variables use `ASHA_*` prefix (`ASHA_DISABLE_ML`, `ASHA_ANCHOR_INTERACTIVE`, …).
+- CI, publish workflows, and smoke tests target `src/asha` and `asha` imports.
+- README and docs aligned with implemented sandbox modes (no unimplemented `docker`/kernel claims).
+
+### Migration
+
+See README **Migration from PrivySHA** — pin `asha==0.4.2` in production.
+
+---
+
 ## [0.4.1] - 2026-06-15
 
 ### Architecture completion (breaking within 0.4.x)
 
-- **Root API frozen** — only `process`, `sanitize`, `optimize`, `Agent`, `__version__`; all lazy root exports removed.
-- **`Pipeline`, `AsyncPipeline`, `Processor` removed** — use `PromptProcessor` and `process()`.
-- **`runtime/resolve.py`** — hot-path argument resolution (no `compat/` on `process()` calls).
-- **`PolicyConfig` fields** — `pii_mode`, `reversible`, `preserve_intent`, `security_level` via `policy=` only.
-- **`security_fail_closed` removed** — use `mode="strict"` / `mode="balanced"`.
-- **Integration safety unified** — `wrap_llm(mode=...)`; `auto_patch(mode="strict")` configurable.
-- **`routing_decision`** — only in `compat/legacy_results` dicts, not runtime hot path.
-- **Architecture tests** — `types/` and `utils/` must not import `compat/`.
+- **Root API frozen** - only `process`, `sanitize`, `optimize`, `Agent`, `__version__`; all lazy root exports removed.
+- **`Pipeline`, `AsyncPipeline`, `Processor` removed** - use `PromptProcessor` and `process()`.
+- **`runtime/resolve.py`** - hot-path argument resolution (no `compat/` on `process()` calls).
+- **`PolicyConfig` fields** - `pii_mode`, `reversible`, `preserve_intent`, `security_level` via `policy=` only.
+- **`security_fail_closed` removed** - use `mode="strict"` / `mode="balanced"`.
+- **Integration safety unified** - `wrap_llm(mode=...)`; `auto_patch(mode="strict")` configurable.
+- **`routing_decision`** - only in `compat/legacy_results` dicts, not runtime hot path.
+- **Architecture tests** - `types/` and `utils/` must not import `compat/`.
 
 ---
 
@@ -31,12 +52,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Re-release track as **0.x developer preview**. APIs may change before 1.0.0. See [docs/developer-preview.md](docs/developer-preview.md).
 
 ### Added
-- **PrivyFit** — project-aware local LLM advisor (`recommend_local_model`, `privysha recommend`)
+- **AshaFit** - project-aware local LLM advisor (`recommend_local_model`, `asha recommend`)
 - Workload fingerprinting from compiled prompts + IR
 - HuggingFace catalog with offline fallback; VRAM fit ranking
 - Router integration: `RoutingStrategy.LOCAL_PRIVACY`
 - `Agent(local_model="auto")`, `wrap_llm(..., auto_select_local_model=True)`
-- [examples/developer_preview_demo.py](examples/developer_preview_demo.py) — minimal no-keys demo
+- [examples/developer_preview_demo.py](examples/developer_preview_demo.py) - minimal no-keys demo
 
 ### Changed
 - Version **1.0.1 → 0.3.0** (semantic versioning: preview until stable 1.0)
@@ -49,16 +70,16 @@ Re-release track as **0.x developer preview**. APIs may change before 1.0.0. See
 
 ### Added
 - **`security_fail_closed`** opt-in on `process()` / `sanitize()` for regulated workloads
-- **OTEL pipeline wiring** — `stage_span()` in all pipeline stages via `StageBase`
+- **OTEL pipeline wiring** - `stage_span()` in all pipeline stages via `StageBase`
 - **Benchmark P95/P99** latency percentiles in harness and CI output
-- **~60 new tests** — optimize, wrap_llm negatives, phone/address PII, FastAPI, fail-closed, edge matrix, framework smoke, hybrid PII
-- **Expanded extras** — `integrations`, `all`, `[llamaindex]` in pyproject.toml
-- **Publish workflow gates** — benchmark compare, twine check, fresh wheel smoke
+- **~60 new tests** - optimize, wrap_llm negatives, phone/address PII, FastAPI, fail-closed, edge matrix, framework smoke, hybrid PII
+- **Expanded extras** - `integrations`, `all`, `[llamaindex]` in pyproject.toml
+- **Publish workflow gates** - benchmark compare, twine check, fresh wheel smoke
 
 ### Fixed
 - **`process_async`** input validation parity with sync `process()`
-- **Docs** — fail-open/fail-closed in security.md; Flask/Django/LlamaIndex/OTEL in integrations.md; Python 3.10+ in troubleshooting
-- **Debug transparency** — `fallback_reason` and `original_error` in `debug=True` responses
+- **Docs** - fail-open/fail-closed in security.md; Flask/Django/LlamaIndex/OTEL in integrations.md; Python 3.10+ in troubleshooting
+- **Debug transparency** - `fallback_reason` and `original_error` in `debug=True` responses
 
 ### Changed
 - CI coverage gate documented at **40%** (matches `--cov-fail-under=40`)
@@ -79,7 +100,7 @@ consistently; benchmarks and CI enforce quality gates.
   verification, and masking
 - **Benchmark harness**: tiktoken metrics, expanded `sample_prompts.json` (10 cases),
   false-positive and fail-safe rate gates
-- **OpenTelemetry extra**: `pip install privysha[otel]` with `enable_otel()` for
+- **OpenTelemetry extra**: `pip install asha[otel]` with `enable_otel()` for
   optional stage span export
 - **Docs site**: full MkDocs Material config, GitHub Pages deploy workflow
 - **CI hardening**: coverage gate (55%), docs build, benchmark quality gates,
@@ -99,7 +120,7 @@ consistently; benchmarks and CI enforce quality gates.
 
 ### Changed
 - **Version unified to 1.0.0** across `pyproject.toml`, `__init__.py`, README, docs
-- **Publish trigger**: GitHub Release (published) or manual dispatch — not tag-only
+- **Publish trigger**: GitHub Release (published) or manual dispatch - not tag-only
 
 ### Release checklist (manual)
 - Configure GitHub `pypi` environment for trusted publishing (see `docs/publishing.md`)
@@ -161,7 +182,7 @@ drop-in API (`process`, `wrap_llm`, `optimize`, `sanitize`) for general use.
 - **Progressive Enhancement Architecture**: ML features now opt-in with `pii_mode` parameter
 - **Lightweight Default**: No automatic model downloads, instant startup
 - **Multi-stage PII Pipeline**: Advanced detection in `core/pii_pipeline/`
-- **Hybrid PII Detector**: Optional ML-enhanced detection via `privysha[ml]`
+- **Hybrid PII Detector**: Optional ML-enhanced detection via `asha[ml]`
 
 ### Changed
 - **Modular pipeline layout**: `pipeline/` package replaces monolithic `pipeline.py`
@@ -207,7 +228,7 @@ drop-in API (`process`, `wrap_llm`, `optimize`, `sanitize`) for general use.
 
 ### Added
 
-Initial development release of **PrivySHA**.
+Initial development release of **ASHA**.
 
 Core features:
 

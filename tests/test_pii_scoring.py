@@ -1,7 +1,7 @@
 """Unit tests for PII confidence scoring stage."""
 
-from privysha.core.pii_pipeline.stages.base_stage import PIIEntity, create_pii_context
-from privysha.core.pii_pipeline.stages.scoring_stage import ScoringStage
+from asha.core.pii_pipeline.stages.base_stage import PIIEntity, create_pii_context
+from asha.core.pii_pipeline.stages.scoring_stage import ScoringStage
 
 
 def test_scoring_boosts_high_confidence_regex():

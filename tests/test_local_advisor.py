@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for PrivyFit local model advisor."""
+"""Tests for AshaFit local model advisor."""
 
 from __future__ import annotations
 
@@ -20,16 +20,16 @@ from unittest.mock import patch
 
 import pytest
 
-from privysha.runtime.local_advisor.catalog.fetcher import load_fallback_catalog
-from privysha.runtime.local_advisor.hardware_profiler import detect_hardware
-from privysha.runtime.local_advisor.ranker import rank_models
-from privysha.runtime.local_advisor.types import GPUInfo, HardwareProfile
-from privysha.runtime.local_advisor.workload_profiler import load_prompts, profile_workload
+from asha.runtime.local_advisor.catalog.fetcher import load_fallback_catalog
+from asha.runtime.local_advisor.hardware_profiler import detect_hardware
+from asha.runtime.local_advisor.ranker import rank_models
+from asha.runtime.local_advisor.types import GPUInfo, HardwareProfile
+from asha.runtime.local_advisor.workload_profiler import load_prompts, profile_workload
 
 
 SAMPLE_PROMPTS = [
     "Create a Python function that validates email addresses.",
-    "My email is john@company.com — analyze this dataset.",
+    "My email is john@company.com - analyze this dataset.",
 ]
 
 
@@ -67,8 +67,8 @@ def test_rank_models_privacy_and_coding():
 
 
 def test_rank_models_respects_vram_simulation():
-    from privysha.runtime.local_advisor.catalog.fetcher import pick_best_variant
-    from privysha.runtime.local_advisor.fit.compatibility import check_compatibility
+    from asha.runtime.local_advisor.catalog.fetcher import pick_best_variant
+    from asha.runtime.local_advisor.fit.compatibility import check_compatibility
 
     workload = profile_workload(["Summarize this paragraph."], mode="lite")
     small_gpu = HardwareProfile(
@@ -114,10 +114,10 @@ def test_rank_models_respects_vram_simulation():
     assert large_only, "Expected models that fit 24GB VRAM but not 8GB"
 
 
-@patch("privysha.runtime.local_advisor.catalog.fetcher.fetch_live_catalog")
+@patch("asha.runtime.local_advisor.catalog.fetcher.fetch_live_catalog")
 def test_recommend_local_model_uses_fallback(mock_fetch):
     mock_fetch.side_effect = RuntimeError("offline")
-    from privysha.runtime.local_advisor.advisor import recommend_local_model
+    from asha.runtime.local_advisor.advisor import recommend_local_model
 
     report = recommend_local_model(
         prompts=SAMPLE_PROMPTS,
@@ -132,7 +132,7 @@ def test_recommend_local_model_uses_fallback(mock_fetch):
 
 
 def test_recommend_report_json_serializable():
-    from privysha.runtime.local_advisor.advisor import recommend_local_model
+    from asha.runtime.local_advisor.advisor import recommend_local_model
     import json
 
     report = recommend_local_model(

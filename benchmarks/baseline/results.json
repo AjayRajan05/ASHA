@@ -14,7 +14,7 @@
     "p95_latency_ms": 57.997941970825195,
     "p99_latency_ms": 57.997941970825195,
     "version_info": {
-      "privysha_version": "0.4.1",
+      "asha_version": "0.4.1",
       "python_version": "3.12.6 (tags/v3.12.6:a4a2d2b, Sep  6 2024, 20:11:23) [MSC v.1940 64 bit (AMD64)]",
       "benchmark_date": "2026-06-15T20:38:39.425705",
       "platform": "win32"
@@ -299,7 +299,7 @@
     }
   ],
   "version_info": {
-    "privysha_version": "0.4.1",
+    "asha_version": "0.4.1",
     "python_version": "3.12.6 (tags/v3.12.6:a4a2d2b, Sep  6 2024, 20:11:23) [MSC v.1940 64 bit (AMD64)]",
     "benchmark_date": "2026-06-15T20:38:39.425705",
     "platform": "win32"

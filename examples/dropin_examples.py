@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""PrivySHA drop-in examples (v0.4.1). No API keys required."""
+"""ASHA drop-in examples (v0.4.2). No API keys required."""
 
-from privysha import Agent, optimize, process, sanitize
-from privysha.core.policy_config import PolicyConfig
-from privysha.integrations import wrap_llm
+from asha import Agent, optimize, process, sanitize
+from asha.core.policy_config import PolicyConfig
+from asha.integrations import wrap_llm
 
 ORIGINAL = (
     "Hey bro can you please help me analyze this dataset for anomalies? "

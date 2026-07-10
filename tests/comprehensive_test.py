@@ -1,25 +1,25 @@
-"""Comprehensive smoke tests for PrivySHA package readiness."""
+"""Comprehensive smoke tests for ASHA package readiness."""
 
 from pathlib import Path
 
 import pytest
 
-from privysha import Agent, process
-from privysha.core.hybrid_pii import HybridPIIDetector
-from privysha.core.security.security_layer import ThreatType
-from privysha.types import AgentResult, ProcessResult
+from asha import Agent, process
+from asha.core.hybrid_pii import HybridPIIDetector
+from asha.core.security.security_layer import ThreatType
+from asha.types import AgentResult, ProcessResult
 
 
 REQUIRED_FILES = [
-    "src/privysha/__init__.py",
-    "src/privysha/runtime/agent.py",
-    "src/privysha/runtime/processor.py",
-    "src/privysha/runtime/resolve.py",
-    "src/privysha/core/engines.py",
-    "src/privysha/compat/legacy_results.py",
-    "src/privysha/runtime/adapters/factory.py",
-    "src/privysha/runtime/adapters/mock_adapter.py",
-    "src/privysha/utils/dropin.py",
+    "src/asha/__init__.py",
+    "src/asha/runtime/agent.py",
+    "src/asha/runtime/processor.py",
+    "src/asha/runtime/resolve.py",
+    "src/asha/core/engines.py",
+    "src/asha/compat/legacy_results.py",
+    "src/asha/runtime/adapters/factory.py",
+    "src/asha/runtime/adapters/mock_adapter.py",
+    "src/asha/utils/dropin.py",
     "README.md",
     "LICENSE",
     "pyproject.toml",

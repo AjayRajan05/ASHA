@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-PrivySHA developer preview — minimal end-to-end demo (no API keys required).
+ASHA developer preview - minimal end-to-end demo (no API keys required).
 
 Run from repo root:
     pip install -e .
     python examples/developer_preview_demo.py
 """
 
-from privysha import process
-from privysha.runtime.local_advisor.advisor import recommend_local_model
+from asha import process
+from asha.runtime.local_advisor.advisor import recommend_local_model
 
 
 def main() -> None:
     prompt = (
-        "Hey! My email is alex@company.com — please analyze this sales dataset "
+        "Hey! My email is alex@company.com - please analyze this sales dataset "
         "and suggest anomalies."
     )
 
@@ -26,7 +26,7 @@ def main() -> None:
     if result.metrics:
         print("Token reduction:", f"{result.metrics.token_reduction_pct}%")
 
-    print("\n=== 2. PrivyFit local model hint (offline catalog OK) ===")
+    print("\n=== 2. AshaFit local model hint (offline catalog OK) ===")
     report = recommend_local_model(
         prompts=[prompt, "Write a Python function to validate JWT tokens."],
         mode="balanced",

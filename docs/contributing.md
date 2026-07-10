@@ -1,6 +1,6 @@
 # Contributing
 
-**PrivySHA v0.4.1** — development guide.
+**ASHA v0.4.2** - development guide.
 
 ---
 
@@ -26,7 +26,17 @@ pytest tests -q
 pytest tests/architecture -q
 
 # With coverage (CI uses --cov-fail-under=50)
-pytest --cov=privysha --cov-report=term -m "not slow"
+pytest --cov=asha --cov-report=term -m "not slow"
+```
+
+### Framework integration tests (optional deps)
+
+```bash
+pip install -e ".[integrations,flask,django,llamaindex]"
+pip install "crewai>=0.80.0,<1.0.0" "langgraph>=0.2.0,<1.0.0"
+pytest tests/test_framework_smoke.py tests/test_fastapi_integration.py \
+  tests/test_django_integration.py tests/test_langchain_integration.py \
+  tests/test_llamaindex_integration.py tests/test_instructor_integration.py -q
 ```
 
 ---
@@ -49,7 +59,7 @@ Do not reintroduce `Pipeline`, root lazy exports, or `compat/` on the `process()
 ## Package layout
 
 ```
-src/privysha/
+src/asha/
 ├── core/           # engines, policy, security, compiler
 ├── runtime/        # PromptProcessor, Agent, adapters
 ├── integrations/   # wrap_llm, auto_patch, middleware
@@ -64,11 +74,11 @@ src/privysha/
 ## Code style
 
 ```bash
-flake8 src/privysha --select=F401,F824
-mypy src/privysha --ignore-missing-imports
+flake8 src/asha --select=F401,F824
+mypy src/asha --ignore-missing-imports
 ```
 
-Match existing conventions — minimal diffs, no drive-by refactors.
+Match existing conventions - minimal diffs, no drive-by refactors.
 
 ---
 
@@ -80,13 +90,13 @@ mkdocs serve
 mkdocs build --strict
 ```
 
-Update docs when changing public API. Root exports are only: `process`, `sanitize`, `optimize`, `Agent`.
+Update docs when changing public API. Root exports are: `process`, `sanitize`, `optimize`, `Agent`, `anchor`.
 
 ---
 
 ## Release track
 
-Current: **0.4.1 developer preview**. Breaking changes allowed in 0.x — document in `CHANGELOG.md` and `docs/migration-v0.4.md`.
+Current: **0.4.2 developer preview**. Breaking changes allowed in 0.x - document in `CHANGELOG.md` and `docs/migration-v0.4.md`.
 
 ---
 
