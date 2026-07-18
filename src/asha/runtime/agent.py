@@ -165,7 +165,7 @@ class Agent:
 
         When tools are configured, runs a governed ReAct tool loop before returning.
         """
-        proc_result = self.processor.run(prompt, **self._processor_kwargs)
+        proc_result = self.processor.run(prompt, trace=trace, **self._processor_kwargs)
         compiled = _get_compiled_prompt_from_result(proc_result)
 
         if self.tools:

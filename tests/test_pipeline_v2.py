@@ -20,6 +20,9 @@ def test_processor_full_flow():
     assert isinstance(result, ProcessResult)
     assert result.output
     assert "john@example.com" not in result.output
+    assert result.original == input_text
+
+    # Verify via legacy dict too
     legacy = to_legacy_pipeline_dict(
         process(input_text, mode="balanced", include_legacy_detail=True)
     )
@@ -37,6 +40,9 @@ def test_processor_token_optimization():
     result = processor.run(long_text, token_budget=10)
     assert isinstance(result, ProcessResult)
     assert result.metrics is not None
+    assert result.output
+    # Output should be shorter than or equal to input
+    assert len(result.output) <= len(long_text) + 50  # some tolerance for mask tokens
 
 
 def test_processor_routing_metadata():
@@ -47,10 +53,29 @@ def test_processor_routing_metadata():
     assert legacy["routing_decision"]["selected_model"] == "default"
 
 
-def test_processor_trace():
-    """Trace output when trace=True."""
+def test_processor_trace_has_stages():
+    """Trace output must contain stage entries when trace=True."""
     processor = PromptProcessor()
     result = processor.run("Hello world", trace=True)
     assert result.trace is not None
     assert "stages" in result.trace
     assert len(result.trace["stages"]) > 0
+    # Each stage should have input/output
+    for stage in result.trace["stages"]:
+        assert "name" in stage or "stage" in stage
+
+
+def test_processor_mode_off_passthrough():
+    """PromptProcessor with mode=off returns input unchanged."""
+    processor = PromptProcessor()
+    prompt = "Contact admin@corp.com for help"
+    result = processor.run(prompt, mode="off")
+    assert result.output == prompt
+
+
+def test_processor_preserves_original():
+    """PromptProcessor always stores the original prompt."""
+    processor = PromptProcessor()
+    prompt = "Email user@test.com about data"
+    result = processor.run(prompt, mode="balanced")
+    assert result.original == prompt

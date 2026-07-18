@@ -187,6 +187,14 @@ class PIIDetector:
                         text, pii_type, match.start(), match.end()
                     )
 
+                    # Skip phone matches that are part of a UUID to avoid false positives
+                    if pii_type == "phone":
+                        if any(u.start() <= match.start() and match.end() <= u.end() for u in re.finditer(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", text)):
+                            continue
+                        # Ensure the numeric part has exactly 10 digits (standard US phone)
+                        if len(re.sub(r"\D", "", match.group())) != 10:
+                            continue
+                    
                     if pii_type == "credit_card" and not self._is_valid_credit_card(
                         match.group()
                     ):

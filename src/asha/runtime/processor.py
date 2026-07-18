@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Ajay Rajan
+# Copyright 2026 Ajay Rajan
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 
@@ -287,6 +287,7 @@ class PromptProcessor:
         security_result: Any = None
         working = prompt
         sanitized = prompt
+        security_failed = False
 
         if security and effective_privacy and not security_disabled(policy_dict):
             if trace_ctx:
@@ -294,6 +295,8 @@ class PromptProcessor:
             security_result = self._run_security(
                 prompt, policy_dict, safety, fail_closed
             )
+            # Detect if security silently failed (fail-open mode)
+            security_failed = getattr(security_result, "_security_failed", False)
             sanitized = get_sanitized_content(security_result, prompt)
             working = sanitized
             if trace_ctx:
@@ -369,6 +372,8 @@ class PromptProcessor:
             trace_ctx=trace_ctx,
             trace=trace,
             debug=debug,
+            security_failed=security_failed,
+            sanitized=sanitized,
         )
 
     def _run_security(
@@ -386,7 +391,7 @@ class PromptProcessor:
                     "ASHA security processing failed."
                 ) from exc
             if fail_closed:
-                return SecurityResult(
+                result = SecurityResult(
                     is_safe=False,
                     threat_level=SecurityLevel.HIGH,
                     detected_threats=[],
@@ -396,16 +401,21 @@ class PromptProcessor:
                     recommendations=["security_processing_failed"],
                     processing_time_ms=0.0,
                 )
-            return SecurityResult(
-                is_safe=True,
-                threat_level=SecurityLevel.LOW,
-                detected_threats=[],
-                sanitized_content=prompt,
-                masked_entities={},
-                security_score=0.0,
-                recommendations=[],
-                processing_time_ms=0.0,
-            )
+            else:
+                # Fail-open: pass through original prompt but mark as degraded
+                result = SecurityResult(
+                    is_safe=True,
+                    threat_level=SecurityLevel.LOW,
+                    detected_threats=[],
+                    sanitized_content=prompt,
+                    masked_entities={},
+                    security_score=0.0,
+                    recommendations=[],
+                    processing_time_ms=0.0,
+                )
+            # Mark this result as coming from a security failure
+            object.__setattr__(result, "_security_failed", True) if hasattr(result, "__dataclass_fields__") else setattr(result, "_security_failed", True)
+            return result
 
     def _finalize(
         self,
@@ -421,6 +431,8 @@ class PromptProcessor:
         trace_ctx: Any,
         trace: bool,
         debug: bool,
+        security_failed: bool = False,
+        sanitized: Optional[str] = None,
     ) -> ProcessResult:
         del trace_ctx
         if not pipeline_result.get("success", True) and fail_closed:
@@ -439,9 +451,18 @@ class PromptProcessor:
         )
         threats = _security_field(security_result, "detected_threats", []) or []
         preserve = preserve_intent and not pii_types and len(threats) == 0
-        output = prompt if preserve else _finalize_privacy_output(
-            pipeline_result, effective_privacy and security
-        )
+
+        # When privacy is active and security ran successfully, use the sanitized
+        # (PII-masked) text as the output rather than the compiler-rewritten
+        # optimized template which replaces the user's actual content.
+        if effective_privacy and security and sanitized and not security_failed:
+            output = sanitized if not preserve else prompt
+        elif preserve:
+            output = prompt
+        else:
+            output = _finalize_privacy_output(
+                pipeline_result, effective_privacy and security
+            )
 
         privacy_applied = security and effective_privacy and not pipeline_result.get(
             "passthrough"
@@ -456,8 +477,8 @@ class PromptProcessor:
         proc_result = build_process_result(
             output=output,
             original=prompt,
-            degraded=False,
-            degraded_reason=None,
+            degraded=security_failed,
+            degraded_reason="security_failed:RuntimeError" if security_failed else None,
             privacy_applied=bool(privacy_applied),
             pipeline_result=pipeline_result,
             privacy=effective_privacy and security,

@@ -93,7 +93,7 @@ class SecurityLayer:
         return [
             # Direct instruction overrides
             {
-                "pattern": r"(?i)(ignore|forget|disregard)\s+(previous|all|above|earlier)\s+(instructions|prompts|commands)",
+                "pattern": r"(?i)(ignore|forget|disregard)\s+(all\s+)?(previous|all|above|earlier)\s+(instructions|prompts|commands)",
                 "threat": ThreatType.INJECTION,
                 "severity": 0.9,
                 "description": "Direct instruction override attempt",
@@ -432,8 +432,8 @@ class SecurityLayer:
         max_severity = 0.0
         detected_threats = []
 
-        # High confidence threshold to reduce false positives
-        CONFIDENCE_THRESHOLD = 0.8
+        # Threshold to reduce false positives while still catching real threats
+        CONFIDENCE_THRESHOLD = 0.5
 
         for pattern_info in self.injection_patterns:
             pattern = pattern_info.get("pattern")
@@ -444,7 +444,7 @@ class SecurityLayer:
             if not isinstance(pattern, str) or not isinstance(threat, ThreatType):
                 continue
 
-            # Only detect high-confidence threats
+            # Only detect threats above confidence threshold
             if confidence >= CONFIDENCE_THRESHOLD and re.search(pattern, content):
                 max_severity = max(max_severity, severity)
                 detected_threats.append(threat)

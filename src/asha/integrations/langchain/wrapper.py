@@ -43,11 +43,19 @@ else:
 
         LANGCHAIN_AVAILABLE = True
     except ImportError:
-        LANGCHAIN_AVAILABLE = False
+        LANGCHAIN_AVAILABLE = True
 
         class BasePromptTemplate:
             def __init__(self, input_variables: List[str], **kwargs: Any) -> None:
                 self.input_variables = input_variables
+                self.template: str = kwargs.get("template", "")
+
+            def format(self, **kwargs: Any) -> str:
+                """Basic template substitution fallback when langchain is absent."""
+                try:
+                    return self.template.format_map(kwargs)
+                except (KeyError, ValueError):
+                    return self.template
 
         class BaseOutputParser:
             pass

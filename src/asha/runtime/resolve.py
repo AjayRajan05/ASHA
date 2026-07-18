@@ -58,7 +58,7 @@ def _stage_flags(
     if profile is not None:
         return profile_to_stages(profile)
     return (
-        cfg.enable_pii_detection and cfg.enable_injection_detection,
+        cfg.enable_pii_detection or cfg.enable_injection_detection,
         cfg.allow_modification,
         cfg.enable_optimization,
     )

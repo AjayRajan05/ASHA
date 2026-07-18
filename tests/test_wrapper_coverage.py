@@ -1,4 +1,4 @@
-"""Additional tests for utils/wrapper.py - improves coverage from ~47% toward 70%+."""
+"""Additional tests for utils/wrapper.py - improves coverage."""
 
 import pytest
 
@@ -56,13 +56,12 @@ class _OpenAIStyleClient:
 # ---------------------------------------------------------------------------
 
 
-def test_process_prompt_for_wrap_strict():
+def test_process_prompt_for_wrap_strict_masks_pii():
     from asha.integrations.llm_wrap import _process_prompt_for_wrap
 
     result = _process_prompt_for_wrap("Contact john@example.com", mode="strict")
     assert isinstance(result, str)
-    # PII should be masked or removed in strict mode
-    assert "@" not in result or "example.com" not in result
+    assert "john@example.com" not in result
 
 
 def test_process_prompt_for_wrap_balanced():
@@ -70,34 +69,15 @@ def test_process_prompt_for_wrap_balanced():
 
     result = _process_prompt_for_wrap("Summarize quarterly report", mode="balanced")
     assert isinstance(result, str)
+    assert len(result) > 0
 
 
-def test_process_prompt_for_wrap_lite():
-    from asha.integrations.llm_wrap import _process_prompt_for_wrap
-
-    result = _process_prompt_for_wrap("Hello there", mode="lite")
-    assert isinstance(result, str)
-
-
-def test_process_prompt_for_wrap_off():
+def test_process_prompt_for_wrap_off_preserves_content():
     from asha.integrations.llm_wrap import _process_prompt_for_wrap
 
     result = _process_prompt_for_wrap("Hello there", mode="off")
     assert isinstance(result, str)
-
-
-def test_process_prompt_for_wrap_mode_off():
-    from asha.integrations.llm_wrap import _process_prompt_for_wrap
-
-    result = _process_prompt_for_wrap("Hello there", mode="off")
-    assert isinstance(result, str)
-
-
-def test_process_prompt_for_wrap_balanced():
-    from asha.integrations.llm_wrap import _process_prompt_for_wrap
-
-    result = _process_prompt_for_wrap("Hello there", mode="balanced")
-    assert isinstance(result, str)
+    assert result == "Hello there"
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +139,6 @@ def test_wrap_llm_openai_style_nested():
     client = _OpenAIStyleClient()
     wrapped = wrap_llm(client, mode="balanced")
     assert wrapped is client
-    # Calling create should still work
     result = client.chat.completions.create(
         messages=[{"role": "user", "content": "Summarize this"}]
     )
@@ -264,7 +243,7 @@ def test_safe_wrap_raises_on_incompatible_client():
     from asha.integrations.llm_wrap import safe_wrap
 
     class _BadClient:
-        pass  # no generate/create method
+        pass
 
     with pytest.raises(ASHAWrapError):
         safe_wrap(_BadClient(), mode="balanced")

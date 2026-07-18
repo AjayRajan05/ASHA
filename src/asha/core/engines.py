@@ -129,7 +129,7 @@ def optimize_tokens(
     optimizer = PromptOptimizer(use_msdpc=True)
     try:
         output, metrics = optimizer.optimize(prompt, ir)
-        reduction = float(metrics.get("token_reduction_percentage", 0))
+        reduction = max(0.0, min(100.0, float(metrics.get("token_reduction_percentage", 0))))
         orig_tok = int(metrics.get("original_tokens", len(prompt.split())))
         opt_tok = int(metrics.get("optimized_tokens", len(output.split())))
         return OptimizeResult(

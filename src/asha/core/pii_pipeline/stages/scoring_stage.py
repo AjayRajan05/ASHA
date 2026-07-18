@@ -144,6 +144,13 @@ class ScoringStage(BaseStage):
         )
 
         for entity in entities:
+            # For high-sensitivity PII that already has high confidence, preserve it
+            HIGH_SENSITIVITY_TYPES = {"ssn", "credit_card", "api_key"}
+            if entity.pii_type in HIGH_SENSITIVITY_TYPES and entity.confidence >= 0.85:
+                entity.metadata["detection_method"] = self._determine_detection_method(entity)
+                entity.metadata["base_confidence"] = entity.confidence
+                continue
+
             # Determine detection method from metadata or patterns
             detection_method = self._determine_detection_method(entity)
             base_confidence = weights.get(detection_method, 0.5)

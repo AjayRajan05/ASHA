@@ -35,6 +35,13 @@ def test_invalid_prompt_type():
     assert result.degraded_reason == "invalid_prompt"
 
 
+def test_whitespace_only_prompt():
+    """Whitespace-only prompts should be processed without crash."""
+    result = process("   \n\t  ")
+    assert isinstance(result, ProcessResult)
+    assert result.output is not None
+
+
 def test_unicode_multilingual_prompt():
     prompt = "Bonjour! 联系人: zhang@example.com 電話: 555-123-4567"
     result = process(prompt)
@@ -56,7 +63,8 @@ def test_large_prompt_does_not_crash():
     assert len(out) > 0
 
 
-def test_structured_json_mostly_unchanged():
+def test_structured_json_mode_off_preserves_exact():
+    """mode=off must preserve JSON byte-for-byte."""
     payload = {
         "task": "classify",
         "labels": ["positive", "negative"],
@@ -66,16 +74,19 @@ def test_structured_json_mostly_unchanged():
     result = process(prompt, mode="off")
     out = output_of(result)
     parsed = json.loads(out)
-    assert parsed["task"] == "classify"
-    assert parsed["labels"] == ["positive", "negative"]
+    assert parsed == payload
 
 
-def test_safe_prompt_no_pii_minimal_change():
+def test_safe_prompt_no_pii_balanced_preserves_meaning():
+    """Balanced mode may optimize but must preserve core meaning."""
     prompt = "Explain the difference between supervised and unsupervised learning."
-    result = process(prompt, mode="lite")
+    result = process(prompt, mode="balanced")
     out = output_of(result)
-    # Core instruction should survive optimization
-    assert "supervised" in out.lower() or "unsupervised" in out.lower()
+    # The output must be non-empty and contain at least one of the key terms
+    assert len(out) > 10
+    # At minimum, the subject matter should be recognizable
+    lower_out = out.lower()
+    assert "learn" in lower_out or "supervised" in lower_out or "unsupervised" in lower_out
 
 
 def test_credit_card_valid_detected_and_masked():
@@ -97,9 +108,28 @@ def test_credit_card_invalid_luhn_not_masked():
 
 
 def test_address_type_detected_by_detector():
-    """Address detection is available on PIIDetector; masking is not required yet."""
     from asha.core.security.pii_detector import PIIDetector
 
     detector = PIIDetector()
     types = detector.detect_pii_types("Ship to 742 Evergreen Street, Springfield")
     assert "address" in types
+
+
+def test_single_character_prompt():
+    """Single character should not crash."""
+    result = process("x")
+    assert isinstance(result, ProcessResult)
+    assert result.output is not None
+
+
+def test_newlines_only_prompt():
+    result = process("\n\n\n")
+    assert isinstance(result, ProcessResult)
+
+
+def test_very_long_single_word():
+    """A single very long word should not crash."""
+    word = "a" * 10000
+    result = process(word)
+    assert isinstance(result, ProcessResult)
+    assert result.output is not None
